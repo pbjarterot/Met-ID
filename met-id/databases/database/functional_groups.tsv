@@ -1,0 +1,10 @@
+Positive Mode	+Na	+K	+H
+Negative Mode	+Na-2H	+K-2H	-H	+Cl
+FMP10	phenols	primAmines
+DPP	primAmines
+TAHS	primAmines
+CA	primAmines
+Girard P	carbonyls
+Girard T	carbonyls
+AMPP	carboxylic acids
+BA	aldehydes	catechols

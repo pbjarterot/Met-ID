@@ -1,0 +1,9 @@
+primary amines	[NX3;H2;!$(NC=[!#6]);!$(NC#[!#6])][#6]
+phenols	[OH]c1ccccc1
+catechols	[OX2H]c1ccccc1[OX2H]
+carbonyls	[CX3](=[OX1])C
+aldehydes	[CX3H1](=O)[#6]
+carboxylic acids	[CX3](=O)[OX2H1]
+triols	[#6](-[#8])-[#6](-[#8])-[#6](-[#8])
+diols	[#6](-[#8])-[#6](-[#8])
+hydroxyls	[#6](-[#8])
