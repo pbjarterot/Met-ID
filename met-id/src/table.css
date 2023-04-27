@@ -1,0 +1,273 @@
+.datatable-container {
+    --primary-color: white;
+    --secondary-color: #747474;
+    --highlight-color: #2c2c2c;
+  
+    --dt-status-available-color: greenyellow;
+    --dt-status-away-color: lightsalmon;
+    --dt-status-not-available-color: lightgray;
+  
+    --dt-padding: 12px;
+    --dt-padding-s: 6px;
+    --dt-padding-xs: 2px;
+  
+    --dt-border-radius: 20px;
+  
+    --dt-background-color-container: #515151;
+    --dt-border-color: var(--secondary-color);
+    --dt-bg-color: var(--highlight-color);
+    --dt-text-color: var(--primary-color);
+    --dt-bg-active-button: var(--highlight-color);
+    --dt-text-color-button: var(--primary-color);
+    --dt-text-color-active-button: var(--primary-color);
+    --dt-hover-cell-color: var(--highlight-color);
+    --dt-even-row-color: var(--secondary-color);
+    --dt-focus-color: var(--highlight-color);
+    --dt-input-background-color: var(--secondary-color);
+    --dt-input-color: white;
+    width: 100%;
+    height: 100%
+}
+  
+.material-icons {
+    font-size: 16px;
+}
+  
+.datatable-container {
+    font-family: sans-serif;
+    background-color: var(--dt-background-color-container);
+    border-radius: var(--dt-border-radius);
+    color: var(--dt-text-color);
+    margin: 0 auto;
+    font-size: 15px;
+}
+  
+.datatable-container .header-tools {
+    border-bottom: solid 1px var(--dt-border-color);
+    /*padding: var(--dt-padding); */
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    height: 45px;
+}
+  
+.datatable-container .header-tools .search {
+    width: 40%;
+    margin-right: 5px;
+}
+  
+.datatable-container .header-tools .search .search-input {
+    width: 100%;
+    height: calc(1.3em + 0.5rem + 2px);
+    background-color: var(--dt-input-background-color);
+    display: block;
+    border-radius: var(--dt-border-radius);
+    border: solid 1px var(--dt-border-color);
+    color: white;
+    font-size: 22px;
+    padding-left: 15px;    
+}
+  
+.datatable-container .header-tools .tools {
+    width: 70%;
+    height: 100%;
+    border-radius: 10px;
+}
+  
+.datatable-container .header-tools .tools ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    height: 100%;
+    border-radius: 10px;
+}
+  
+.datatable-container .header-tools .tools ul li {
+    display: inline-block;
+    margin: 0 var(--dt-padding-xs); 
+    align-items: baseline;
+    height: 100%;
+    border-radius: 10px;
+}
+
+
+.datatable-container .header-tools .tools ion-icon {
+    height: 30px;
+    width: 25px;
+    border-radius: 10px ;
+}
+
+.datatable-container .footer-tools {
+    padding: var(--dt-padding);
+    display: flex;
+    align-items: baseline;
+}
+  
+.datatable-container .footer-tools .list-items {
+    width: 50%;
+}
+  
+.datatable-container .footer-tools .pages {
+    margin-left: auto;
+    margin-right: 0;
+    width: 50%;
+}
+  
+.datatable-container .footer-tools .pages ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+}
+  
+.datatable-container .footer-tools .pages ul li {
+    display: inline-block;
+    margin: 0 var(--dt-padding-xs);
+}
+  
+.datatable-container .footer-tools .pages ul li button,
+.datatable-container .header-tools .tools ul li button {
+    color: var(--dt-text-color-button);
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 0;
+    
+    background: transparent;
+    cursor: pointer;
+}
+  
+.datatable-container .footer-tools .pages ul li button:hover,
+.datatable-container .header-tools .tools ul li button:hover {
+    background: var(--dt-bg-active-button);
+    color: var(--dt-text-color-active-button);
+}
+  
+.datatable-container .footer-tools .pages ul li span.active {
+    background-color: var(--dt-bg-color);
+    border-radius: var(--dt-border-radius);
+}
+  
+.datatable-container .footer-tools .pages ul li button,
+.datatable-container .footer-tools .pages ul li span,
+.datatable-container .footer-tools .pages ul li input,
+.datatable-container .header-tools .tools ul li button {
+    padding: var(--dt-padding-s) var(--dt-padding);
+}
+  
+.datatable-container .datatable {
+    border-collapse: collapse;
+    width: 100%;
+}
+  
+.datatable-container .datatable,
+.datatable-container .datatable th,
+.datatable-container .datatable td {
+    padding:  0px;
+    margin: 0px;
+}
+
+.datatable-container .datatable th {
+    font-weight: bolder;
+    text-align: left;
+    border-bottom: solid 1px var(--dt-border-color);
+}
+  
+.datatable-container .datatable td {
+    border-bottom: solid 1px var(--dt-border-color);
+}
+
+.datatable-container .datatable br {
+    margin: 0px;
+    padding: 0px;
+}
+  
+.datatable-container .datatable tbody tr:nth-child(even) {
+    background-color: var(--dt-even-row-color);
+}
+  
+.datatable-container .datatable tbody tr:hover {
+    background-color: var(--dt-hover-cell-color);
+}
+  
+.datatable-container .datatable tbody tr .available::after,
+.datatable-container .datatable tbody tr .not-available::after {
+    display: inline-block;
+    vertical-align: middle;
+}
+  
+.datatable-container .datatable tbody tr .available::after {
+    content: "Available";
+    color: var(--dt-status-available-color);
+}
+  
+  
+.datatable-container .datatable tbody tr .not-available::after {
+    content: "Not available";
+    color: var(--dt-statu-not-available-color);
+}
+  
+.datatable-container .datatable tbody tr .available::before,
+.datatable-container .datatable tbody tr .away::before,
+.datatable-container .datatable tbody tr .not-available::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+  
+.datatable-container .datatable tbody tr .available::before {
+    background-color: var(--dt-status-available-color);
+}
+  
+.datatable-container .datatable tbody tr .away::before {
+    background-color: var(--dt-status-away-color);
+}
+  
+.datatable-container .datatable tbody tr .not-available::before {
+    background-color: var(--dt-status-not-available-color);
+}
+  
+.datatable-container-scrollable {
+    height: 90%;
+    overflow: auto;
+}
+  
+.datatable-container-scrollable table {
+    width: 100%;
+}
+
+.datatable-container-scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+  
+.datatable-container-scrollable::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+#add-to-ms1-table-li {
+    display: inline-block;
+    margin-bottom: 2px;
+    height: 100%;
+    border-radius: 10px;
+    
+}
+#add-to-ms1-table-input {
+    display: inline-block;
+    margin-top: 6px;
+    margin-left: 5px;
+    height: 85%;
+    border-radius: 10px;
+    background-color: var(--dt-input-background-color);
+    border-radius: var(--dt-border-radius);
+    border: solid 1px var(--dt-border-color);
+    color: white;
+    font-size: 22px;
+    
+}

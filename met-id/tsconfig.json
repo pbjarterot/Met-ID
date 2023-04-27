@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ESNext", "DOM", "es2017", "dom", "ES6"],
+    "typeRoots": ["node_modules/@types"],
+    "moduleResolution": "node",
+    "strict": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "types": ["vite/client", "jQuery", "node", "d3"],
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noImplicitAny": false,
+    "declaration": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "*" :["./node_modules/*"]
+    }
+  },
+  "include": ["./src", "./src/**/*"]
+}

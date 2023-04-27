@@ -1,0 +1,81 @@
+.tabs {
+	position: relative;
+	display: flex;
+	min-height: 800px;
+	border-radius: 18px 18px 20px 20px;
+	overflow: hidden;
+  height: 100%;
+  margin-top: 10px;
+  width: 100%;
+
+}
+
+.tabby-tab {
+	flex: 1;
+  height: 95vh;
+}
+
+
+.tabby-label {
+	display: block;
+	box-sizing: border-box;
+	/* tab content must clear this */
+		height: 40px;
+	
+	padding: 10px;
+	text-align: center;
+	background: #989898;
+  color: white;
+	cursor: pointer;
+	transition: background 0.5s ease;
+  font-size: 20px;
+	
+}
+
+.tabby-label:hover {
+	background: #5a595a;
+  color: white;
+  
+}
+
+.tabby-content {
+	position: absolute;
+  height: 95vh;
+	
+	left: 0; bottom: 0; right: 0;
+	/* clear the tab labels */
+		top: 40px; 
+	
+	padding: 20px;
+	border-radius: 0 0 8px 8px;
+	background: #4b4b4b;
+	
+	transition: 
+		opacity 0.8s ease,
+		transform 0.8s ease		;
+	
+	/* show/hide */
+		opacity: 0;
+		transform: scale(0.1);
+		transform-origin: top left;
+  
+  border-radius: 0 0 0 0px
+	
+}
+
+/* MAKE IT WORK ----- */
+
+.tabby-tab [type=radio] { display: none; }
+[type=radio]:checked ~ label {
+	background: #2c2c2c;
+	z-index: 2;
+  color: white;
+}
+
+[type=radio]:checked ~ label ~ .tabby-content {
+	z-index: 1;
+	
+	/* show/hide */
+		opacity: 1;
+		transform: scale(1);
+}

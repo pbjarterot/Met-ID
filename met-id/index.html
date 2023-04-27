@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Met-id</title>
+    <script type="module" src="/src/main.ts" defer></script>
+    <script src="./node_modules/d3/dist/d3.min.js"></script>
+    <script src="https://unpkg.com/ionicons@5.4.0/dist/ionicons.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
+  </head>
+  <body>
+    <div data-tauri-drag-region class="titlebar">
+      <div class="titlebar-button" id="titlebar-minimize">
+        <img
+          src="https://api.iconify.design/mdi:window-minimize.svg"
+          alt="minimize"
+        />
+      </div>
+      <div class="titlebar-button" id="titlebar-maximize">
+        <img
+          src="https://api.iconify.design/mdi:window-maximize.svg"
+          alt="maximize"
+        />
+      </div>
+      <div class="titlebar-button" id="titlebar-close">
+        <img src="https://api.iconify.design/mdi:close.svg" alt="close" />
+      </div>
+    </div>
+    <div class="container">    
+      <div class="tabs">
+        <div class="tabby-tab">
+          <input type="radio" id="tab-1" name="tabby-tabs" checked>
+          <label for="tab-1" class="tabby-label">MS2</label>
+          <div class="tabby-content">
+            <div class="ms2-left-sidebar">
+              <div class="ms2-logo">
+                <h1 class="ms2-logo-text">Met-id</h1>
+              </div>
+              <div class="ms2-menu">
+                <button class="ms2-sidebar-button" id="ms2-sidebar-open-file-button">
+                  <span class="open-file-button-text">Open File</span>
+                  <span class="open-file-button-icon">
+                    <ion-icon name="add-circle-outline"></ion-icon>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="body-main">
+              <div class="ms2-searchbar">
+                <div class="ms2-searchbar-left">
+                  <div class="ms2-searchbar-row">
+                    <div class="ms2-searchbar-name">Name</div>
+                    
+                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar">
+                  </div>
+                </div>
+                <div class="ms2-searchbar-right">
+                  <div class="ms2-searchbar-row">
+                    <div class="ms2-searchbar-name">Parent ion m/z </div>
+                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar-parent">
+                  </div>
+                  <div class="ms2-searchbar-row">
+                    <div class="ms2-searchbar-name">Product ion m/z</div>
+                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar-parent">
+                  </div>
+                </div>
+              </div>
+              <div class="results-body" id="results-body">
+                <div class="small-results-card">
+                  <div class="small-results-card-textbox">
+                    <div class="small-results-card-name">
+                      <label class="small-results-card-name">3,4 dimethoxyphenethylamine</label>
+                    </div>
+                  </div>
+                  <div class="small-results-card-metadata">
+                    <div class="small-results-molecule-info">
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>CID</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>0eV</p>
+                        </div>
+                      </div>
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Matrix</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>FMP-10</p>
+                        </div>
+                      </div>
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Adduct</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>1</p>
+                        </div>
+                      </div>
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Parent ion m/z</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>200.0</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="small-results-card-similarity">
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Spectral Sim.</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>1</p>
+                        </div>
+                      </div>
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Cosine Sim.</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>1</p>
+                        </div>
+                      </div>
+                      <div class="small-ms2-dash-box">
+                        <div class="small-ms2-dashbox-header">
+                          <p>Delta ppm</p>
+                        </div>
+                        <div class="small-ms2-dashbox-text">
+                          <p>1</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                <!--Here goes all the cards for the results-->
+            </div>
+            </div>
+          </div>
+        <div class="tabby-tab">
+          <input type="radio" id="tab-2" name="tabby-tabs">
+          <label for="tab-2" class="tabby-label">MS1</label>
+          <div class="tabby-content">
+            <div class="ms1-left-sidebar">
+              <div class="ms1-logo">
+                <h1 class="ms1-logo-text">Met-id</h1>
+              </div>
+              <div class="menu">
+                <button class="ms1-sidebar-button" id="ms1-sidebar-open-file-button">
+                  <span class="ms1-sidebar-button-text">Open File</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="arrow-up-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-identify-button2">
+                  <span class="ms1-sidebar-button-text">Identify</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="bulb-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-export-button">
+                  <span class="ms1-sidebar-button-text" id="export-button-text1">Export Analysis file</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="arrow-down-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-export-button2">
+                  <span class="ms1-sidebar-button-text" id="export-button-text2">Export Identification file</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="arrow-down-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-add-button">
+                  <span class="ms1-sidebar-button-text" id="ms1-add-matrix-button-text1">Add Matrix</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="add-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-add-button2">
+                  <span class="ms1-sidebar-button-text" id="ms1-add-button-text2">Add Metabolite</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="add-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-add-button3">
+                  <span class="ms1-sidebar-button-text" id="ms1-add-button-text3">Add Functional Group</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="add-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-help-button">
+                  <span class="ms1-sidebar-button-text" id="ms1-help-button-text">Help</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="help-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
+                  <span class="ms1-sidebar-button-text" id="ms1-about-button-text">About</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="information-circle-outline"></ion-icon>
+                  </span>
+                </button>
+                <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
+                  <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Update</span>
+                  <span class="ms1-sidebar-button-icon">
+                    <ion-icon name="arrow-up-circle-outline"></ion-icon>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="body-main">
+              <div class="ms1-searchbar">
+                <div class="ms1-searchbar-left">
+                  <div class="ms1-metabolome-div" id="ms1-metabolome-div1">
+                    <div class="ms1-searchbar-row">
+                      <p class="ms1-search-lbl">Target Metabolome</p>
+                      <div class="dropdown dropdown-dark" id="ms1-search-metabolome">
+                        <select name="two" class="dropdown-select" id="metabolome-dropdown">
+                          <!--  Appended by fill_dropdown in dropdown.ts  -->
+                        </select>
+                      </div>
+                    </div>
+                    <div class="ms1-searchbar-row3" id="metabolome-checkbox-container">
+                      <!--  Appended by fill_options_under_dropdown in dropdown.ts  -->
+                    </div>
+                  </div>
+                  <div class="ms1-metabolome-div" id="ms1-metabolome-div2">
+                    <div class="ms1-searchbar-row">
+                      <p class="ms1-search-lbl">Matrix</p>
+                      <div class="dropdown dropdown-dark" id="ms1-search-matrix">
+                        <select name="two" class="dropdown-select" id="matrix-dropdown">
+                          <!--  Appended by fill_dropdown in dropdown.ts  -->
+                        </select>
+                      </div>
+                    </div>
+                    <div class="ms1-searchbar-row3" id="matrix-checkbox-container">
+                      <!--  Appended by fill_options_under_dropdown in dropdown.ts  -->
+                    </div>
+                  </div>
+                  <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
+                    <div class="ms1-searchbar-row4">
+                      <p class="ms1-search-lbl">Display Options</p>
+                    </div>
+                    <div class="ms1-searchbar-row3">
+                      <div class="checkbox-label-container">
+                        <p>Show delta mass (Da)</p>
+                        <input type="checkbox" checked="checked">
+                      </div>
+                      
+                      <div class="checkbox-label-container">
+                        <p>Mass deviation (ppm)</p>
+                        <input type="checkbox" checked="checked">
+                        <span class="checkmark"></span>
+                      </div>
+                      
+                      <div class="checkbox-label-container">
+                        <p>Theoretical mass</p>
+                        <input type="checkbox" checked="checked">
+                        <span class="checkmark"></span>
+                      </div>
+                      <div class="checkbox-label-container" id="checkbox-label-container2">
+                        <p>Show only matched</p>
+                        <input type="checkbox" checked="checked">
+                        <span class="checkmark"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
+                    <div class="ms1-searchbar-row">
+                        <p class="ms1-search-lbl">Mass Error</p>
+                      <div class="ms1-searchbar-row">
+                        <input type="text" class="ms1-error-input" placeholder="0.0">
+                      </div>
+                    </div>
+                    <button class="ms1-error-button" id="ms1-error-button">
+                      <span class="ms1-error-button-text">Suggest (RANSAC)</span>
+                      <span class="ms1-error-button-icon">
+                        <ion-icon name="bar-chart-outline"></ion-icon>
+                      </span>
+                    </button>
+                    <button class="ms1-error-button" id="ms1-error-button">
+                      <span class="ms1-error-button-text">Manual</span>
+                      <span class="ms1-error-button-icon">
+                        <ion-icon name="analytics-outline"></ion-icon>
+                      </span>
+                    </button>
+                    <button class="ms1-error-button" id="ms1-error-button">
+                      <span class="ms1-error-button-text">Show Plot</span>
+                      <span class="ms1-error-button-icon">
+                        <ion-icon name="albums-outline"></ion-icon>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div class="ms1-searchbar-right">
+                  <div class="ms1-searchbar-row2">
+                    <div class="ms1-slidecontainer">
+                      <p>Search window: <span id="demo"></span></p>
+                      <input type="range" min="0" max="10" value="2" class="slider" id="myRange" step="0.1">
+                  </div>
+                </div>
+                <div class="ms1-searchbar-row2">
+                  <div class="ms1-slidecontainer">
+                    <p>Unique metabolites in db: <span id="demo"></span></p>
+                    <p>2000</p>
+                  </div>
+                </div>
+                <div class="ms1-searchbar-row2">
+                  <div class="ms1-slidecontainer">
+                    <p>Progress <span id="demo"></span></p>
+                    <p>100%</p>
+                  </div>
+                </div>
+                </div>
+              </div>
+              <div class="ms1-results">
+                <div class="datatable-container">
+                  <!-- ======= Header tools ======= -->
+                  <div class="header-tools">
+                    <div class="tools">
+                      <ul>
+                        <li id="add-to-ms1-table-li">
+                          <input type="search" id="add-to-ms1-table-input" placeholder="Add m/z"></input>
+                        </li>
+                        <li>
+                          <button id="append-to-ms1-table">
+                            <ion-icon name="add-circle-outline"></ion-icon>
+                          </button>
+                        </li>
+
+                        <li>
+                          <button id="ms1-table-delete-row">
+                            <ion-icon name="trash-outline"></ion-icon>
+
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                
+                    <div class="search">
+                      <input type="search" class="search-input" placeholder="Search..." />
+                    </div>
+                  </div>
+                
+                  <!-- ======= Table ======= -->
+                  <div class="datatable-container-scrollable">
+                    <table class="datatable" id="ms1-datatable">
+                      <thead>
+                        <tr>
+                          <th><input type="checkbox" id="ms1-table-head-check"/></th>
+                          <th>Observed m/z</th>
+                          <th>Adjusted m/z</th>
+                          <th>Matched name</th>
+                          <th>Matched delta mass (Da)</th>
+                          <th>Matched difference (ppm)</th>
+                          <th>Matched theoretical mass</th>
+                          <th>MSMS Spectra available?</th>
+
+                        </tr>
+                      </thead>
+                  
+                      <tbody id="ms1-table-body">
+                        <tr>
+                          <td><input type="checkbox" /></td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>Dopamine<br>Dopamine<br>Dopamine
+                          </td>
+                          <td>0.005</td>
+                          <td>3.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>Dopamine</td>
+                          <td>0.005</td>
+                          <td>3.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>Dopamine</td>
+                          <td>0.005</td>
+                          <td>3.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>Dopamine</td>
+                          <td>0.005</td>
+                          <td>3.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>L-Dopa</td>
+                          <td>0.0005</td>
+                          <td>2.0</td>
+                          <td>500</td>
+                          <td><span class="available"></span></td>
+                        </tr>
+                  
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>6-OHDA</td>
+                          <td>0.00005</td>
+                          <td>1.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>
+
+                        <tr>
+                          <td>
+                            <input type="checkbox" />
+                          </td>
+                          <td>400</td>
+                          <td>500</td>
+                          <td>3-OMD</td>
+                          <td>0.000005</td>
+                          <td>0.0</td>
+                          <td>500</td>
+                          <td><span class="not-available"></span></td>
+                        </tr>                   
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="slide-in">
+                <button class="close-button" id="close-add-matrix-div">close</button>
+              </div>
+            </div>
+          </div>
+        </div>      
+      </div>
+  </body>
+</html>
