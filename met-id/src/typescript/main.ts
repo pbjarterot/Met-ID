@@ -43,6 +43,10 @@ window.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('titlebar-minimize')?.addEventListener('click', () => appWindow.minimize());
 	document.getElementById('titlebar-maximize')?.addEventListener('click', () => appWindow.toggleMaximize());
 	document.getElementById('titlebar-close')?.addEventListener('click', () => appWindow.close());
+	document.getElementById("metabolome-dropdown")?.addEventListener("change", () => {
+		fill_options_under_dropdown("metabolome", "metabolome-dropdown", "metabolome-checkbox-container")});
+	document.getElementById("matrix-dropdown")?.addEventListener("change", () => {
+		fill_options_under_dropdown("matrix", "matrix-dropdown", "matrix-checkbox-container")})
 });
 
 function draw(div_index: number) {

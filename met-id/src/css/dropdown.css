@@ -6,8 +6,8 @@
     display: inline-block;
     position: relative;
     overflow: hidden;
-    height: 40px;
-    width: 200px;
+    height: 30px;
+    width: 230px;
     border-radius: 3px;
 }
   
@@ -15,7 +15,7 @@
     content: '';
     position: absolute;
     z-index: 2;
-    top: 4px;
+    top: 1px;
     right: 10px;
     width: 0;
     height: 0;
@@ -40,10 +40,10 @@
     position: relative;
     width: 130%;
     margin: 0;
-    padding: 0px 8px 6px 10px;
+    padding: 0px 1px 15px 10px;
     height: 44px;
     line-height: 14px;
-    font-size: 22px;
+    font-size: 15px;
     color: #494949;
     
     background: 2c2c2c; /* Fallback for IE 8 */

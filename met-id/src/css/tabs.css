@@ -40,14 +40,14 @@
 
 .tabby-content {
 	position: absolute;
-  height: 95vh;
+  	height: 100%;
 	
 	left: 0; bottom: 0; right: 0;
 	/* clear the tab labels */
 		top: 40px; 
 	
-	padding: 20px;
-	border-radius: 0 0 8px 8px;
+	padding: 0px 10px;
+	border-radius: 0 0 18px 18px;
 	background: #4b4b4b;
 	
 	transition: 

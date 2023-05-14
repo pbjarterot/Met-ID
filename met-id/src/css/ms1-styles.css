@@ -18,15 +18,15 @@
 }
 
 #ms1-sidebar-export-button {
-    margin-top: 8vh;
+    margin-top: 2vh;
 }
 
 #ms1-sidebar-add-button {
-    margin-top: 8vh;
+    margin-top: 2vh;
 }
 
 #ms1-sidebar-help-button {
-    margin-top: 8vh;
+    margin-top: 2vh;
 }
 
 .ms1-sidebar-button-text,
@@ -63,7 +63,7 @@
 
 .ms1-searchbar-row {
     text-align: center;
-    height: 30%;
+    height: 32%;
     width: 100%;
 }
 
@@ -73,8 +73,9 @@
 }
 
 .ms1-searchbar-row2 {
-      height: 28.6%;
+      height: 25%;
       width: 99%;
+      margin: 12px 0px;
 }
 
 .ms1-searchbar-row3 {
@@ -96,9 +97,12 @@
 }
 
 .ms1-searchbar {
-      height: 330px;
+      height: 230px;
+      left: 270px;
+      right: 0.5vw;
+      position: absolute;
       border-radius: 10px;
-      width: 100%;
+
 }
    
 .ms1-search-lbl {
@@ -118,8 +122,8 @@
     border-radius: 10px;
     height: 80%;
     width: 80%;
-    padding: 20px;
-    margin: 10px;
+    padding: 10px;
+    margin: 10px 1px;
 }
 
 .ms1-searchbar-left {
@@ -129,7 +133,6 @@
     min-height: 180px;
     color:white;
     float: left;
-    padding-left: 20px;
     display: grid;
     grid-template-columns: 25% 25% 25% 25%;
   
@@ -137,7 +140,7 @@
 
 .ms1-searchbar-right {
     background-color: #4b4b4b;
-    width: 18%;
+    width: 20%;
     height: 100%;
     color:white;
     float: right;
@@ -146,7 +149,7 @@
 
 .ms1-left-sidebar {
     background-color: #4b4b4b;
-    width: 13vw;
+    width: 250px;
     height: 100%;
     float: left;
     padding: 0%;
@@ -155,8 +158,9 @@
 }
 
 .ms1-logo {
-    height: 10%;
-    width: 100%
+    height: 60px;
+    width: 100%;
+    text-align: center;
 }
 
 .ms1-menu {
@@ -165,10 +169,12 @@
 }
   
 .ms1-logo-text {
-    width: 100%;
     text-align: center;
-    font-size: 40px;
+    font-size: 50px;
     color: rgb(255, 255, 255);
+    padding: 0px;
+    margin: 0px;
+    margin-top: 30px;
 }
 
 .searchbar-row3 {
@@ -236,11 +242,13 @@
     width: 90%;
     padding: 5px;
     border-radius: 10px;
+    height: 20px;
+    margin-bottom: 5px;
 }
 
 .ms1-error-button {
         display: flex;
-        height: 40px;
+        height: 35px;
         width: 100%;
         padding: 0;
         background: #747474;
@@ -249,10 +257,10 @@
         border-radius: 8px;
         overflow: hidden;
         font-family: "Quicksand", sans-serif;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 500;
         cursor: pointer;
-        margin: 10px 5px 20px 0px;
+        margin: 10px 5px 1px 0px;
         text-align: center;
 }
 
@@ -288,12 +296,37 @@
 
 .ms1-results {
     background-color: #929292;
-    width: 98%;
-    height: 55vh;
+    left: 270px;
+    right: 0.5vw;
+    top: 240px;
+    bottom:50px;
+    position: absolute;
     border-radius: 20px;
-    margin-left: 30px;
+
 }
 
 .datatable-container {
     width: 100%;
+}
+
+.body-main {
+    background-color: #4b4b4b;
+    height: auto;
+    width: auto;
+    float: right;
+
+}
+
+.ms1-top-sidebar-buttons {
+    position: absolute;
+    width: 250px;
+    top: 90px;
+}
+
+.ms1-bottom-buttons {
+    position: absolute;
+    width: 250px;
+
+    bottom: 60px;
+
 }

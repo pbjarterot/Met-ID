@@ -43,13 +43,14 @@
 }
 
 .ms1-slidecontainer > p {
-    margin-top: 10px;
-    padding-top: 10px;
+    padding-top: 1px;
+    margin-top: 0px;
+    padding-bottom: 0px;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
   
     font-family: "Quicksand", sans-serif;
-    font-size: 20px;
+    font-size: 17px;
 }
 
 .searchbar-row2 > .ms1-slidecontainer input {

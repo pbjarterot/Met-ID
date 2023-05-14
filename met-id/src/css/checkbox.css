@@ -1,29 +1,29 @@
 .checkbox-label-container {
-    height: 33px;
+    height: 25px;
     width: 100%;
     text-align: left;
   }
   
   .checkbox-label-container p {
-
     width: 80%;
-    height: 40%;
+    height: 100%;
     float: right;
-    font-size: 15px;
+    font-size: 14px;
     margin: 1px;
 
   
   }
   #checkbox-label-container2 {
-    margin-top: 80px;
+    margin-top: 20px;
   }
   
   
   .checkbox-label-container input {
-    height: 22px;
-    width: 22px;
+    height: 18px;
+    width: 18px;
     float: left;
     margin-top: 1px;
+    margin-left: 15px;
   }
   .checkbox-label-container > #text {
     float: right;

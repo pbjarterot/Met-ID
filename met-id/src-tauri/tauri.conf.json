@@ -6,6 +6,7 @@
     "distDir": "../dist",
     "withGlobalTauri": true
   },
+  
   "package": {
     "productName": "met-id",
     "version": "0.0.0"

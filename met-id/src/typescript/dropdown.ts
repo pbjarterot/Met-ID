@@ -18,23 +18,28 @@ const target_metabolome = {"HMDB (All)": ["Endogenous Metabolites", "Exogenous M
                            "HMDB (CSF)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
                            "Lipidmaps": []}
 
+const metabolome_values = {"HMDB (All)": ["Endogenous", "Exogenous", "Unspecified"],
+                           "HMDB (Brain)": ["Endogenous", "Exogenous", "Unspecified"],
+                           "HMDB (CSF)": ["Endogenous", "Exogenous", "Unspecified"],
+                           "Lipidmaps": []}
 
-const target_matrix = {"Positive mode": ["[M+H]+", "[M+K+]+", "[M+Na]+"],
+
+const target_matrix = {"Positive mode": ["[M+H]+", "[M+K]+", "[M+Na]+"],
                        "Negative mode": ["[M-H]-", "[M+K-2H]-", "[M+Na-2H]-", "[M+Cl]-"], 
-                       "FMP-10": ["[M+FMP10]+", "[M+2FMP10-H]+", "[M+2FMP10-CH3]+", 
-                       "[M+3FMP10-H]+", "[M+3FMP10-CH3]+", "[M+3FMP10-C2H6]+"],
+                       "FMP-10": ["Phenols", "Primary amines", "Triols", "Diols", "Hydroxyls"],
+                       "AMPP": ["Aldehydes", "Carboxylic Acids"]
                        }
 
 
 
-console.log((document.getElementById("metabolome-dropdown")! as HTMLSelectElement).value)
+//console.log((document.getElementById("metabolome-dropdown")! as HTMLSelectElement).value)
 
-
+//doesnt trigger
 export function fill_options_under_dropdown(type: string, dropdown_id: string, elementID: string) {
     const template = 
         `<div class="checkbox-label-container">
         <p>{{value}}</p>
-        <input type="checkbox" checked="checked">
+        <input type="checkbox" checked="checked" value={{id}}>
         </div>`
 
     const myElement = document.getElementById(elementID);
@@ -45,12 +50,14 @@ export function fill_options_under_dropdown(type: string, dropdown_id: string, e
     if (type === "metabolome")  {
         for (let i = 0; i < target_metabolome[option_selected].length; i++) {
             const renderedTemplate = template.replace("{{value}}", target_metabolome[option_selected][i]);
-            myElement!.innerHTML += renderedTemplate;
+            const renderedTemplate2 = renderedTemplate.replace("{{id}}", metabolome_values[option_selected][i]);
+            myElement!.innerHTML += renderedTemplate2;
         }
     } else if (type === "matrix") {
         for (let i = 0; i < target_matrix[option_selected].length; i++) {
             const renderedTemplate = template.replace("{{value}}", target_matrix[option_selected][i]);
-                myElement!.innerHTML += renderedTemplate;
+            const renderedTemplate2 = renderedTemplate.replace("{{id}}", target_matrix[option_selected][i]);
+                myElement!.innerHTML += renderedTemplate2;
         }
     }
 }

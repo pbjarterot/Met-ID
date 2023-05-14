@@ -1,8 +1,8 @@
-use pyo3::{Python, PyAny};
+use pyo3::{Python, prepare_freethreaded_python};
 use pyo3::types::PyModule;
 use std::collections::HashMap;
-use std::sync::mpsc;
-use pyo3::types::PyTuple;
+use rayon::prelude::*;
+
 
 #[derive(Debug, Clone)]
 pub struct Metabolite {
@@ -10,7 +10,8 @@ pub struct Metabolite {
     pub name: String,
     pub smiles: String,
     pub formula: String,
-    pub mz: f64
+    pub mz: f64,
+    pub endo_exo: Vec<String>
 }
 
 impl Metabolite {
@@ -20,41 +21,44 @@ impl Metabolite {
     }
 
     pub fn functional_group(&self, functional_smarts: &HashMap<String, String>) -> HashMap<String, String> {
-        let (tx, rx) = mpsc::channel();
-        let smils = self.smiles.clone();
-        let smarts_ = functional_smarts.clone();
+        let smils: String = self.smiles.clone();
+        let smarts_: HashMap<String, String> = functional_smarts.clone();
 
-        for (key, value) in &smarts_ {
-            let tx1 = tx.clone();
-            let value_clone = value.clone();
-            let key_clone = key.clone();
-            let smiles = smils.clone();
-            
-            pyo3::prepare_freethreaded_python();
-            Python::with_gil(|py: Python| {
-            let rdkit: &PyModule = py.import("rdkit.Chem").unwrap();
-            let mol: &PyAny = rdkit.getattr("MolFromSmiles").unwrap().call((smiles, ), None).unwrap();
-            
-            let tuple_len: usize;
-            if !mol.is_none() {
-                let func: &PyAny = rdkit.getattr("MolFromSmarts").unwrap().call((value_clone, ), None).unwrap();
-                let a: &PyAny = mol.getattr("GetSubstructMatches").unwrap().call((func, ), None).unwrap();
-                let aa: &PyTuple = a.extract().unwrap();
-                tuple_len = aa.len();
-            } else {
-                tuple_len = 0 as usize;
-            }
-            
-            tx1.send((tuple_len, key_clone)).unwrap();
-            });
-        };
-        
+        let result: Vec<Option<(usize, String)>> = smarts_
+            .par_iter()
+            .map(|(key, value)| {
+                let value_clone = value.clone();
+                let key_clone = key.clone();
+                let smiles_clone = smils.clone();
+                prepare_freethreaded_python();
+                Python::with_gil(|py| {
+                    let rdkit: &PyModule = py.import("rdkit.Chem").unwrap();
+                    let mol: &pyo3::PyAny = rdkit.getattr("MolFromSmiles").unwrap().call1((&smiles_clone,)).unwrap();
+                    if !mol.is_none() {
+                        let func: &pyo3::PyAny = rdkit.getattr("MolFromSmarts").unwrap().call1((&value_clone,)).unwrap();
+                        let a: &pyo3::PyAny = mol.call_method1("GetSubstructMatches", (func,)).unwrap();
+                        let aa: Vec<Vec<usize>> = a.extract().unwrap();
+                        let tuple_len = aa.len();
+
+                        Some((tuple_len, key_clone))
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect();
+
         let mut fgh: HashMap<String, String> = HashMap::new();
-        for _ in functional_smarts.values() {
-            let (length, group): (usize, String) = rx.recv().unwrap();
-            fgh.insert(group, length.to_string());
-        };
-    
+        for index in 0..functional_smarts.values().len() {
+            //let (length, group): (usize, String) = &result[index];
+            match &result[index] {
+                Some((u, s)) => fgh.insert(s.clone(), u.to_string()),
+                None => None,
+            };
+
+        }
+
         fgh
     }
+    
 }

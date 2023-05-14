@@ -7,12 +7,26 @@ window.addEventListener("DOMContentLoaded", () => {
 
 });
 
+let table_body = document.getElementById("ms1-table-body");
+
+export async function append_to_table(input_mz: number) {
+  let ms1_table_row = `
+  <tr>
+      <td><input type="checkbox" /></td>
+      <td>${input_mz}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td><span class="unavailable"></span></td>
+  </tr>`
+  table_body!.innerHTML += ms1_table_row
+}
+
 function appendToMSTable() {
-    console.log("button clicked");
     let input_mass_element = document.getElementById("add-to-ms1-table-input") as HTMLInputElement;
     let input_mass = input_mass_element!.value
-
-    let table_body = document.getElementById("ms1-table-body");
 
     table_body!.innerHTML += `
                         <tr>
@@ -54,11 +68,15 @@ function selectRows() {
         (checkbox as HTMLInputElement).checked = (event.target as HTMLInputElement).checked;
       });
     });
-    /*
-    checkboxes.forEach((checkbox) => {
-      checkbox.addEventListener('change', () => {
-        selectAllCheckbox!.checked = Array.from(checkboxes).every((checkbox) => (checkbox as HTMLInputElement).checked);
-      });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const clickableCells = document.querySelectorAll('.clickable-cell');
+
+  clickableCells.forEach((cell) => {
+    cell.addEventListener('click', () => {
+      const row = cell.parentNode as HTMLTableRowElement;
+      row.classList.toggle('clicked'); // Toggle the 'clicked' class on the parent row
     });
-    */
-  }
+  });
+});
+

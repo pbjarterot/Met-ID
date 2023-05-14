@@ -1,7 +1,8 @@
-use quick_xml::events::Event;
-use quick_xml::{Reader, Error};
+use quick_xml::{Reader, Error, events::Event, name::QName};
 use crate::metabolite::Metabolite;
 
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 fn parse_float_or_zero(s: &str) -> f64 {
     match s.parse::<f64>() {
@@ -10,84 +11,167 @@ fn parse_float_or_zero(s: &str) -> f64 {
     }
 }
 
-
 pub fn parse_xml(path: String) -> Result<Vec<Metabolite>, Error> {
-    let mut reader = Reader::from_file(path)?;
-    reader.trim_text(true);
+    let file: File = File::open(path).unwrap();
+    let mut buf_reader: BufReader<File> = BufReader::new(file);
 
-    let mut buf = Vec::new();
-    let mut metabolites = Vec::new();
-    loop {
-        match reader.read_event(&mut buf) {
-            Ok(Event::Start(ref e)) if e.name() == b"metabolite" => {
-                let mut found_name = false;
-                let mut found_accession = false;
-                let mut found_smiles = false;
-                let mut found_mw = false;
-                let mut found_mf = false;
+    let mut buf: Vec<u8> = Vec::new();
+    buf_reader.read_to_end(&mut buf).unwrap();
+    let mut reader: Reader<&[u8]> = Reader::from_reader(&buf[..]);
 
-                let mut accession = String::from("");
-                let mut name = String::from("");
-                let mut smiles = String::from("");
-                let mut weight = String::from("");
-                let mut formula = String::from("");
+    let mut metabolites: Vec<Metabolite> = Vec::new();
+
+    while let Ok(event) = reader.read_event() {
+        match event {
+            Event::Start(ref e) if e.name() == QName(b"metabolite") => {
+                let mut endo_exo: Vec<String> = Vec::new();
+
+                let mut found_name: bool = false;
+                let mut found_accession: bool = false;
+                let mut found_smiles: bool = false;
+                let mut found_mw: bool = false;
+                let mut found_mf: bool = false;
+
+                let mut accession: String = String::from("");
+                let mut name: String = String::from("");
+                let mut smiles: String = String::from("");
+                let mut weight: String = String::from("");
+                let mut formula: String = String::from("");
 
                 loop {
-                    match reader.read_event(&mut buf) {
-                        Ok(Event::Start(ref e)) if e.name() == b"accession" => {
+                    match reader.read_event().unwrap() {
+                        Event::Start(ref e) if e.name() == QName(b"accession") => {
                             if !found_accession {
-                                accession = reader.read_text(b"accession", &mut Vec::new()).unwrap();
+                                accession = reader.read_text(QName(b"accession")).unwrap().to_string();
                                 found_accession = true;
                             }
                         },
-                        Ok(Event::Start(ref e)) if e.name() == b"name" => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"name") => {
                             if !found_name {
-                                name = reader.read_text(b"name", &mut Vec::new()).unwrap();
+                                name = reader.read_text(QName(b"name")).unwrap().to_string();
                                 found_name = true;
                             }
                         },
-                        Ok(Event::Start(ref e)) if e.name() == b"smiles" => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"smiles") => {
                             if !found_smiles {
-                                smiles = reader.read_text(b"smiles", &mut Vec::new()).unwrap();
+                                smiles = reader.read_text(QName(b"smiles")).unwrap().to_string();
                                 found_smiles = true;
                             }
                         },
-                        Ok(Event::Start(ref e)) if e.name() == b"monisotopic_molecular_weight" => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"monisotopic_molecular_weight") => {
                             if !found_mw {
-                                weight = reader.read_text(b"monisotopic_molecular_weight", &mut Vec::new()).unwrap();
+                                weight = reader.read_text(QName(b"monisotopic_molecular_weight")).unwrap().to_string();
                                 found_mw = true;
                             }
                         },
-                        Ok(Event::Start(ref e)) if e.name() == b"chemical_formula" => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"chemical_formula") => {
                             if !found_mf {
-                                formula = reader.read_text(b"chemical_formula", &mut Vec::new()).unwrap();
+                                formula = reader.read_text(QName(b"chemical_formula")).unwrap().to_string();
                                 found_mf = true;
                             }
                         },
-                        Ok(Event::End(ref e)) if e.name() == b"metabolite" => {
-                            // reached the end of the metabolite element
+                        Event::Start(ref e) if e.name() == QName(b"ontology") => {
+                            loop {
+                                match reader.read_event().unwrap() {
+                                    Event::Start(ref e) if e.name() == QName(b"descendants") => {
+                                        loop {
+                                            match reader.read_event().unwrap() {
+                                                Event::Start(ref e) if e.name() == QName(b"descendant") => {
+                                                    loop {
+                                                        match reader.read_event().unwrap() {
+                                                            Event::Start(ref e) if e.name() == QName(b"term") => {
+                                                                let term: String = reader.read_text(QName(b"term")).unwrap().to_string();
+                                                                if term == String::from("Endogenous") && !endo_exo.contains(&term) {
+                                                                    endo_exo.push("Endogenous".to_string());
+                                                                    
+                                                                } else if term == String::from("Exogenous") && !endo_exo.contains(&term){
+                                                                    endo_exo.push("Exogenous".to_string());
+                                                                    
+                                                                }    
+                                                            },
+                                                            _ => ()
+                                                        }
+                                                        break;
+                                                    }
+                                                },
+                                                _ => ()
+                                            }
+                                            break;
+                                        }
+                                    },
+                                    _ => ()
+                                }
+                                break;
+                            }
+                        }
+                        Event::End(ref e) => {
+                            if e.name() == QName(b"metabolite") {
 
-                            let met = Metabolite {accession, 
-                                                              name, 
-                                                              formula,
-                                                              mz: parse_float_or_zero(&weight),
-                                                              smiles};
-                            metabolites.push(met);
-                            break;
-                        },
-                        Ok(Event::Eof) => panic!("unexpected end of document"),
+                                let met: Metabolite = Metabolite {accession, 
+                                                                  name, 
+                                                                  formula,
+                                                                  mz: parse_float_or_zero(&weight),
+                                                                  smiles,
+                                                                  endo_exo};
+                                metabolites.push(met);
+                                break;
+                            }
+                        }
+
+                        Event::Eof => panic!("unexpected end of document"),
                         _ => (),
                     }
-                    buf.clear();
                 }
             },
-            Ok(Event::Eof) => break, // reached the end of the document
-            Err(e) => panic!("error reading event: {:?}", e),
+            Event::Eof => break, // reached the end of the document
+            //Err(e) => panic!("error reading event: {:?}", e),
             _ => (), // ignore other events
         }
-        buf.clear();
     }
 
     Ok(metabolites)
     
 }
+
+pub fn parse_only_accession(path: &String) -> Result<Vec<String>, Error>{
+    let file: File = File::open(path).unwrap();
+    let mut buf_reader: BufReader<File> = BufReader::new(file);
+    //buf_reader.trim_text(true);
+
+    let mut buf: Vec<u8> = Vec::new();
+    buf_reader.read_to_end(&mut buf).unwrap();
+    let mut reader: Reader<&[u8]> = Reader::from_reader(&buf[..]);
+
+    let mut metabolites: Vec<String> = Vec::new();
+        while let Ok(event) = reader.read_event() {
+        match event {
+            Event::Start(ref e) if e.name() == QName(b"metabolite") => {
+                let mut found_accession: bool = false;
+                let mut accession: String = String::from("");
+
+                loop {
+                    match reader.read_event().unwrap() {
+                        Event::Start(ref e) if e.name() == QName(b"accession") => {
+                            if !found_accession {
+                                accession = reader.read_text(QName(b"accession")).unwrap().to_string();
+                                found_accession = true;
+                            }
+                        },
+                        Event::End(ref e) if e.name() == quick_xml::name::QName(b"metabolite") => {
+                            // reached the end of the metabolite element
+
+                            metabolites.push(accession);
+                            break;
+                        }
+                        _ => (),
+                    }
+                }
+            },
+            Event::Eof => break, // reached the end of the document
+            //Err(e) => panic!("error reading event: {:?}", e),
+            _ => (), // ignore other events
+        }
+    }
+    Ok(metabolites)
+}
+
