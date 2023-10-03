@@ -1,0 +1,296 @@
+#overlay {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* Adjust the alpha value to control darkness */
+    z-index: 9999; /* Ensure the overlay is on top */
+  }
+  
+#popup {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #807f7f;
+    padding: 5px;
+    z-index: 10000; /* Ensure the popup is on top of the overlay */
+    height: 70%;
+    width: 70%;
+    border-radius: 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+.ms1-popup-bottom-div {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 7%;
+    padding: 0px;
+    width: 100%;
+    display: flex;
+    justify-content:space-between;
+    position: absolute
+}
+.ms1-popup-bottom-div-button {
+    height: 90%;
+    width: 15%;
+    border-radius: 10px;
+    margin: 0px 10px;
+    color: rgb(250, 250, 252);
+    background-color: rgb(49, 49, 49);
+    font-family: "Quicksand", sans-serif;
+	font-size: 13px;
+	font-weight: 500;
+    border: 0;
+}
+#ms1-popup-cancel-button {
+    order: 1;
+    
+}
+#ms1-popup-continue-button {
+    order: 2;
+    background-color: rgb(22, 73, 150);
+    
+}
+.ms1-popup-top-div {
+    position: absolute;
+    height: 6%;
+    top: 0.5%;
+    width: 97%;
+    background-color: rgb(18, 17, 17);
+    display: flex;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.filename-window {
+    width: 100%;
+}
+.ms1-popup-top-div p {
+    color: white;
+    height: 100%;
+    width: 90%;
+    padding: 0px 0px;
+    margin: 0px 20px;
+    margin-top: 0px;
+    margin-right: 10px;
+    /*font-size: 15px;
+    line-height: 1;*/
+    text-align: center;
+    white-space: nowrap;
+    font-size: 0.8vw;
+}
+.ms1-popup-top-div::-webkit-scrollbar {
+    height: 5px;
+    margin: 0px 10px;
+}
+.ms1-popup-top-div::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 10px;
+}
+
+.ms1-popup-middle-div {
+    top: 10%;
+    height: 82%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.ms1-popup-middle-div > * {
+    margin: 0px 10px; /* Adjust the margin value as needed */
+}
+
+
+
+.ms1-popup-options-div {
+    background-color: rgb(38, 38, 38);
+    height: 100%;
+    width: 25%;
+    border-radius: 20px;
+}
+
+.ms1-popup-spreadsheet-div {
+    width: 100%;
+    overflow: auto;
+    --primary-color: white;
+    --secondary-color: #747474;
+    --highlight-color: #2c2c2c;
+  
+    --dt-status-available-color: greenyellow;
+    --dt-status-away-color: lightsalmon;
+    --dt-status-not-available-color: lightgray;
+  
+    --dt-padding: 7px;
+    --dt-padding-s: 1px;
+    --dt-padding-xs: 0px;
+  
+    --dt-border-radius: 20px;
+  
+    --dt-background-color-container: #525252;
+    --dt-border-color: var(--secondary-color);
+    --dt-bg-color: var(--highlight-color);
+    --dt-text-color: var(--primary-color);
+    --dt-bg-active-button: var(--highlight-color);
+    --dt-text-color-button: var(--primary-color);
+    --dt-text-color-active-button: var(--primary-color);
+    --dt-hover-cell-color: var(--highlight-color);
+    --dt-even-row-color: var(--secondary-color);
+    --dt-focus-color: var(--highlight-color);
+    --dt-input-background-color: var(--secondary-color);
+    --dt-input-color: white;
+    width: 75%;
+    height: 100%;
+}
+.ms1-popup-spreadsheet-div {
+    font-family: sans-serif;
+    background-color: var(--dt-background-color-container);
+    border-radius: var(--dt-border-radius);
+    color: var(--dt-text-color);
+    margin: 0 0;
+    font-size: 12px;
+}
+.ms1-popup-trash-button {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    border: 0;
+    padding: 0;
+    padding-top: 5px;
+}
+.ms1-popup-trash-button ion-icon {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    border: 0;
+    color: white;
+
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable td {
+    border-bottom: solid 1px var(--dt-border-color);
+    padding:  1px 5px;
+    height: 40px;
+    max-width: 300px;
+    overflow-wrap: break-word;
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable th {
+    padding:  1px 10px;
+    margin: 0px; 
+    font-weight: bolder;
+    text-align: left;
+    border-bottom: solid 1px var(--dt-border-color);
+    font-size: 11px;
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable tbody tr:nth-child(even) {
+    background-color: var(--dt-even-row-color);
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable tbody tr:hover {
+    background-color: var(--dt-hover-cell-color);
+}
+
+.ms1-popup-spreadsheet-div .popup-datatable tbody th:nth-child(1),
+.ms1-popup-spreadsheet-div .popup-datatable tbody td:nth-child(1) {
+    width: 20px;
+}
+
+
+
+.ms1-popup-options-vertical-div {
+    position: relative;
+}
+
+.ms1-popup-options-vertical-div-row {
+    display: flex;
+    margin: 10px;
+    border-radius: 10px;
+    background-color: #525252;
+    align-items: center;
+    height: 50px;
+}
+.ms1-popup-options-vertical-div-row2,
+.ms1-popup-options-vertical-div-row3 {
+    margin: 10px;
+    border-radius: 10px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    transition: filter 0.2s;
+}
+.ms1-popup-options-vertical-div-row2 {
+background-color: #3e3e3e;
+}
+.ms1-popup-options-vertical-div-row3 {
+    background-color: #4a27f9;
+    margin-bottom: 50px;
+}
+
+.ms1-popup-options-vertical-div-row2:hover,
+.ms1-popup-options-vertical-div-row3:hover {
+    filter: brightness(75%);
+}
+
+.ms1-popup-options-vertical-div-row p {
+    text-align: center;
+    color: white;
+    padding: 0px 10px;
+    margin: 0;
+    font-size: 15px;
+}
+.ms1-popup-options-vertical-div-row input {
+
+    margin: 0;
+    padding: 0;
+}
+.ms1-popup-delimiter-input {
+    position: absolute;
+    right: 20px;
+    background-color: #525252;    
+    border: 1px solid #fff;
+    font-size: 20px;
+    color: #fff;
+    height: 40px;
+    width: 50%;
+    margin: 0px 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.ms1-popup-dropdown-select {
+    position: absolute;
+    right: 20px;
+    width: 40%;
+    margin: 0;
+    padding: 0px 1px 1px 1px;
+    height: 40px;
+    line-height: 14px;
+    font-size: 14px;
+    color: #494949;
+    
+    background: 2c2c2c; /* Fallback for IE 8 */
+    background: rgba(0, 0, 0, 0.40) !important; /* "transparent" doesn't work with Opera */
+    border: 0;
+    border-radius: 10px;
+
+    color: white;
+  
+}

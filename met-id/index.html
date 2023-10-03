@@ -33,124 +33,195 @@
         <div class="tabby-tab">
           <input type="radio" id="tab-1" name="tabby-tabs" checked>
           <label for="tab-1" class="tabby-label">MS2</label>
+          <div id="ms2-overlay"></div>
+          <div id="ms2-popup">
+            <div class="ms2-popup-plot" id="ms2-popup-plot">
+
+            </div>
+          </div>
           <div class="tabby-content">
             <div class="ms2-left-sidebar">
               <div class="ms2-logo">
                 <h1 class="ms2-logo-text">Met-id</h1>
               </div>
               <div class="ms2-menu">
-                <button class="ms2-sidebar-button" id="ms2-sidebar-open-file-button">
-                  <span class="open-file-button-text">Open File</span>
-                  <span class="open-file-button-icon">
-                    <ion-icon name="add-circle-outline"></ion-icon>
-                  </span>
-                </button>
+                <div class="ms2-top-sidebar-buttons">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-open-file-button">
+                    <span class="ms2-sidebar-button-text">Open File</span>
+                    <span class="ms2-sidebar-button-icon">
+                      <ion-icon name="arrow-up-circle-outline"></ion-icon>
+                    </span>
+                  </button>
+                </div>
+                <div class="ms2-bottom-buttons">
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-help-button">
+                    <span class="ms1-sidebar-button-text" id="ms1-help-button-text">Help</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="help-outline"></ion-icon>
+                    </span>
+                  </button>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
+                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">About</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="information-circle-outline"></ion-icon>
+                    </span>
+                  </button>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-view-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID', '_blank')">
+                    <span class="ms1-sidebar-button-text" id="ms1-view-button-text">View Code</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="code-slash-outline"></ion-icon>
+                    </span>
+                  </button>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/issues', '_blank')">
+                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Report a Bug</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="bug-outline"></ion-icon>
+                    </span>
+                  </button>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
+                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Update</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="arrow-up-circle-outline"></ion-icon>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="body-main">
+            <div class="ms2-body-main">
               <div class="ms2-searchbar">
-                <div class="ms2-searchbar-left">
-                  <div class="ms2-searchbar-row">
-                    <div class="ms2-searchbar-name">Name</div>
-                    
-                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar">
+                <div class="ms2-searchbar-left" id="ms2-searchbar-left">
+                  <div class="ms2-searchbar-left-input-div">
+                    <div class="ms2-searchbar-row">
+                      <div class="ms2-searchbar-name">
+                        <p>Name</p>
+                      </div>
+                      <input type="text" class="ms2-searchbar-input" id="msms-searchbar">
+                    </div>
+                    <div class="ms2-searchbar-row2">
+                    </div>
+                    <div class="ms2-searchbar-row">
+                      <div class="ms2-searchbar-name">
+                        <p>Fragment m/z</p>
+                      </div>
+                      <input type="text" class="ms2-searchbar-input" id="msms-searchbar-fragment">
+                    </div>
+                    <div class="ms2-slidecontainer">
+                      <p>± <span id="demo2"></span></p>
+                      <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow2" step="5">
+                    </div>
+                    <div class="ms2-searchbar-row">
+                      <div class="ms2-searchbar-name">
+                        <p>MS1 m/z</p>
+                        </div>
+                        <input type="text" class="ms2-searchbar-input" id="msms-searchbar-ms1">
+                    </div>
+                    <div class="ms2-slidecontainer">
+                      <p>± <span id="demo3"></span></p>
+                      <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow3" step="10">
+                    </div>
                   </div>
+                  
                 </div>
                 <div class="ms2-searchbar-right">
-                  <div class="ms2-searchbar-row">
-                    <div class="ms2-searchbar-name">Parent ion m/z </div>
-                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar-parent">
+                  <div class="ms2-searchbar-right-to-compare" id="ms2-searchbar-right-to-compare">
+                    <p> To compare: </p>
+                    <div class="ms2-to-compare-compounds" id="ms2-to-compare-compounds">
+                      <!-- Here goes all the -->
+                    </div>
+                    <button class="ms2-to-compare-button" id="ms2-compare">
+                      <span class="ms2-to-compare-textspan">Compare!</span>
+                      <span class="ms2-to-compare-iconspan">
+                        <ion-icon name="arrow-up-circle-outline"></ion-icon>
+                      </span>
+                    </button>
                   </div>
-                  <div class="ms2-searchbar-row">
-                    <div class="ms2-searchbar-name">Product ion m/z</div>
-                    <input type="text" class="ms2-searchbar-input" id="msms-searchbar-parent">
-                  </div>
+                  
                 </div>
               </div>
-              <div class="results-body" id="results-body">
-                <div class="small-results-card">
-                  <div class="small-results-card-textbox">
-                    <div class="small-results-card-name">
-                      <label class="small-results-card-name">3,4 dimethoxyphenethylamine</label>
-                    </div>
-                  </div>
-                  <div class="small-results-card-metadata">
-                    <div class="small-results-molecule-info">
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>CID</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>0eV</p>
-                        </div>
-                      </div>
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Matrix</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>FMP-10</p>
-                        </div>
-                      </div>
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Adduct</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>1</p>
-                        </div>
-                      </div>
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Parent ion m/z</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>200.0</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="small-results-card-similarity">
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Spectral Sim.</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>1</p>
-                        </div>
-                      </div>
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Cosine Sim.</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>1</p>
-                        </div>
-                      </div>
-                      <div class="small-ms2-dash-box">
-                        <div class="small-ms2-dashbox-header">
-                          <p>Delta ppm</p>
-                        </div>
-                        <div class="small-ms2-dashbox-text">
-                          <p>1</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div class="ms2-results-body" id="ms2-results-body">
                 <!--Here goes all the cards for the results-->
+              </div>
             </div>
             </div>
           </div>
         <div class="tabby-tab">
           <input type="radio" id="tab-2" name="tabby-tabs">
           <label for="tab-2" class="tabby-label">MS1</label>
+          <div id="overlay"></div>
+          <div id="popup">
+            <div class="ms1-popup-top-div">
+              <div class="filename-window">
+                <p id="ms1-popup-filename-window-name"></p>
+              </div>
+            </div>
+            <div class="ms1-popup-middle-div">
+              <div class="ms1-popup-spreadsheet-div">
+                <table class="popup-datatable" id="ms1-popup-datatable">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Column 1</th>
+                      <th>Column 2</th>
+                      <th>Column 3</th>
+                      <th>Column 4</th>
+                      <th>Column 5</th>
+                      <th>Column 6</th>
+                      <th>Column 7</th>
+                      <!-- Add more column headers as needed -->
+                    </tr>
+                  </thead>
+                  <tbody id="ms1-popup-tbody">
+                    <!-- Add more rows as needed -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="ms1-popup-options-div">
+                <div class="ms1-popup-options-vertical-div">
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>Delimiter</p>
+                    <input type="text" class="ms1-popup-delimiter-input" id="ms1-popup-delimiter-input">
+                  </div>
+                  <div class="ms1-popup-options-vertical-div-row3" id="ms1-popup-change-delimiter-button">
+                    <p> Update with new delimiter</p>
+                    <!-- button for updating -->
+                  </div>
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>m/z Column</p>
+                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-mz-column-dropdown">
+                        <!--  Appended by fill_dropdown in   -->
+                      </select>
+                  </div>
+                  <!--
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>Contains ion mobility data</p>
+                    <input type="checkbox">
+                  </div>
+                  
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>Ion Mobility Column</p>
+                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-ccs-column-dropdown">
+                      </select>
+                  </div>
+                  -->
+                  <div class="ms1-popup-options-vertical-div-row2" id="ms1-popup-transpose-button">
+                    <p>Transpose</p>
+                    <!-- button for transposing -->
+                  </div> 
+                </div>
+              </div>
+            </div>
+            <div class="ms1-popup-bottom-div">
+              <button class="ms1-popup-bottom-div-button" id="ms1-popup-cancel-button">Cancel</button>
+              <button class="ms1-popup-bottom-div-button" id="ms1-popup-continue-button">Continue</button>
+            </div>
+            <!-- Content of the new div -->
+          </div>
           <div class="tabby-content">
             <div class="ms1-left-sidebar">
               <div class="ms1-logo">
                 <h1 class="ms1-logo-text">Met-id</h1>
               </div>
-              <div class="menu">
+              <div class="ms1-menu">
                 <div class="ms1-top-sidebar-buttons">
                   <button class="ms1-sidebar-button" id="ms1-sidebar-open-file-button">
                     <span class="ms1-sidebar-button-text">Open File</span>
@@ -176,19 +247,19 @@
                       <ion-icon name="arrow-down-circle-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-button">
-                    <span class="ms1-sidebar-button-text" id="ms1-add-matrix-button-text1">Add Matrix</span>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-metabolite">
+                    <span class="ms1-sidebar-button-text" id="ms1-add-matrix-button-text1">Add Metabolite</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="add-circle-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-button2">
-                    <span class="ms1-sidebar-button-text" id="ms1-add-button-text2">Add Metabolite</span>
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-matrix">
+                    <span class="ms1-sidebar-button-text" id="ms1-add-button-text2">Add Matrix</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="add-circle-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-button3">
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-add-functional-group">
                     <span class="ms1-sidebar-button-text" id="ms1-add-button-text3">Add Functional Group</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="add-circle-outline"></ion-icon>
@@ -229,7 +300,7 @@
                 </div>
               </div>
             </div>
-            <div class="body-main">
+            <div class="ms1-body-main">
               <div class="ms1-searchbar">
                 <div class="ms1-searchbar-left">
                   <div class="ms1-metabolome-div" id="ms1-metabolome-div1">
@@ -258,6 +329,7 @@
                       <!--  Appended by fill_options_under_dropdown in dropdown.ts  -->
                     </div>
                   </div>
+                  <!--
                   <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
                     <div class="ms1-searchbar-row4">
                       <p class="ms1-search-lbl">Display Options</p>
@@ -286,44 +358,57 @@
                       </div>
                     </div>
                   </div>
+                  -->
                   <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
                     <div class="ms1-searchbar-row">
                         <p class="ms1-search-lbl">Mass Error</p>
                       <div class="ms1-searchbar-row">
-                        <input type="text" class="ms1-error-input" placeholder="0.0" id="ms1-error-input">
+                        <div class="ms1-error-input-container">
+                          <input type="text" class="ms1-error-input" placeholder="0.0" id="ms1-error-input-text">
+                        </div>
+                        
                       </div>
                     </div>
-                    <button class="ms1-error-button" id="ms1-error-button">
+                    <!--
+                    <button class="ms1-error-button" id="ms1-error-button-suggest">
                       <span class="ms1-error-button-text">Suggest (RANSAC)</span>
                       <span class="ms1-error-button-icon">
                         <ion-icon name="bar-chart-outline"></ion-icon>
                       </span>
                     </button>
-                    <button class="ms1-error-button" id="ms1-error-button">
+                    <button class="ms1-error-button" id="ms1-error-button-manual">
                       <span class="ms1-error-button-text">Manual</span>
                       <span class="ms1-error-button-icon">
                         <ion-icon name="analytics-outline"></ion-icon>
                       </span>
                     </button>
-                    <button class="ms1-error-button" id="ms1-error-button">
+                    <button class="ms1-error-button" id="ms1-error-button-show-plot">
                       <span class="ms1-error-button-text">Show Plot</span>
                       <span class="ms1-error-button-icon">
                         <ion-icon name="albums-outline"></ion-icon>
                       </span>
                     </button>
+                    -->
+                    <button class="ms1-error-button" id="ms1-error-button-manual">
+                      <span class="ms1-error-button-text">Manual</span>
+                      <span class="ms1-error-button-icon">
+                        <ion-icon name="analytics-outline"></ion-icon>
+                      </span>
+                    </button>
                   </div>
+                  
                 </div>
                 <div class="ms1-searchbar-right">
                   <div class="ms1-searchbar-row2">
                     <div class="ms1-slidecontainer">
                       <p>Search window: <span id="demo"></span></p>
-                      <input type="range" min="0" max="10" value="2" class="slider" id="myRange" step="0.1">
+                      <input type="range" min="0" max="10" value="2" class="slider" id="mzWindow" step="0.1">
                   </div>
                 </div>
                 <div class="ms1-searchbar-row2">
                   <div class="ms1-slidecontainer">
                     <p>Unique metabolites in db: <span id="demo"></span></p>
-                    <p>2000</p>
+                    <p id="db_size">0</p>
                   </div>
                 </div>
                 <div class="ms1-searchbar-row2">
@@ -334,21 +419,20 @@
                 </div>
                 </div>
               </div>
-              <div class="ms1-results">
+              <div class="ms1-results" id="ms1-results">
                 <div class="datatable-container">
                   <!-- ======= Header tools ======= -->
                   <div class="header-tools">
                     <div class="tools">
                       <ul>
                         <li id="add-to-ms1-table-li">
-                          <input type="search" id="add-to-ms1-table-input" placeholder="Add m/z"></input>
+                          <input type="text" id="add-to-ms1-table-input" placeholder="Add m/z"></input>
                         </li>
                         <li>
                           <button id="append-to-ms1-table">
                             <ion-icon name="add-circle-outline"></ion-icon>
                           </button>
                         </li>
-
                         <li>
                           <button id="ms1-table-delete-row">
                             <ion-icon name="trash-outline"></ion-icon>
@@ -357,9 +441,8 @@
                         </li>
                       </ul>
                     </div>
-                
                     <div class="search">
-                      <input type="search" class="search-input" placeholder="Search..." />
+                      <input type="text" class="search-input" placeholder="Search..." />
                     </div>
                   </div>
                 
@@ -372,28 +455,32 @@
                           <th>Observed m/z</th>
                           <th>Adjusted m/z</th>
                           <th>Matched name</th>
+                          <th>Adduct</th>
+                          <th>Formula</th>
                           <th>Matched delta mass (Da)</th>
                           <th>Matched difference (ppm)</th>
                           <th>Matched theoretical mass</th>
                           <th>MSMS available?</th>
-
                         </tr>
                       </thead>
-                  
                       <tbody id="ms1-table-body">
+                        <!--
                         <tr class="data">
                           <td><input type="checkbox" /></td>
                           <td class="clickable-cell">400</td>
                           <td class="clickable-cell">500</td>
                           <td class="clickable-cell">
                             Dopamine<br>Dopamine<br>Dopamine
+                          </td>
+                          <td class="clickable-cell">[M+K]+</td>
+                          <td class="clickable-cell">C2H5O2</td>
                           <td class="clickable-cell">0.005</td>
                           <td class="clickable-cell">3.0</td>
                           <td class="clickable-cell">500</td>
                           <td class="clickable-cell"><span class="available"></span><br><span class="available"></span><br><span class="not-available"></span></td>
                         </tr>
                         <tr class="hidden-row">
-                          <td colspan="8">
+                          <td colspan="10">
                             <div class="row-details">
                               <div class="ms1-table-molecule">
                                 <div class="im-container">
@@ -434,26 +521,38 @@
                           <td class="clickable-cell">400</td>
                           <td class="clickable-cell">500</td>
                           <td class="clickable-cell">L-Dopa</td>
+                          <td class="clickable-cell">[M+H]+</td>
+                          <td class="clickable-cell">C2H5O2</td>
                           <td class="clickable-cell">0.0005</td>
                           <td class="clickable-cell">2.0</td>
                           <td class="clickable-cell">500</td>
                           <td class="clickable-cell"><span class="available"></span></td>
                         </tr>   
                         <tr class="hidden-row">
-                          <td colspan="8">
+                          <td colspan="10">
                             <div class="row-details">
-
                             </div>
                           </td>
-                        </tr>                                          
+                        </tr> 
+                        -->                                         
                       </tbody>
+                      
                     </table>
                   </div>
                 </div>
               </div>
+            
+              <div class="slide-in" id="add-to-db-slidein">
+              <!--
+                filled by ms1_add_buttons.ts
+              -->          
+              </div>
 
-              <div class="slide-in">
-                <button class="close-button" id="close-add-matrix-div">close</button>
+              <div class="slide-in-bottom" id="slide-in-bottom">
+                <div class="resize-handle" draggable="true"></div>
+                <div class="slide-in-bottom-content" id="slide-in-bottom-content">
+
+                </div>
               </div>
             </div>
           </div>

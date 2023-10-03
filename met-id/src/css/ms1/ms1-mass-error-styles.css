@@ -1,0 +1,223 @@
+.slide-in-bottom {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    height: 250px; /* Initial height */
+    background-color: rgb(58, 58, 58);
+    z-index: 9999;
+    transition: all 0.5s ease; /* Transition only for height */
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+  }
+  
+  .slide-in-bottom.slide-in-bottom--active {
+    bottom: 0;
+    height: auto; /* Updated to auto for dynamic height */
+    min-height: 270px; /* Set a minimum height */
+    transition: height 0.3s ease;
+    width: 100%;
+    
+  }
+  
+  .slide-in-bottom.plot-div-expanded {
+    height: auto; /* Updated to auto for dynamic height */
+    min-height: 680px; /* Set a minimum height */
+  }
+  
+  .resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background-color: #fff;
+    cursor: nwse-resize; /* Cursor style for resizing */
+  }
+  
+  .slide-in-bottom-content {
+    --column-width: 320px;
+    display: grid;
+    grid-template-columns: var(--column-width) var(--column-width) minmax(0, 1fr);
+    grid-template-rows: 200px;
+    grid-gap: 15px;
+    padding: 10px;
+    margin-bottom: 60px;
+    width: 100%;
+
+  }
+  
+
+  
+  .slide-in-bottom-content:hover .manual-mass-error-plot-div {
+    height: 100%;
+    margin: 0;
+    grid-column-start: 2;
+    grid-column-end: 4;
+    grid-row-start: 1; /* Add this line */
+    grid-row-end: 3;
+    margin-top: 0;
+    padding-bottom: 0;
+  }
+  .slide-in-bottom-content:hover .slide-in-bottom.slide-in-bottom--active {
+    min-height: 500px;
+  }
+  
+  .manual-mass-error-plot-div,
+  .manual-mass-error-table-div,
+  .manual-mass-error-top-div {
+    height: 200px;
+    width: 99%;
+    border-radius: 10px;
+    border: 1px solid #000; /* Change border shorthand */
+    transition: all 0.3s ease;
+    font-size: 16px;
+  }
+  .manual-mass-error-plot-div {
+    transition: all 0.3s ease;
+    grid-column-start: 3;
+    grid-column-end: 4;
+    width: 98%;
+  }
+  
+  .manual-mass-error-table-div {
+    overflow-y: auto;
+  }
+  
+  .slide-in-bottom-content:hover .manual-mass-error-table-div {
+    grid-column-start: 1; /* Update grid column start */
+    grid-column-end: 2; /* Update grid column end */
+  }
+
+
+.mass-error-manual-text {
+    display: inline-flex;
+    align-items: center;
+    color: #fff;
+    height: 100%;
+    font-size: 15px;
+    width: 40%;
+    padding: 0 0 0 2px;
+    margin: 5px;
+  }
+  
+  .mass-error-manual-input {
+    display: inline-flex;
+    align-items: center;
+    width: 50%;
+    padding-left:10px;
+    background: rgba(0, 0, 0, 0.4);
+    font-size: 19px;
+    color: #fff;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+  }
+
+
+.ms1-manual-error-button {
+	display: flex;
+	height: 30px;
+  width: 45%;
+	padding: 0;
+	background: #909090;
+	border: none;
+	outline: none;
+	border-radius: 8px;
+	overflow: hidden;
+	font-family: "Quicksand", sans-serif;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+  text-align: center;
+}
+
+
+
+
+.ms1-manual-error-button-text,
+.ms1-manual-error-button-icon {
+  display: inline-flex;
+  align-items: center;
+  
+  color: #fff;
+  height: 100%; 
+  font-size: 1.2hmin;
+}
+
+.ms1-manual-error-button-text {
+    width: 80%;
+    padding: 0 0 0 20px;
+}
+
+.ms1-manual-error-button-icon {
+    width: 18%;
+    font-size: 2em;
+    background: rgba(0, 0, 0, 0.30);
+    padding: 0 10px;
+}
+
+
+
+
+
+  
+.ms1-manual-error-button:hover {
+    background: #666666;
+}
+
+.ms1-manual-error-button:active {
+    background: #666666;
+}
+
+
+.ms1-mass-error-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: rgb(210, 210, 210);
+    font-size: 15px;
+}
+
+
+.ms1-mass-error-table th, td {
+    padding: 6px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.manual-mass-error-table-div .scrollable-table {
+    height: 200px;
+    overflow-y: auto;
+}
+.manual-mass-error-table-div::-webkit-scrollbar {
+    width: 10px;
+    height: 96%;
+}
+
+  
+.manual-mass-error-table-div::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+
+.ms1-manual-error-button-container {
+  display: flex;
+  justify-content: space-between; 
+  margin: 10px;
+}
+
+#manual-mass-error-scatterplot {
+  height: 100%;
+  width: 100%;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: white;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  fill: white;
+  font-size: 14px;
+}

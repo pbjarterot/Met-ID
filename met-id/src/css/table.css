@@ -7,13 +7,13 @@
     --dt-status-away-color: lightsalmon;
     --dt-status-not-available-color: lightgray;
   
-    --dt-padding: 12px;
-    --dt-padding-s: 6px;
-    --dt-padding-xs: 2px;
+    --dt-padding: 7px;
+    --dt-padding-s: 1px;
+    --dt-padding-xs: 0px;
   
     --dt-border-radius: 10px;
   
-    --dt-background-color-container: #515151;
+    --dt-background-color-container: #525252;
     --dt-border-color: var(--secondary-color);
     --dt-bg-color: var(--highlight-color);
     --dt-text-color: var(--primary-color);
@@ -39,7 +39,7 @@
     border-radius: var(--dt-border-radius);
     color: var(--dt-text-color);
     margin: 0 auto;
-    font-size: 15px;
+    font-size: 13px;
 }
   
 .datatable-container .header-tools {
@@ -48,7 +48,7 @@
     padding-left: 0;
     display: flex;
     align-items: center;
-    height: 45px;
+    height: 35px;
 }
   
 .datatable-container .header-tools .search {
@@ -57,14 +57,14 @@
 }
   
 .datatable-container .header-tools .search .search-input {
-    width: 100%;
-    height: calc(1.3em + 0.5rem + 2px);
+    width: 95%;
+    height: 100%;
     background-color: var(--dt-input-background-color);
     display: block;
     border-radius: var(--dt-border-radius);
     border: solid 1px var(--dt-border-color);
     color: white;
-    font-size: 22px;
+    font-size: 17px;
     padding-left: 15px;    
 }
   
@@ -180,6 +180,11 @@
     border-bottom: solid 1px var(--dt-border-color);
 }
 
+.datatable-container span {
+    margin: 0px;
+    padding: 0px;
+}
+
 .datatable-container .datatable br {
     margin: 0px;
     padding: 0px;
@@ -197,6 +202,9 @@
 .datatable-container .datatable tbody tr .not-available::after {
     display: inline-block;
     vertical-align: middle;
+    font-size: 12px;
+    margin: 0px;
+    padding: 0px;
 }
   
 .datatable-container .datatable tbody tr .available::after {
@@ -215,11 +223,14 @@
 .datatable-container .datatable tbody tr .not-available::before {
     content: "";
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     margin-right: 10px;
     border-radius: 50%;
     vertical-align: middle;
+    padding: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
   
 .datatable-container .datatable tbody tr .available::before {
@@ -253,8 +264,8 @@
 }
 #add-to-ms1-table-li {
     display: inline-block;
-    margin-bottom: 2px;
-    height: 100%;
+    margin-bottom: 8px;
+    height: 90%;
     border-radius: 10px;
     
 }
@@ -262,13 +273,14 @@
     display: inline-block;
     margin-top: 6px;
     margin-left: 5px;
-    height: 85%;
+    padding-left: 10px;
+    height: 70%;
     border-radius: 10px;
     background-color: var(--dt-input-background-color);
     border-radius: var(--dt-border-radius);
     border: solid 1px var(--dt-border-color);
     color: white;
-    font-size: 22px;
+    font-size: 14px;
     
 }
 
@@ -283,7 +295,8 @@
   
   .clicked + .hidden-row {
     display: table-row; /* Show the hidden row when the row is clicked */
-    height: auto; /* Set the height to auto for proper adjustment */
+    /*height: auto;*/ /* Set the height to auto for proper adjustment */
+    height: 100px;
   }
   
   .row-details {
@@ -353,4 +366,3 @@
   .im-container2 p.long-text {
     font-size: 16px; /* Set a smaller font size for long paragraphs */
   }
-  

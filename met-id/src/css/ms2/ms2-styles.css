@@ -1,0 +1,522 @@
+/* SIDEBAR */
+.ms2-sidebar-button {
+	display: flex;
+	height: 40px;
+    width: 100%;
+	padding: 0;
+	background: #909090;
+	border: none;
+	outline: none;
+	border-radius: 8px;
+	overflow: hidden;
+	font-family: "Quicksand", sans-serif;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+    margin: 0px 5px 8px 0px;
+    text-align: center;
+}
+
+#ms2-sidebar-export-button {
+    margin-top: 2vh;
+}
+
+#ms2-sidebar-add-button {
+    margin-top: 2vh;
+}
+
+#ms2-sidebar-help-button {
+    margin-top: 2vh;
+}
+
+.ms2-sidebar-button-text,
+.ms2-sidebar-button-icon {
+    display: inline-flex;
+    align-items: center;
+    color: #fff;
+    height: 100%; 
+    font-size: 1.2hmin;
+}
+
+.ms2-sidebar-button-text {
+    width: 80%;
+    padding: 0 0 0 20px;
+}
+
+.ms2-sidebar-button-icon {
+    width: 10%;
+    font-size: 2em;
+    background: rgba(0, 0, 0, 0.10);
+    padding: 0 12px;
+}
+  
+.ms2-sidebar-button:hover {
+    background: #666666;
+}
+
+.ms2-sidebar-button:active {
+    background: #666666;
+}
+.ms2-left-sidebar {
+    background-color: #4b4b4b;
+    width: 250px;
+    height: 100%;
+    float: left;
+    padding: 0%;
+    margin: 0%;
+    min-width: 150px;
+}
+
+.ms2-searchbar-right-to-compare {
+    height: 99%;
+    width: 50%;
+    float: right;
+    margin-top: 5px;
+    border-radius: 20px;
+    padding-right: 10px;
+    padding-left: 20px;
+    background-color: #929292;
+    text-align: center;
+    
+}
+
+
+
+.ms2-searchbar-right-to-compare p {
+    margin: 0px;
+    padding: 4px;
+    font-size: 18px;
+}
+
+.ms2-searchbar-left-input-div {
+    height: 88%;
+    width: 100%;
+    background-color: #929292;
+    padding: 10px;
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 48%); /* 2 columns */
+    grid-template-rows: repeat(3, 25%); /* 3 rows */
+    gap: 20px; /* spacing between items */
+    margin-top: 15px;
+}
+
+.ms2-slidecontainer {
+    width: 100%;
+    background-color:#2c2c2c;
+    border-radius: 10px;
+    height: 100%;
+    padding: 0px;
+    text-align: center;
+  }
+
+.ms2-slidecontainer p {
+    margin: 0px;
+    font-size: 16px;
+}
+
+.ms2-searchbar-row {
+    height: 100%;
+    width: 100%;
+    background-color: #2c2c2c;
+    border-radius: 10px;
+    margin: 0px;
+    text-align: center;
+    padding: 1px;
+}
+
+
+.ms2-searchbar-row input{
+    width: 56%;
+    padding: 1px;
+    float: right;
+    border-radius: 10px;
+    height: 80%;
+}
+
+.ms2-searchbar-row > .ms1-search-lbl{
+width: 10vw;
+float: left;
+padding: 10px;
+
+}
+
+.ms2-searchbar-name {
+height: 100%;
+width: 40%;
+float: left;
+text-align: center;
+padding-top: 5px;
+font-size: 14px;
+}
+.ms2-searchbar-name  p {
+padding: 0;
+margin: 0;
+width: 100%;
+}
+
+.ms2-searchbar-input{
+height: 80%;
+width: 50%;
+}
+
+.ms2-searchbar {
+    font-size: 30px;
+    border-radius: 10px;
+    left: 270px;
+    right: 0.5vw;
+    float: center;
+}
+
+.ms2-searchbar-row > p {
+    font-size: 25px;
+    width: 30%;
+    text-align: center;
+    height: 100%;
+}
+
+.ms2-searchbar {
+    left: 270px;
+    height: 230px;
+    right: 0.5vw;
+    position: absolute;
+    border-radius: 10px;
+}
+
+
+
+
+.small-ms2-dash-box {
+    border-radius: 10px;
+    background-color: rgb(31, 31, 31);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 140px;
+    height: 98%; 
+    
+}
+
+.small-ms2-dashbox-header p{
+    text-align: center;
+    font-size: 14px;
+    margin: 0;
+    padding: 2px 1px 1px 1px;
+    color:rgb(147, 147, 147);
+}
+
+.small-ms2-dashbox-text p{
+    text-align: center;
+    margin: 0;
+    font-size: 14px;
+    color:rgb(255, 255, 255);
+    padding: 2px 1px 1px 1px;
+}
+
+
+
+
+
+.ms2-logo {
+    height: 10%;
+    width: 100%
+}
+
+.ms2-menu {
+    height: 85%;
+    width: 100%;
+}
+    
+.ms2-logo-text {
+    width: 100%;
+    text-align: center;
+    font-size: 40px;
+    color: rgb(255, 255, 255);
+}
+
+.molecule {
+    float: right;
+    width: 57%;
+    height: 220px;
+    margin: 20px 0 0 0;
+}
+
+.molecule-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.ms2-body-main {
+    background-color: #4b4b4b;
+    height: auto;
+    width: auto;
+    float: right;
+
+}
+  
+.ms2-results-body {
+    left: 270px;
+    right: 0.5vw;
+    top: 250px;
+    bottom: 50px;
+    position: absolute;
+    border-radius: 20px;
+    overflow-y: auto;
+    background-color: #626262; 
+}
+  
+.ms2-results-card {
+    height: 300px;
+    width: 98%;
+    background-color: #303030;
+    margin: 0.5%;
+    border-radius: 20px;
+}
+
+.ms2-small-results-card {
+    height: 30px;
+    width: 98%;
+    background-color: #303030;
+    margin: 5px 10px;
+    border-radius: 20px;
+    color: white;
+}
+  
+.ms2-results-body label {
+    font-size: 20px;
+    color: white;
+    width: 98%;
+    padding: 1px;
+}
+  
+
+.ms2-small-results-card-top {
+        display: flex; /* Uses flexbox layout to easily manage the widths */
+        width: 100%;
+        height: 30px;
+}
+
+.ms2-results-card-textbox {
+    height: 280px;
+    flex-grow: 1;
+    padding: 20px 0 0 20px;
+    float: left;
+    align-items: center;
+    text-align: center;
+    color: white;
+}
+
+.ms2-small-results-card-textbox {
+    height: 30px;
+    flex-grow: 1;
+    padding: 4px 0 0 20px;
+    float: left;
+    align-items: center;
+    text-align: center;
+}
+
+.ms2-small-results-card-metadata {
+    height: 30px;
+    width: 460px;
+    right: 0px;
+    
+  
+}
+
+.ms2-small-results-molecule-info {
+    height: 98%;
+    width: 55%;
+    display: grid;
+    grid-template-columns: 150px 150px 150px 150px;
+    margin: 1px 0 0 1px;
+    float: left;
+}
+
+.ms2-small-results-card-similarity {
+    height: 100%;
+    width: 40%;
+    display: grid;
+    grid-template-columns: 120px 120px 120px;
+    margin: 1px 0 0 1px;
+    float: right;
+}
+  
+.ms2-results-card-spectrogram-div {
+    height: 289px;
+    width: 58%;
+    padding: 5px;
+    float: right;
+    background-color: rgb(31, 31, 31);
+    border-radius: 20px;
+    align-items:end;
+}
+  
+.ms2-results-card-dash {
+    display: grid;
+    grid-template-columns: 110px 110px;
+    color: white;
+    font-family: poppins, sans-serif;
+    width: 40%;
+    height: 75%;
+    margin: 20px 0 0 5px;
+    float: left;
+  
+}
+
+.ms2-searchbar-left {
+    background-color: #4b4b4b;
+    width: 49%;
+    height: 100%;
+    min-height: 150px;
+    color:white;
+    float: left;
+    margin: 0px;
+    border-radius: 0px;
+}
+
+.ms2-searchbar-right {
+    background-color: #4b4b4b;
+    width: 49%;
+    height: 100%;
+    min-height: 150px;
+    color:white;
+    float: right;
+  
+}
+  
+.ms2-bottom-buttons {
+    position: absolute;
+    width: 250px;
+    bottom: 60px;
+}
+
+.ms2-results-body::-webkit-scrollbar {
+    width: 8px;
+}
+  
+.ms2-results-body::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+
+
+
+  
+.open {
+    height: 500px;
+  }
+
+
+.ms2-small-results-card-plot {
+    position: absolute;
+    height: 420px;
+    width: 96%;
+    margin: 0px 1%;
+    margin-top: 10px;
+}
+
+.ms2-to-compare-button {
+	display: flex;
+	height: 25px;
+    width: 98%;
+	padding: 0;
+	background: #787878;
+	border: none;
+	outline: none;
+	border-radius: 8px;
+	overflow: hidden;
+	font-family: "Quicksand", sans-serif;
+	font-size: 15px;
+	font-weight: 500;
+	cursor: pointer;
+    margin: 0px 5px 8px 0px;
+    text-align: center;
+}
+
+#ms2-compare {
+    background-color: rgb(32, 88, 245);
+    height: 30px;
+    font-size: 20px;
+    width: 96%;
+    
+}
+
+.ms2-to-compare-iconspan,
+.ms2-to-compare-textspan {
+    display: inline-flex;
+    align-items: center;
+
+    color: #fff;
+    height: 100%; 
+    font-size: 0.2hmin;
+}
+
+.ms2-to-compare-textspan {
+    text-align: center;
+    width: 90%;
+    padding: 0 0 0 20px;
+}
+
+.ms2-to-compare-iconspan {
+    width: 8%;
+    font-size: 2em;
+    background: rgba(0, 0, 0, 0.20);
+    padding: 0 12px;
+}
+
+.ms2-to-compare-button:hover {
+    background: #666666;
+}
+
+.ms2-to-compare-button:active {
+    background: #666666;
+}
+
+.ms2-to-compare-compounds {
+    overflow-y: auto;
+    height: 160px;
+}
+.ms2-to-compare-compounds::-webkit-scrollbar {
+    width: 8px;
+}
+  
+.ms2-to-compare-compounds::-webkit-scrollbar-thumb {
+    background-color: #c4c3c3;
+    border-radius: 10px;
+}
+
+
+
+#ms2-overlay {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* Adjust the alpha value to control darkness */
+    z-index: 9999; /* Ensure the overlay is on top */
+  }
+  
+#ms2-popup {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #2f2f2f;
+    padding: 5px;
+    z-index: 10000; /* Ensure the popup is on top of the overlay */
+    height: 70%;
+    width: 70%;
+    border-radius: 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+#ms2-popup-plot {
+    height: 100%;
+    width: 80%;
+    position: fixed;
+    left: 0px;
+}

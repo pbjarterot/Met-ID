@@ -1,0 +1,359 @@
+:root {
+    --white: #afafaf;
+    --red: #e31b23;
+    --bodyColor: #292a2b;
+    --borderFormEls: hsl(0, 0%, 10%);
+    --bgFormEls: hsl(0, 0%, 14%);
+    --bgFormElsFocus: hsl(0, 7%, 20%);
+  }
+.slide-in {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 500px;
+    height: 96%;
+    background-color: rgb(92, 92, 92);
+    z-index: 9999;
+    transition: all 0.5s ease-out;
+    border-radius: 20px 0 10px 20px;
+    padding: 20px;
+}
+  
+.slide-in--active {
+    right: 0;
+}
+
+
+.ms1-slidein-button {
+	display: flex;
+	height: 40px;
+    width: 100%;
+	padding: 0;
+	background: #3d3d3d;
+	border: none;
+	outline: none;
+	border-radius: 8px;
+	overflow: hidden;
+	font-family: "Quicksand", sans-serif;
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+    margin: 0px 5px 8px 0px;
+    text-align: center;
+}
+
+.ms1-slidein-button-text,
+.ms1-slidein-button-icon {
+  display: inline-flex;
+  align-items: center;
+  
+  color: #fff;
+  height: 100%; 
+  font-size: 1.2hmin;
+}
+
+.ms1-slidein-button-text {
+    width: 99%;
+    padding: 0 0 0 20px;
+}
+
+.ms1-slidein-button-icon {
+    width: 10%;
+    font-size: 2em;
+    background: rgba(0, 0, 0, 0.10);
+    padding: 0 12px;
+}
+  
+.ms1-slidein-button:hover {
+    background: #434343;
+}
+
+.ms1-slidein-button:active {
+    background: #545454;
+}
+
+.add-to-database li,
+.add-to-database .grid > *:not(:last-child) {
+  margin-bottom: 1rem;
+  color: #dcdcdc;
+}
+
+.add-to-database h1 {
+  color:#dcdcdc;
+}
+
+.add-to-database select,
+.add-to-database input,
+.add-to-database textarea,
+.add-to-database button {
+  width: 95%;
+  line-height: 1.5;
+  padding: 15px 10px;
+  border: 1px solid var(--borderFormEls);
+  color: var(--white);
+  background: var(--bgFormEls);
+  transition: background-color 0.1s cubic-bezier(0.57, 0.21, 0.69, 1.25),
+    transform 0.1s cubic-bezier(0.57, 0.21, 0.69, 1.25);
+}
+.add-to-database button:hover {
+    background: #434343;
+}
+
+.add-to-database button:active {
+    background: #9e9e9e;
+}
+
+.add-to-database textarea {
+    height: 120px;
+  }
+  
+.add-to-database ::placeholder {
+    color: inherit;
+    /*Fix opacity issue on Firefox*/
+    opacity: 1;
+  }
+
+.add-to-database select:focus,
+.add-to-database input:focus,
+.add-to-database textarea:focus,
+.add-to-database button:enabled:hover,
+.add-to-database button:focus,
+.add-to-database input[type="checkbox"]:focus + label {
+background: var(--bgFormElsFocus);
+}
+
+.add-to-database select:focus,
+.add-to-database input:focus,
+.add-to-database textarea:focus {
+  transform: scale(1.04);
+}
+
+
+.add-to-database img {
+  height: 25px;
+}
+
+.add-to-database-adducts img {
+
+    height: 16px;
+
+}
+
+.add-to-database *:required,
+.add-to-database select {
+  background-repeat: no-repeat;
+  background-position: center right 12px;
+  background-size: 12px 12px;
+}
+
+.add-to-database *:required {
+  background-image: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/asterisk.svg);  
+}
+
+.add-to-database select {
+  background-image: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/down.svg);
+}
+/*
+.add-to-database *:disabled {
+  cursor: default;
+  filter: blur(2px);
+}
+*/
+
+.add-to-database input,
+.add-to-database select,
+.add-to-database textarea,
+.add-to-database button {
+font-family: inherit;
+font-size: 100%;
+}
+
+.add-to-database button,
+.add-to-database label {
+cursor: pointer;
+}
+
+.add-to-database select {
+appearance: none;
+}
+
+/* Remove native arrow on IE */
+.add-to-database select::-ms-expand {
+display: none;
+}
+
+/*Remove dotted outline from selected option on Firefox*/
+/*https://stackoverflow.com/questions/3773430/remove-outline-from-select-box-in-ff/18853002#18853002*/
+/*We use !important to override the color set for the select on line 99*/
+.add-to-database select:-moz-focusring {
+color: transparent !important;
+text-shadow: 0 0 0 var(--white);
+}
+
+.add-to-database textarea {
+resize: none;
+}
+
+.add-to-database ul {
+list-style: none;
+}
+
+.add-to-database body {
+font: 18px/1.5 "Open Sans", sans-serif;
+background: var(--bodyColor);
+color: var(--white);
+margin: 1.5rem 0;
+}
+
+.add-to-database {
+    list-style: none;
+    text-align: center;
+    width: 95%;
+    position: absolute;
+}
+
+
+
+@media screen and (min-width: 600px) {
+.add-to-database .grid {
+    display: grid;
+    grid-gap: 1.1rem;
+}
+.add-to-database .grid-1 {
+  grid-template-columns: 100%;
+  align-items: center;
+  width: 100%;
+}
+
+.add-to-database .grid-2 {
+    grid-template-columns: 50% 44%;
+    align-items: center;
+    width: 100%;
+}
+
+.add-to-database .grid-3 {
+    grid-template-columns: 30% 30% 24.5%;
+    align-items: center;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.add-to-database .grid-4 {
+  grid-template-columns: 1fr 1fr 1fr 0.1fr;
+  align-items: center;
+}
+
+.add-to-database .grid > *:not(:last-child) {
+    margin-bottom: 0;
+}
+
+.add-to-database .required-msg {
+    display: block;
+}
+}
+
+.add-to-database-adducts {
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+@media screen and (min-width: 541px) {
+.add-to-database input[type="checkbox"] + label::before {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.add-to-database input[type="checkbox"]:checked + label::after {
+    top: 3px;
+}
+}
+
+/* CUSTOM CHECKBOX
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+
+.add-to-database input[type="checkbox"] {
+  position: absolute;
+  left: -9999px;
+}
+
+.add-to-database input[type="checkbox"] + label {
+  position: relative;
+  display: inline-block;
+  padding-left: 2rem;
+  transition: background 0.3s cubic-bezier(0.57, 0.21, 0.69, 1.25);
+}
+
+.add-to-database input[type="checkbox"] + label::before,
+.add-to-database input[type="checkbox"] + label::after {
+  content: '';
+  position: absolute;
+
+}
+
+.add-to-database input[type="checkbox"] + label::before {
+  left: 0;
+  top: 12px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--white);
+}
+
+.add-to-database input[type="checkbox"]:checked + label::before {
+  background: var(--bodyColor);
+}
+
+.add-to-database input[type="checkbox"]:checked + label::after {
+  left: 7px;
+  top: 2px;
+  width: 6px;
+  height: 14px;
+  border-bottom: 2px solid var(--white);
+  border-right: 2px solid var(--white);
+  transform: rotate(45deg);
+}
+
+/* Styles for the checkbox grid container */
+.add-to-database-checkboxes .grid {
+  display: flex;
+  flex-wrap: nowrap; /* Prevents items from wrapping to the next row */
+  margin-bottom: 5px; /* Space between rows */
+}
+
+/* Styles for each checkbox item */
+.add-to-database-checkbox-child {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-right: 2px; /* Gap between checkboxes */
+}
+.add-to-database-checkbox-child-full-width {
+  flex: 1; /* Takes up the whole row */
+}
+
+
+.yourCanvasClass {
+  display: block;
+  position:absolute; 
+  top:380px;
+  left:0px;
+}
+.yourSpanClass {
+  color:#292929;
+  display:block;
+  line-height:220px;
+  text-align:center;
+  width:200px;
+  font-family:sans-serif;
+  font-size:30px;
+  font-weight:100;
+  margin-left:5px;
+}
+/*
+input {
+  width: 200px;
+}
+
+span {
+
+}
+*/

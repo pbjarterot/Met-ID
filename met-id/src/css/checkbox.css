@@ -1,17 +1,15 @@
 .checkbox-label-container {
     height: 25px;
-    width: 100%;
-    text-align: left;
+    width: 99%;
+    display: flex;
   }
   
   .checkbox-label-container p {
-    width: 80%;
+    flex-grow: 1;
     height: 100%;
-    float: right;
     font-size: 14px;
     margin: 1px;
-
-  
+    float: right;
   }
   #checkbox-label-container2 {
     margin-top: 20px;
@@ -24,6 +22,7 @@
     float: left;
     margin-top: 1px;
     margin-left: 15px;
+
   }
   .checkbox-label-container > #text {
     float: right;

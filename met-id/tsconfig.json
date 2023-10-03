@@ -9,7 +9,7 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "types": ["vite/client", "jQuery", "node", "d3"],
+    "types": ["jQuery", "node", "d3"],
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -18,6 +18,7 @@
     "declaration": true,
     "outDir": "dist",
     "baseUrl": ".",
+    //"allowImportingTsExtensions": true,
     "paths": {
       "*" :["./node_modules/*"]
     }

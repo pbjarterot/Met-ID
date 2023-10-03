@@ -1,0 +1,63 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="results-card" id="results-card-top">
+        <div class="results-card-textbox">
+            <div class="results-card-name">
+                <label class="results-card-name">${all_spectra[0][i]}</label>
+            </div>
+            <div class="results-card-dash">
+                <div class="ms2-dash-box">
+                    <div class="ms2-dashbox-header">
+                        <p>CID</p>
+                    </div>
+                    <div class="ms2-dashbox-text">
+                        <p>${all_spectra[2][i]}</p>
+                    </div>
+                </div>
+                <div class="ms2-dash-box">
+                    <div class="ms2-dashbox-header">
+                        <p>Matrix</p>
+                    </div>
+                    <div class="ms2-dashbox-text">
+                        <p>FMP-10</p>
+                    </div>
+                </div>
+                <div class="ms2-dash-box">
+                    <div class="ms2-dashbox-header">
+                        <p>Adduct</p>
+                    </div>
+                    <div class="ms2-dashbox-text">
+                        <p>${all_spectra[3][i]}</p>
+                    </div>
+                </div>
+                <div class="ms2-dash-box">
+                    <div class="ms2-dashbox-header">
+                        <p>Parent ion m/z</p>
+                    </div>
+                    <div class="ms2-dashbox-text">
+                        <p>400.000000</p>
+                    </div>
+                </div>
+            </div>
+            <div class="molecule" id="molecule-canvas">
+                <img data-smiles=${all_spectra[1][i]}
+                    data-smiles-options=" {'width': 300, 'height': 250 }"
+                    data-smiles-theme='dark' />
+    
+                <script>
+                SmiDrawer.apply({"themes": dark});
+            </script>
+    
+            </div>
+        </div>
+        <div class="results-card-spectrogram-div"
+            id="${res_div_class + i as unknown as string}"></div>
+    </div>
+</body>
+</html>
+

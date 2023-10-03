@@ -1,11 +1,15 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:400,700,900,300);
-@import url('ms2-styles.css');
-@import url('ms1-styles.css');
+@import url('ms2/ms2-styles.css');
+@import url('ms1/ms1-styles.css');
 @import url('dropdown.css');
 @import url('tabs.css');
 @import url('checkbox.css');
 @import url('slider.css');
 @import url('table.css');
+@import url('ms1/ms1-mass-error-styles.css');
+@import url('ms1/ms1-popup.css');
+@import url('ms1/ms1-slidein.css');
+
 
 
 
