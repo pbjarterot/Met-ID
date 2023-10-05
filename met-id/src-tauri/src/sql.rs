@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use serde::{Serialize, Serializer, Deserialize};
 use crate::mass_match::mass_matcher;
-use maplit::hashmap;
 use thiserror::Error;
 use r2d2_sqlite::SqliteConnectionManager;
 use std::mem;
@@ -150,18 +149,17 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
 fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts: Vec<String>) -> String {
     let mut query: String = "SELECT COUNT(*) FROM ".to_string();
 
-    let functional_groups_map: HashMap<&str, &str> = hashmap!{
-        "Phenols" => "functional_groups.phenols",
-        "Aldehydes" => "functional_groups.aldehydes",
-        "Carboxylic" => "functional_groups.carboxylicacids",
-        "Primary" => "functional_groups.primaryamines",
-    };
+    let mut functional_groups_map: HashMap<&str, &str> = HashMap::new();
+    functional_groups_map.insert("Phenols", "functional_groups.phenols");
+    functional_groups_map.insert("Aldehydes", "functional_groups.aldehydes");
+    functional_groups_map.insert("Carboxylic", "functional_groups.carboxylicacids");
+    functional_groups_map.insert("Primary", "functional_groups.primaryamines");
 
-    let met_type_map: HashMap<&str, &str> = hashmap!{
-        "Endogenous" => "endogeneity.endogenous",
-        "Exogenous" => "endogeneity.exogenous",
-        "Unspecified" => "endogeneity.unspecified"
-    };
+
+    let mut met_type_map: HashMap<&str, &str> = HashMap::new();
+    met_type_map.insert("Endogenous" , "endogeneity.endogenous");
+    met_type_map.insert("Exogenous", "endogeneity.exogenous");
+    met_type_map.insert("Unspecified", "endogeneity.unspecified");
 
     if met.starts_with("HMDB") {
         query += "metabolites INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id";

@@ -70,7 +70,7 @@
       "resources": [
         "DBs/*",
         "bin",
-        "python310.dll"
+        "bin/python310.dll"
       ],
       "targets": "all"
     },

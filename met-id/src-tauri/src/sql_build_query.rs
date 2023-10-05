@@ -1,16 +1,15 @@
 use crate::sql::Args;
 use std::collections::HashMap;
-use maplit::hashmap;
 
 
 pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String {
-    let met_type_map: HashMap<&str, &str> = hashmap!{
-        "Endogenous" => "endogenous",
-        "Exogenous" => "exogenous",
-        "Unspecified" => "unspecified"
-    };
+    let mut met_type_map: HashMap<&str, &str> = HashMap::new();
+    met_type_map.insert("Endogenous", "endogenous");
+    met_type_map.insert("Exogenous", "exogenous");
+    met_type_map.insert("Unspecified", "unspecified");
 
-    let _matrix_map: HashMap<&str, &str> = hashmap!{
+    /* 
+    let _matrix_map: HashMap<&str, &str> = HashMap::new();
         "FMP-10" => "fmp",
         "DPP" => "dpp",
         "TAHS" => "tahs",
@@ -19,42 +18,41 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
         "Girard T" => "girardt",
         "AMPP" => "ampp",
         "Boronic Acid" => "boronicacid"
-    };
+    */
 
-    let functional_groups_map: HashMap<&str, &str> = hashmap!{
-        "Phenols" => "phenols",
-        "Catechols" => "catechols",
-        "Carbonyls" => "carbonyls",
-        "Aldehydes" => "aldehydes",
-        "Carboxylic" => "carboxylicacids",
-        "Primary" => "primaryamines",
-        "Triols" => "triols",
-        "Diols" => "diols",
-        "Hydroxyls" => "hydroxyls"
-    };
+    let mut functional_groups_map: HashMap<&str, &str> = HashMap::new();
+    functional_groups_map.insert("Phenols", "phenols");
+    functional_groups_map.insert("Catechols", "catechols");
+    functional_groups_map.insert("Carbonyls", "carbonyls");
+    functional_groups_map.insert("Aldehydes", "aldehydes");
+    functional_groups_map.insert("Carboxylic", "carboxylicacids");
+    functional_groups_map.insert("Primary", "primaryamines");
+    functional_groups_map.insert("Triols", "triols");
+    functional_groups_map.insert("Diols", "diols");
+    functional_groups_map.insert("Hydroxyls", "hydroxyls");
 
-    let adduct_map: HashMap<&str, &str> = hashmap!{
-        "[M+K]+" => "M+K",
-        "[M+H]+" => "M+H",
-        "[M+Na]+" => "M+Na",
-        "[M+K-2H]-" => "M+K-H2",
-        "[M-H]-" => "M-H",
-        "[M+Na-2H]-" => "M+Na-H2",
-        "[M+Cl]-" => "M+Cl",
-        "M+FMP10" => "M+FMP10",
-        "M+2FMP10a" => "M+2FMP10a",
-        "M+2FMP10b" => "M+2FMP10b",
-        "M+3FMP10a" => "M+3FMP10a",
-        "M+3FMP10b" => "M+3FMP10b",
-        "M+3FMP10c" => "M+3FMP10c",
-        //extend for more matrices
-    };
+    let mut adduct_map: HashMap<&str, &str> = HashMap::new();
+    adduct_map.insert("[M+K]+","M+K");
+    adduct_map.insert("[M+H]+" , "M+H");
+    adduct_map.insert("[M+Na]+","M+Na");
+    adduct_map.insert("[M+K-2H]-" ,"M+K-H2");
+    adduct_map.insert("[M-H]-" , "M-H");
+    adduct_map.insert("[M+Na-2H]-" , "M+Na-H2");
+    adduct_map.insert("[M+Cl]-" ,"M+Cl");
+    adduct_map.insert("M+FMP10" , "M+FMP10");
+    adduct_map.insert("M+2FMP10a", "M+2FMP10a");
+    adduct_map.insert("M+2FMP10b", "M+2FMP10b");
+    adduct_map.insert("M+3FMP10a", "M+3FMP10a");
+    adduct_map.insert("M+3FMP10b", "M+3FMP10b");
+    adduct_map.insert("M+3FMP10c", "M+3FMP10c");
+    //extend for more matrices
 
-    let tissue_map: HashMap<&str, &str> = hashmap!{
-        "HMDB (CSF)" => "csf",
-        "HMDB (Urine)" => "urine",
-        "HMDB (Serum)" =>"serum",
-    };
+
+    let mut tissue_map: HashMap<&str, &str> = HashMap::new();
+    tissue_map.insert("HMDB (CSF)", "csf");
+    tissue_map.insert("HMDB (Urine)", "urine");
+    tissue_map.insert("HMDB (Serum)", "serum");
+
 
 
     let if_fmp10: bool = args.matrix == "FMP-10".to_string();

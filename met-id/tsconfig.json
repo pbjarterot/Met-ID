@@ -9,7 +9,7 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "types": ["jQuery", "node", "d3"],
+    "types": ["node", "d3"],
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
