@@ -23,10 +23,10 @@
         "open": true,
         "sidecar": true,
         "scope": [
-          {"name": "bin/src-tauri", "sidecar": true},
-          {"name": "bin/src-tauri-x86_64-unknown-linux-gnu", "sidecar": true},
-          {"name": "bin/src-tauri-x86_64-pc-windows-msvc.exe", "sidecar": true},
-          {"name": "bin/src-taurix86_64-apple-darwin", "sidecar": true}
+          {"name": "bin/met-id_tauri", "sidecar": true},
+          {"name": "bin/met-id_tauri-x86_64-unknown-linux-gnu", "sidecar": true},
+          {"name": "bin/met-id_tauri-x86_64-pc-windows-msvc.exe", "sidecar": true},
+          {"name": "bin/met-id_tauri-x86_64-apple-darwin", "sidecar": true}
         ]
       },
       "window": {
@@ -62,10 +62,10 @@
     "bundle": {
       "active": true,
       "externalBin": [
-                  "bin/src-tauri", 
-                  "bin/src-tauri-x86_64-unknown-linux-gnu", 
-                  "bin/src-tauri-x86_64-pc-windows-msvc.exe",
-                  "bin/src-taurix86_64-apple-darwin"],
+                  "bin/met-id_tauri", 
+                  "bin/met-id_tauri-x86_64-unknown-linux-gnu", 
+                  "bin/met-id_tauri-x86_64-pc-windows-msvc.exe",
+                  "bin/met-id_tauri-86_64-apple-darwin"],
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
