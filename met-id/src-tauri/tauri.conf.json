@@ -23,7 +23,11 @@
         "open": true,
         "sidecar": true,
         "scope": [
+<<<<<<< Updated upstream
           {"name": "bin/src-tauri", "sidecar": true}
+=======
+          {"name": "bin/met-id_python", "sidecar": true}
+>>>>>>> Stashed changes
         ]
       },
       "window": {
@@ -58,7 +62,12 @@
     },
     "bundle": {
       "active": true,
+<<<<<<< Updated upstream
       "externalBin": ["bin/src-tauri"],
+=======
+      "externalBin": [
+                  "bin/met-id_python"],
+>>>>>>> Stashed changes
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",

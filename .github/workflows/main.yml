@@ -27,6 +27,39 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+<<<<<<< Updated upstream
+=======
+
+      - name: Install PyOxidizer
+        run: |
+            cargo install pyoxidizer
+        working-directory: met-id
+
+
+      - name: Main Build with PyOxidizer
+        run: |
+          # Define PyOxidizer target based on current platform
+          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+            pyoxidizer build --target-triple x86_64-pc-windows-msvc
+            mv build/x86_64-pc-windows-msvc/debug/met-id_python/met-id_python.exe ./bin/met-id_python-x86_64-pc-windows-msvc.exe
+          elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
+            mkdir bin
+            pyoxidizer build --target-triple aarch64-unknown-linux-gnu
+            mv ./build/aarch64-unknown-linux-gnu/debug/met-id_python/met-id_python ./bin/met-id_python-aarch64-unknown-linux-gnu
+          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            pyoxidizer build --target-triple x86_64-apple-darwin
+            mv ./build/x86_64-apple-darwin/debug/met-id_python/met-id_python ./bin/met-id_python-x86_64-apple-darwin
+          fi
+        working-directory: met-id/src-tauri
+      - name: List binaries directory
+        run: |
+          ls -lR met-id/src-tauri
+      # Note: The following step needs to be properly defined, and steps should not be nested.
+      - name: Upload Bin
+        run: |
+          # Add your upload commands here
+
+>>>>>>> Stashed changes
       - name: install frontend dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
       - uses: tauri-apps/tauri-action@v0

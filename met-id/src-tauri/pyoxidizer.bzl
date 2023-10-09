@@ -120,6 +120,7 @@ def make_exe():
     # by setting attributes on the instance. Some of these are
     # documented below.
     python_config = dist.make_python_interpreter_config()
+<<<<<<< Updated upstream
 
     # Make the embedded interpreter behave like a `python` process.
     # python_config.config_profile = "python"
@@ -201,6 +202,13 @@ def make_exe():
     # Produce a PythonExecutable from a Python distribution, embedded
     # resources, and other options. The returned object represents the
     # standalone executable that will be built.
+=======
+    policy = dist.make_python_packaging_policy()
+    policy.extension_module_filter = "all"
+    policy.resources_location = "filesystem-relative:lib"
+    policy.resources_location_fallback = "filesystem-relative:lib"
+
+>>>>>>> Stashed changes
     exe = dist.to_python_executable(
         name="src-tauri",
 
@@ -210,6 +218,7 @@ def make_exe():
 
         # If no argument passed, the default `PythonInterpreterConfig` is used.
         config=python_config,
+<<<<<<< Updated upstream
     )
 
     # Install tcl/tk support files to a specified directory so the `tkinter` Python
@@ -270,6 +279,19 @@ def make_exe():
 
     # Return our `PythonExecutable` instance so it can be built and
     # referenced by other consumers of this target.
+=======
+        name="met-id_python",
+        packaging_policy=policy
+    )
+
+    # exe.add_python_resources(exe.pip_download(["pillow", "rdkit", "numpy"]))
+
+    for resource in exe.pip_download(["pillow", "numpy", "rdkit"]):
+        resource.add_location = "filesystem-relative:lib"
+        exe.add_python_resource(resource)
+
+    print("Exe built successfully!")
+>>>>>>> Stashed changes
     return exe
 
 def make_embedded_resources(exe):
