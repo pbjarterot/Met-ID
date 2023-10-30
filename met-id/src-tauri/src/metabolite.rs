@@ -1,7 +1,7 @@
-use pyo3::{Python, PyErr, prepare_freethreaded_python, types::PyModule, PyResult};
-//use pyo3::types::{PyDict, PyString};
 //use pyo3::prelude::*;
-//use pyo3::types::IntoPyDict;
+/* 
+use std::env;
+use std::path::Path;
 use std::collections::HashMap;
 use rayon::prelude::*;
 
@@ -18,26 +18,42 @@ impl Metabolite {
         vec![self.name.clone().replace("\"", "'"), self.smiles.clone(), formula, mz]
     }
 
-    fn get_mz_and_formula_from_smiles(&self) -> Result<(String, String), PyErr> {
+    fn get_mz_and_formula_from_smiles(&self) -> Result<(String, String), String> {
         let smiles = &self.smiles;
 
-        Python::with_gil(|py| {
-            let rdkit = PyModule::import(py, "rdkit.Chem")?;
-            let descriptors = PyModule::import(py, "rdkit.Chem.Descriptors")?;
-            let formula = PyModule::import(py, "rdkit.Chem.rdMolDescriptors")?;
+        // Get the path to the executable
+        let exe_path = env::current_exe().map_err(|e| e.to_string())?;
 
-            let mol = rdkit.call_method1("MolFromSmiles", (smiles,))?;
+        // Calculate the path to the bundled Anaconda environment
+        let anaconda_path = exe_path
+            .parent()
+            .expect("Failed to get parent directory")
+            .join("myenv"); // Replace with the actual directory name of your Anaconda environment
 
-            if mol.is_none() {
-                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid SMILES string"));
-            }
+        // Initialize the embedded Python interpreter with the Anaconda environment path
+        let python = Python::initialize_with_path(anaconda_path).map_err(|e| e.to_string())?;
 
-            let mz: f64 = descriptors.call_method1("ExactMolWt", (mol.clone(),))?.extract()?;
-            let mol_formula: String = formula.call_method1("CalcMolFormula", (mol.clone(),))?.extract()?;
+        // Execute the Python code within the embedded Python environment
+        let result: Result<(String, String), String> = python
+            .execute(|py| {
+                let rdkit = PyModule::import(py, "rdkit.Chem").map_err(|e| e.to_string())?;
+                let descriptors = PyModule::import(py, "rdkit.Chem.Descriptors").map_err(|e| e.to_string())?;
+                let formula = PyModule::import(py, "rdkit.Chem.rdMolDescriptors").map_err(|e| e.to_string())?;
 
+                let mol: &pyo3::PyAny = rdkit.call_method1("MolFromSmiles", (smiles,)).map_err(|e| e.to_string())?;
 
-            Ok((mz.to_string(), mol_formula))
-        })
+                if mol.is_none() {
+                    return Err("Invalid SMILES string".to_string());
+                }
+
+                let mz: f64 = descriptors.call_method1("ExactMolWt", (mol.clone(),)).map_err(|e| e.to_string())?.extract()?;
+                let mol_formula: String = formula.call_method1("CalcMolFormula", (mol.clone(),)).map_err(|e| e.to_string())?.extract()?;
+
+                Ok((mz.to_string(), mol_formula))
+            })
+            .map_err(|e| e.to_string())?;
+
+        result
     }
 
     pub fn functional_group(&self, functional_smarts: &HashMap<String, String>) -> Result<HashMap<String, String>, PyErr> {
@@ -74,9 +90,7 @@ impl Metabolite {
             Err(e) => Err(e),
         }
     }
-
 }
-
 
 pub fn single_functional_group(smiles_list: &Vec<String>, functional_smarts: &str) -> Vec<usize> {
     prepare_freethreaded_python();
@@ -108,3 +122,5 @@ pub fn single_functional_group(smiles_list: &Vec<String>, functional_smarts: &st
     })
     .unwrap_or_else(|_| vec![]) // Handle errors by returning an empty vec
 }
+
+*/

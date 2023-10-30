@@ -3,7 +3,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("ms1-table-delete-row")?.addEventListener("click", () => deleteRows())
     document.getElementById("ms1-table-head-check")?.addEventListener("click", () => selectRows())
 
-
+    document.getElementById("toggle-show-identified")?.addEventListener("click", () => toggleRows())
 });
 
 let table_body = document.getElementById("ms1-table-body");
@@ -64,3 +64,40 @@ export function createBottomRow(index: number, _names_for_img: string[], _smiles
 
   return row;
 }
+
+function toggleRows(): void {
+  console.log("pressing togglerows")
+  const table: HTMLTableElement | null = document.getElementById('ms1-datatable') as HTMLTableElement;
+  
+  if (!table) {
+      console.error('Table not found.');
+      return;
+  }
+
+  const rows: NodeListOf<HTMLTableRowElement> = table.querySelectorAll('tbody tr.data');
+
+  rows.forEach((row: HTMLTableRowElement) => {
+      // Assuming the 3rd column is the one to check (index 2 since index starts at 0)
+      const cell: HTMLTableCellElement = row.children[2] as HTMLTableCellElement;
+      
+      //console.log(cell.textContent, cell.textContent!.trim());
+      if (cell.textContent) {
+        
+          if (cell.textContent === '') {
+              row.style.display = 'none';
+              console.log("table-none")
+          } else {
+              row.style.display = 'table-row';
+          }
+      }
+      else {
+        if (row.style.display === "none") {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        } 
+        
+      }
+  });
+}
+

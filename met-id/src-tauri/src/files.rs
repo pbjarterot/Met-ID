@@ -111,9 +111,6 @@ fn parse_data_points(lines: &[&str]) -> Result<(Vec<f64>, Option<Vec<f64>>), io:
     Ok((mz, ion_mobility))
 }
 
-
-
-
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 struct MSMSSpectra {
@@ -158,10 +155,6 @@ pub fn parse_ms1_csv(path: String) -> Vec<f64>{
         Ok(ms1_file) => {
             // Successfully parsed the file into an MS1File struct
             mzs = ms1_file.mz;
-            println!("Filename: {}", ms1_file.filename);
-            println!("Delimiter: {:?}", ms1_file.delimiter);
-            //println!("MZ values: {:?}", &ms1_file.mz);
-            //println!("Ion mobility values: {:?}", ms1_file.ion_mobility);
         }
         Err(err) => {
             // Failed to parse the file
@@ -199,9 +192,8 @@ pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedro
     let mut res_rows: Vec<Vec<String>> = Vec::new();
 
     for line in reader.records() {
-        let rec = line.unwrap();
-        let record_str = rec.get(0).unwrap();
-
+        let rec: csv::StringRecord = line.unwrap();
+        let record_str: &str = rec.get(0).unwrap();
         let res: Vec<String> = record_str.split(&delimiter).map(|s| s.to_string()).collect();
         res_rows.push(res);
     }
@@ -229,33 +221,39 @@ pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedro
 
 // Function to transpose a matrix
 fn transpose_vec<T>(matrix: Vec<Vec<T>>) -> Vec<Vec<String>>
-where
-    T: ToString,
-{
-    // Find the length of the longest inner vector
-    let max_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
+    where
+        T: ToString,
+    {
+        // Find the length of the longest inner vector
+        let max_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
 
-    // Create a new vector to store the transposed elements as strings
-    let mut transposed: Vec<Vec<String>> = vec![Vec::new(); max_len];
+        // Create a new vector to store the transposed elements as strings
+        let mut transposed: Vec<Vec<String>> = vec![Vec::new(); max_len];
 
-    // Iterate through the rows of the original matrix
-    for (row_index, row) in matrix.iter().enumerate() {
-        // Iterate through the elements of each row and populate the corresponding columns in the transposed matrix
-        for (col_index, elem) in row.iter().enumerate() {
-            let value_str = elem.to_string();
-            if transposed[col_index].len() <= row_index {
-                transposed[col_index].resize(row_index + 1, String::new());
+        // Iterate through the rows of the original matrix
+        for (row_index, row) in matrix.iter().enumerate() {
+            // Iterate through the elements of each row and populate the corresponding columns in the transposed matrix
+            for (col_index, elem) in row.iter().enumerate() {
+                let value_str = elem.to_string();
+                if transposed[col_index].len() <= row_index {
+                    transposed[col_index].resize(row_index + 1, String::new());
+                }
+                transposed[col_index][row_index] = value_str;
             }
-            transposed[col_index][row_index] = value_str;
         }
+
+        transposed
     }
 
-    transposed
+
+
+#[tauri::command]
+pub fn save_csv(path: String, csvcontent: String) {
+    match fs::write(path, csvcontent){
+        Ok(_) => println!("Success!"),
+        Err(e) => println!("Failed to save csv: {:?}", e)
+    };
 }
-
-
-
-
 
 /* 
 #[tauri::command]
@@ -289,3 +287,27 @@ fn parse_text_file(file_path: &str) -> io::Result<Vec<f64>> {
     Ok(numbers)
 }
 */
+
+
+#[tauri::command]
+pub fn read_mass_error_csv(path: String) -> Vec<Vec<String>> {
+    // Open the file
+    let file: File = File::open(path).unwrap();
+
+    // Create a CSV reader from the file
+    let mut reader = ReaderBuilder::new().has_headers(false).from_reader(file);
+    let mut res_rows: Vec<Vec<String>> = Vec::new();
+
+    for (index, line) in reader.records().enumerate() {
+
+        if index != 0 {
+            let rec: csv::StringRecord = line.unwrap();
+
+            let res: Vec<String> = vec![rec.get(0).unwrap().to_string(), rec.get(1).unwrap().to_string()];
+            res_rows.push(res);
+        }
+        
+    }
+
+    res_rows
+}

@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api';
 import { get_csv } from './ms1_popup';
-import { identify } from './ms1_sidebar';
+import { identify, get_adjusted_ms1 } from './ms1_sidebar';
 import { fill_dropdown, fill_under_dropdown } from "../dropdown";
 import "./ms1_mass_error";
 import "./ms1_table";
 import "./ms1_popup";
 import {add_matrix, add_metabolite, add_functional_group} from "./ms1_add_buttons";
+import { convertTableToCSV } from './ms1_io';
 
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -22,6 +23,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("ms1-sidebar-open-file-button")!.addEventListener("click", async () => get_csv());
     document.getElementById("ms1-sidebar-identify-button2")!.addEventListener("click", async () => identify());
+    document.getElementById("ms1-sidebar-export-adjusted")!.addEventListener("click", async () => get_adjusted_ms1());
 
     document.getElementById("matrix-dropdown")!.addEventListener("change", async () => check_options_for_sql_counter());
     document.getElementById("metabolome-dropdown")!.addEventListener("change", async () => check_options_for_sql_counter());
@@ -33,6 +35,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     slider!.oninput = function() {
         output!.innerHTML = (this as HTMLInputElement).value + " ppm";
     }
+
+
+    document.getElementById("ms1-sidebar-export-button")!.addEventListener("click", () => {
+        convertTableToCSV("ms1-datatable");
+    })
 })
 
 

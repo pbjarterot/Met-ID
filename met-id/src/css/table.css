@@ -366,3 +366,8 @@
   .im-container2 p.long-text {
     font-size: 16px; /* Set a smaller font size for long paragraphs */
   }
+
+#toggle-show-identified {
+    border-radius: 5px;
+    border: 1px solid rgb(182, 182, 182);
+}

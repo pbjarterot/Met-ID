@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Met-id</title>
     <script type="module" src="/src/typescript/main.ts" defer></script>
-    <script src="./node_modules/d3/dist/d3.min.js"></script>
+    <script type="module" src="./node_modules/d3/dist/d3.min.js"></script>
 
     <script type="text/javascript" src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
   </head>
@@ -146,7 +146,7 @@
           </div>
         <div class="tabby-tab">
           <input type="radio" id="tab-2" name="tabby-tabs">
-          <label for="tab-2" class="tabby-label">MS1</label>
+          <label  for="tab-2" class="tabby-label" id="rightmost-tab">MS1</label>
           <div id="overlay"></div>
           <div id="popup">
             <div class="ms1-popup-top-div">
@@ -241,8 +241,16 @@
                       <ion-icon name="arrow-down-circle-outline"></ion-icon>
                     </span>
                   </button>
+                  <!-- 
                   <button class="ms1-sidebar-button" id="ms1-sidebar-export-button2">
                     <span class="ms1-sidebar-button-text" id="export-button-text2">Export Identification file</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="arrow-down-circle-outline"></ion-icon>
+                    </span>
+                  </button>
+                  -->
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-export-adjusted">
+                    <span class="ms1-sidebar-button-text" id="export-button-text2">Export Adjusted m/z</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="arrow-down-circle-outline"></ion-icon>
                     </span>
@@ -329,36 +337,6 @@
                       <!--  Appended by fill_options_under_dropdown in dropdown.ts  -->
                     </div>
                   </div>
-                  <!--
-                  <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
-                    <div class="ms1-searchbar-row4">
-                      <p class="ms1-search-lbl">Display Options</p>
-                    </div>
-                    <div class="ms1-searchbar-row3">
-                      <div class="checkbox-label-container">
-                        <p>Show delta mass (Da)</p>
-                        <input type="checkbox" checked="checked">
-                      </div>
-                      
-                      <div class="checkbox-label-container">
-                        <p>Mass deviation (ppm)</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                      
-                      <div class="checkbox-label-container">
-                        <p>Theoretical mass</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                      <div class="checkbox-label-container" id="checkbox-label-container2">
-                        <p>Show only matched</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                    </div>
-                  </div>
-                  -->
                   <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
                     <div class="ms1-searchbar-row">
                         <p class="ms1-search-lbl">Mass Error</p>
@@ -369,26 +347,7 @@
                         
                       </div>
                     </div>
-                    <!--
-                    <button class="ms1-error-button" id="ms1-error-button-suggest">
-                      <span class="ms1-error-button-text">Suggest (RANSAC)</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="bar-chart-outline"></ion-icon>
-                      </span>
-                    </button>
-                    <button class="ms1-error-button" id="ms1-error-button-manual">
-                      <span class="ms1-error-button-text">Manual</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="analytics-outline"></ion-icon>
-                      </span>
-                    </button>
-                    <button class="ms1-error-button" id="ms1-error-button-show-plot">
-                      <span class="ms1-error-button-text">Show Plot</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="albums-outline"></ion-icon>
-                      </span>
-                    </button>
-                    -->
+
                     <button class="ms1-error-button" id="ms1-error-button-manual">
                       <span class="ms1-error-button-text">Manual</span>
                       <span class="ms1-error-button-icon">
@@ -411,12 +370,14 @@
                     <p id="db_size">0</p>
                   </div>
                 </div>
+                <!--
                 <div class="ms1-searchbar-row2">
                   <div class="ms1-slidecontainer">
                     <p>Progress <span id="demo"></span></p>
                     <p>100%</p>
                   </div>
                 </div>
+                -->
                 </div>
               </div>
               <div class="ms1-results" id="ms1-results">
@@ -437,6 +398,11 @@
                           <button id="ms1-table-delete-row">
                             <ion-icon name="trash-outline"></ion-icon>
 
+                          </button>
+                        </li>
+                        <li>
+                          <button id="toggle-show-identified">
+                            Show only identified
                           </button>
                         </li>
                       </ul>
@@ -464,77 +430,6 @@
                         </tr>
                       </thead>
                       <tbody id="ms1-table-body">
-                        <!--
-                        <tr class="data">
-                          <td><input type="checkbox" /></td>
-                          <td class="clickable-cell">400</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell">
-                            Dopamine<br>Dopamine<br>Dopamine
-                          </td>
-                          <td class="clickable-cell">[M+K]+</td>
-                          <td class="clickable-cell">C2H5O2</td>
-                          <td class="clickable-cell">0.005</td>
-                          <td class="clickable-cell">3.0</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell"><span class="available"></span><br><span class="available"></span><br><span class="not-available"></span></td>
-                        </tr>
-                        <tr class="hidden-row">
-                          <td colspan="10">
-                            <div class="row-details">
-                              <div class="ms1-table-molecule">
-                                <div class="im-container">
-                                  <img data-smiles="CCOCC"
-                                      data-smiles-options=" {'width': 200, 'height': 160, 'padding': 0.0 }"  
-                                      data-smiles-theme='dark' />
-                                  <script>
-                                    SmiDrawer.apply();
-                                  </script>
-                                </div>
-                                <div class="im-container2">
-                                  <p class="ms1-molecule-name">Dopamine</p>
-                                </div>
-                                
-                              </div>
-                              <div class="ms1-table-molecule">
-                                <div class="im-container">
-                                  <img data-smiles="CCOCCCCC"
-                                      data-smiles-options="{'width': 200, 'height': 160, 'padding': 0.0 }"  
-                                      data-smiles-theme='dark' />
-                                  <script>
-                                    SmiDrawer.apply();
-                                  </script>
-                                  
-                                </div>
-                                <div class="im-container2">
-                                  <p class="ms1-molecule-name">Dopamine</p>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                  
-                        <tr class="data">
-                          <td>
-                            <input type="checkbox" />
-                          </td>
-                          <td class="clickable-cell">400</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell">L-Dopa</td>
-                          <td class="clickable-cell">[M+H]+</td>
-                          <td class="clickable-cell">C2H5O2</td>
-                          <td class="clickable-cell">0.0005</td>
-                          <td class="clickable-cell">2.0</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell"><span class="available"></span></td>
-                        </tr>   
-                        <tr class="hidden-row">
-                          <td colspan="10">
-                            <div class="row-details">
-                            </div>
-                          </td>
-                        </tr> 
-                        -->                                         
                       </tbody>
                       
                     </table>

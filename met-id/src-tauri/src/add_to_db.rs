@@ -2,17 +2,84 @@
 pub mod add_to_db_functions {
     use r2d2_sqlite::SqliteConnectionManager;
     use rusqlite::{params, Result, ToSql};
-    use crate::validation::mass_from_formula;
+    //use crate::validation::mass_from_formula;
     use crate::sql::check_if_table_exists;
-    use crate::metabolite::{ Metabolite, single_functional_group };
-    use crate::get_connection;
+    use crate::sidecar::sidecar_function;
+    //use crate::metabolite::{ Metabolite, single_functional_group };
+    use crate::database_setup::get_connection;
     use std::collections::HashMap;
     use std::iter::repeat;
     use std::sync::mpsc;
 
+    fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
+        smiles.insert(0, smarts.to_owned());
 
+        let sidecar_output = sidecar_function("metabolite".to_string(), smiles.to_owned());
+        let result: Vec<usize> = match sidecar_output {
+            Ok(s) => {
+                s.trim_end_matches('\r')
+                    .trim_start_matches('[')
+                    .trim_end_matches(']')
+                    .split(", ")
+                    .filter_map(|n| n.parse::<usize>().ok())
+                    .collect()
+            },
+            Err(_) => Vec::new(),
+        };
+        
+        result
+    }
+
+    fn metabolite_for_db_sidecar(smiles: &String, smarts_map: &mut HashMap<String, String>) -> (String, String, HashMap<String, String>) {
+        let mut smarts_vec: Vec<_> = smarts_map.values().cloned().collect();
+        smarts_vec.insert(0, smiles.to_owned());
+
+        let sidecar_output = sidecar_function("metabolite_for_db".to_string(), smarts_vec.to_owned());
+        println!("{:?}", sidecar_output);
+
+        parse_input(&sidecar_output.unwrap()[..], smarts_map).unwrap()
+    }
+
+    fn parse_input(input: &str, smarts_map: &mut HashMap<String, String>) -> Result<(String, String, HashMap<String, String>), &'static str> {
+        use regex::Regex;
+        //let input = "C3H8 44.062600255999996 [0, 0, 0, 0]\r";
+
+        // Extract molecule formula
+        let molecule_re = Regex::new(r"([A-Z][a-z]*\d*)+").unwrap();
+        let molecule = molecule_re.find(input).unwrap().as_str();
+
+        // Extract float number
+        let float_re = Regex::new(r"\d+\.\d+").unwrap();
+        let float_number: f64 = float_re.find(input).unwrap().as_str().parse().unwrap();
+
+        // Extract numbers from the array
+        let array_start = input.find('[').unwrap();
+        let array_end = input.find(']').unwrap();
+        let array_str = &input[array_start + 1..array_end];
+        let array: Vec<i32> = array_str
+            .split(", ")
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+
+        // Assuming keys and values have the same length
+        let keys: Vec<String> = smarts_map.keys().cloned().collect();
+        for (key, value) in keys.iter().zip(array.iter()) {
+            smarts_map.insert(key.clone(), value.clone().to_string());
+        }
+    
+        Ok((molecule.to_string(), float_number.to_string(), smarts_map.to_owned()))
+    }
+
+    /* 
+    fn update_fg(smarts: &String) {
+        const BATCH_SIZE: usize = 50;
+        let match_counts: Vec<usize> = single_functional_group(smarts);
+    }
+    */
+     
     pub fn update_functional_groups(table_name: &str, table2_name: &str, name: &String, smarts: &String, progress_sender: &mpsc::Sender<f32>) {
-        const BATCH_SIZE: usize = 10;
+        const BATCH_SIZE: usize = 50;
+        
     
         let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         let conn2: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
@@ -44,7 +111,7 @@ pub mod add_to_db_functions {
             batch_rowids.push(rowid);
     
             if batch_smiles.len() == BATCH_SIZE {
-                let match_counts = single_functional_group(&batch_smiles, &smarts[..]);
+                let match_counts = single_functional_group(&mut batch_smiles, &smarts);
                 
                 let transaction = conn.transaction().unwrap();
     
@@ -65,7 +132,7 @@ pub mod add_to_db_functions {
     
         // Process any remaining items in the batch
         if !batch_smiles.is_empty() {
-            let match_counts = single_functional_group(&batch_smiles, &smarts[..]);
+            let match_counts = single_functional_group(&mut batch_smiles, &smarts);
     
             let transaction = conn.transaction().unwrap();
             
@@ -81,8 +148,7 @@ pub mod add_to_db_functions {
             progress_sender.send(progress).unwrap();
         }
     }
-
-
+    
     fn update_matrix_table_with_functional_group(table_name: &str, name: &str, matrices: &HashMap<String, bool>) {
         let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         conn.execute(
@@ -115,6 +181,8 @@ pub mod add_to_db_functions {
         
         update_functional_groups("functional_groups", "metabolites", &name, &smarts, progress_sender);
         update_functional_groups("user_functional_groups", "user_metabolites", &name, &smarts, progress_sender);
+
+        //update_fg(&smarts);
         
         //if any matrix is pressed, update derivatized_by and user_matrices
         update_matrix_table_with_functional_group("matrices", &name, &matrices);
@@ -164,7 +232,7 @@ pub mod add_to_db_functions {
     }
 
     fn get_matrices_fgs(conn: &r2d2::PooledConnection<SqliteConnectionManager>) -> Result<HashMap<String, Vec<String>>, rusqlite::Error> {
-        let mut stmt = conn.prepare("SELECT * FROM matrices")?;
+        let mut stmt = conn.prepare("SELECT * FROM matrices").unwrap();
         let col_count = stmt.column_count();
     
         // Fetch column names beforehand
@@ -180,15 +248,15 @@ pub mod add_to_db_functions {
         let mut rows = stmt.query([])?;
         
         while let Some(row) = rows.next()? {
+
             let mut fgs: Vec<String> = Vec::new();
-    
             for i in 0..col_count {
                 let value: String = row.get(i)?;
                 if value == "1" {
                     fgs.push(col_names[i].clone())
                 }
             }
-    
+            
             let name_: String = row.get(0)?;
             matrices_fgs.insert(name_, fgs);
         }
@@ -207,7 +275,6 @@ pub mod add_to_db_functions {
 
         for matrix in matrices {
             let functional_groups = matrices_fgs.get(&matrix);
-
             let result = match functional_groups {
                 Some(func_groups) => func_groups.iter().map(|fg| fgh.get(fg).unwrap().parse::<usize>().unwrap()).sum(),
                 None => 0,
@@ -284,7 +351,7 @@ pub mod add_to_db_functions {
     }
 
     fn fill_user_functional_groups(conn: &r2d2::PooledConnection<SqliteConnectionManager>, fgh: &HashMap<String, String>) {
-        let mut functional_groups = get_table_column_names(conn, "functional_groups").unwrap();
+        let mut functional_groups: Vec<String> = get_table_column_names(conn, "functional_groups").unwrap();
         functional_groups.remove(0);
 
         let new_fgh: HashMap<String, String> = fgh
@@ -293,9 +360,11 @@ pub mod add_to_db_functions {
             .collect();
 
 
-        let mut data = HashMap::new();
+        let mut data: HashMap<String, &String> = HashMap::new();
         for fg in functional_groups {
-            data.insert(fg.clone(), new_fgh.get(&fg).unwrap());
+            if let Some(value) = new_fgh.get(&fg) {
+                data.insert(fg.clone(), value);
+            }
         }
 
 
@@ -341,13 +410,15 @@ pub mod add_to_db_functions {
         check_if_table_exists("db_accessions",     "user_db_accessions").unwrap();
         check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
 
-        let functional_smarts: HashMap<String, String> = get_hashmap_from_table(&conn);
-        let metabolite: Metabolite = Metabolite{ name: name.clone(), smiles: smiles.clone() };
-        let fgh: HashMap<String, String> = metabolite.functional_group(&functional_smarts).unwrap();
+        let mut functional_smarts: HashMap<String, String> = get_hashmap_from_table(&conn);
+
+        let (formula, mz, fgh) = metabolite_for_db_sidecar(&smiles, &mut functional_smarts);
+        //let metabolite: Metabolite = Metabolite{ name: name.clone(), smiles: smiles.clone() };
+        //let fgh: HashMap<String, String> = metabolite.functional_group(&functional_smarts).unwrap();
         let matrices_fgs: HashMap<String, Vec<String>> = get_matrices_fgs(&conn).unwrap();
 
         fill_user_derivatized_by(&conn, &fgh, &matrices_fgs);
-        fill_user_metabolites(&conn, &metabolite.get()[0], &metabolite.get()[1], &metabolite.get()[2], &metabolite.get()[3]);
+        fill_user_metabolites(&conn, &name, &smiles, &formula, &mz);
         fill_user_endogeneity(&conn, &endo_exo);
         fill_user_in_tissue(&conn, &in_tissue);
         fill_user_functional_groups(&conn, &fgh);
@@ -382,7 +453,7 @@ pub mod add_to_db_functions {
                     "add-adduct-name-" => adduct_vec.insert(number as usize, value.to_string()),
                     "add-matrix-formula-" => {
                         mx_formula_vec.insert(number as usize, value.to_string()); 
-                        deltamass_vec.insert(number as usize, mass_from_formula(value).to_string());
+                        deltamass_vec.insert(number as usize, "0".to_string());//mass_from_formula(value).to_string());
                     },
                     "add-fg-" => {
                         if value.to_string() == "".to_string() {

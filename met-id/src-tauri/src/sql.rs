@@ -11,7 +11,7 @@ use std::cmp::Ordering;
 //use crate::validation::mass_from_smiles;
 use crate::sql_build_query::{build_query, build_condition_query};
 use crate::add_to_db::add_to_db_functions::*;
-use crate::{get_connection, get_msms_connection};
+use crate::database_setup::{get_connection, get_msms_connection};
 
 use std::sync::mpsc;
 

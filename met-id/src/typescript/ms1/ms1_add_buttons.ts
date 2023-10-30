@@ -182,7 +182,8 @@ const createAndAttach = async (which_button: string) => {
 		MetaboliteListener = async () => {
 			let name = document.getElementById("add-name-to-db") as HTMLInputElement;
 			let smiles = document.getElementById("add-smiles-to-db") as HTMLInputElement;
-			const smilesResult = await check_smiles(smiles!.value);
+			//const smilesResult = await check_smiles(smiles!.value);
+			const smilesResult = true;
 
 			const TissueCheckboxObject = {};
 			const MetTypeCheckboxObject = {};
@@ -219,7 +220,8 @@ const createAndAttach = async (which_button: string) => {
 		FunctionalGroupListener = async () => {
 			let name = document.getElementById("add-name-to-db") as HTMLInputElement;
 			let smarts = document.getElementById("add-smarts-to-db") as HTMLInputElement;
-			const smartsResult = await check_smarts(smarts!.value);
+			//const smartsResult = await check_smarts(smarts!.value);
+			const smartsResult = true;
 
 			const fgCheckboxObject = {}
 
@@ -266,12 +268,13 @@ async function check_smiles(smiles: string): Promise<boolean> {
 
     return smiles_ok;
 }
-
+/*
 async function check_smarts(smarts: string): Promise<boolean> {
     let smarts_ok: boolean = await invoke("check_smarts", {smarts:smarts});
 
     return smarts_ok;
 }
+*/
 
 export async function add_matrix() {
     change_slidein();

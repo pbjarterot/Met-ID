@@ -39,10 +39,10 @@ const checkBackendReadiness = async () => {
       // Backend is ready, proceed with your app logic.
     } else {
       // Wait for a short period and check again.
-      setTimeout(checkBackendReadiness, 500);
+      setTimeout(checkBackendReadiness, 10000);
     }
   } catch (error) {
-    console.error('Error checking backend readiness:', error);
+    console.log('Error checking backend readiness:', error);
   }
 }
 

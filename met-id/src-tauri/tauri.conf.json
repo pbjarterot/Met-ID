@@ -23,12 +23,12 @@
         "open": true,
         "sidecar": true,
         "scope": [
-<<<<<<< Updated upstream
-          {"name": "bin/src-tauri", "sidecar": true}
-=======
-          {"name": "bin/met-id_python", "sidecar": true}
->>>>>>> Stashed changes
+          {"name": "pyinstaller/dist/metabolite", "sidecar": true},
+          {"name": "pyinstaller/dist/metabolite_for_db", "sidecar": true},
+          {"name": "pyinstaller/dist/regression", "sidecar": true},
+          {"name": "pyinstaller/dist/validation", "sidecar": true}
         ]
+        
       },
       "window": {
         "all": false,
@@ -62,12 +62,12 @@
     },
     "bundle": {
       "active": true,
-<<<<<<< Updated upstream
-      "externalBin": ["bin/src-tauri"],
-=======
       "externalBin": [
-                  "bin/met-id_python"],
->>>>>>> Stashed changes
+        "pyinstaller/dist/metabolite",
+        "pyinstaller/dist/metabolite_for_db",
+        "pyinstaller/dist/regression",
+        "pyinstaller/dist/validation"
+      ],
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -77,9 +77,7 @@
       ],
       "identifier": "com.farmbio.metid",
       "resources": [
-        "DBs/*",
-        "bin",
-        "python310.dll"
+        "DBs/*"
       ],
       "targets": "all"
     },

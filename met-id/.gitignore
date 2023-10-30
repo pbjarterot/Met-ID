@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.spec
+
+src-tauri/pyinstaller/build/*
+src-tauri/pyinstaller/dist/*

@@ -1,7 +1,7 @@
 /* SIDEBAR */
 .ms1-sidebar-button {
 	display: flex;
-	height: 40px;
+	height: 35px;
     width: 100%;
 	padding: 0;
 	background: #909090;
@@ -154,7 +154,7 @@
 
 .ms1-left-sidebar {
     background-color: #4b4b4b;
-    width: 250px;
+    width: 200px;
     height: 100%;
     float: left;
     padding: 0%;
@@ -169,7 +169,7 @@
 }
 
 .ms1-menu {
-    height: 85%;
+    height: 95%;
     width: 100%;
 }
   
@@ -231,25 +231,25 @@
     border-radius: 10px;
     height: 10px;
     margin-bottom: 5px;
-    font-size: 15px;
+    font-size: 12px;
 }
 
 .ms1-error-button {
-        display: flex;
-        height: 33px;
-        width: 100%;
-        padding: 0;
-        background: #747474;
-        border: none;
-        outline: none;
-        border-radius: 8px;
-        overflow: hidden;
-        font-family: "Quicksand", sans-serif;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        margin: 0px 5px 5px 0px;
-        text-align: center;
+    display: flex;
+    height: 33px;
+    width: 100%;
+    padding: 0;
+    background: #747474;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: "Quicksand", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin: 0px 5px 5px 0px;
+    text-align: center;
 }
 
 .ms1-error-button-text,
@@ -287,7 +287,7 @@
     left: 270px;
     right: 0.5vw;
     top: 250px;
-    bottom: 50px;
+    bottom: 30px;
     position: absolute;
     border-radius: 20px;
 
@@ -315,7 +315,7 @@
     position: absolute;
     width: 250px;
 
-    bottom: 60px;
+    bottom: 25px;
 
 }
 

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api';
 import { check_checkboxes, check_selected } from './ms1_main';
 import { createBottomRow } from './ms1_table';
+import { saveCsv } from './ms1_io';
 
 
 export async function identify() {
@@ -24,13 +25,10 @@ export async function identify() {
     let massWindow: string = (document.getElementById("mzWindow") as HTMLInputElement)!.value as string;
     let input_masses: string[] = get_ms1_input_peaks();
 
-    console.log(met_selected, matrix_selected, met_type, adducts, mass_error_input, massWindow)
     let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler", {met: met_selected, mat: matrix_selected, typ: met_type, 
                                                     adducts:adducts, massError: mass_error_input, masses: input_masses,
                                                     mzwindow: massWindow});
-    console.log("done with getting the results");
     fill_ms1_results(ms1_results_data);
-    console.log("done filling the results");
 }
 
 function parse_cell_text(cell: Element) {
@@ -55,6 +53,15 @@ function parse_cell_text(cell: Element) {
     } else {
         return innerHTML;
     }
+}
+
+export async function get_adjusted_ms1() {
+    let inputMasses: string[] = get_ms1_input_peaks();
+    let massErrorInput: string = (document.getElementById("ms1-error-input-text") as HTMLInputElement)!.value as string;
+    let adjusted_ms1s: Record<string, string>[] = await invoke("calculate_adjusted_mass", {masses:inputMasses, massError: massErrorInput});
+    const dataRows = adjustedProcessDataGroup(adjusted_ms1s);
+    console.log(dataRows);
+    saveCsv(dataRows.oMass, dataRows.aMass);
 }
 
 function get_ms1_input_peaks() {
@@ -110,7 +117,6 @@ function createDataCells(data: string) {
 }
 
 async function renderImagesAsync(names_for_img: string[], smiles_for_img: string[]): Promise<HTMLElement> {
-    console.log(smiles_for_img);
     const image_area = document.createElement("td");
     image_area.setAttribute("colspan", "10");
 
@@ -172,7 +178,6 @@ async function fill_ms1_results(ms1_results_data:  Array<Array<Record<string, st
 
         topRow.addEventListener('click', async () => {
             topRow.classList.toggle('clicked'); // Toggle the 'clicked' class on the parent row
-            console.log("Hello", topRow.id);
             let bottomRow = document.getElementById("hidden-row-" + index);
         
             // Check if topRow has the 'clicked' class
@@ -189,7 +194,6 @@ async function fill_ms1_results(ms1_results_data:  Array<Array<Record<string, st
         // Create the bottom row with images if names are present
         if (dataRows.names.length > 0) {
             const bottomRow = createBottomRow(index, dataRows.names, dataRows.smiles);
-            console.log(bottomRow);
             fragment.appendChild(bottomRow);
             
         }
@@ -244,8 +248,22 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
     };
 }
 
+function adjustedProcessDataGroup(resultGroup: Record<string, string>[]) {
+    let oMass: string[] = [];
+    let aMass: string[] = [];
+
+    for (const result of resultGroup) {
+        oMass.push(formNumber(result.oMass));
+        aMass.push(formNumber(result.aMass));
+    }
+
+    return {
+        oMass,
+        aMass,
+    };
+}
+
 function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles?: string[]; names_for_img?: string[]; formula: any; }, index: number) {
-    console.log(dataRows.formula);
     const row = document.createElement("tr");
     row.className = "data";
     row.id = "data-" + index;
@@ -262,7 +280,6 @@ function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: 
         dataRows.tMass,
         dataRows.ms2
     ];
-
     for (const cellData of dataCells) {
         row.appendChild(createDataCells(cellData.join("<br>")));
     }

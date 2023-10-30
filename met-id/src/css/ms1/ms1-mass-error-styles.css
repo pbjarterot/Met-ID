@@ -42,7 +42,7 @@
     grid-template-rows: 200px;
     grid-gap: 15px;
     padding: 10px;
-    margin-bottom: 60px;
+    margin-bottom: 30px;
     width: 100%;
 
   }
@@ -66,7 +66,7 @@
   .manual-mass-error-plot-div,
   .manual-mass-error-table-div,
   .manual-mass-error-top-div {
-    height: 200px;
+    height: 210px;
     width: 99%;
     border-radius: 10px;
     border: 1px solid #000; /* Change border shorthand */
@@ -117,8 +117,8 @@
 
 .ms1-manual-error-button {
 	display: flex;
-	height: 30px;
-  width: 45%;
+	height: 35px;
+  width: 47%;
 	padding: 0;
 	background: #909090;
 	border: none;
@@ -126,14 +126,16 @@
 	border-radius: 8px;
 	overflow: hidden;
 	font-family: "Quicksand", sans-serif;
-	font-size: 16px;
+	font-size: 15px;
 	font-weight: 500;
 	cursor: pointer;
   text-align: center;
 }
 
 
-
+#ms1-manual-error-add-button {
+  margin-bottom: 15px;
+}
 
 .ms1-manual-error-button-text,
 .ms1-manual-error-button-icon {
@@ -151,7 +153,7 @@
 }
 
 .ms1-manual-error-button-icon {
-    width: 18%;
+    width: 12%;
     font-size: 2em;
     background: rgba(0, 0, 0, 0.30);
     padding: 0 10px;
@@ -203,7 +205,7 @@
 .ms1-manual-error-button-container {
   display: flex;
   justify-content: space-between; 
-  margin: 10px;
+  margin: 5px;
 }
 
 #manual-mass-error-scatterplot {

@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { invoke } from '@tauri-apps/api';
+import { convertTableToCSV, importFromCSV } from './ms1_io';
 
 function mass_error_slidein() {
     const slideInContent = document.getElementById("slide-in-bottom-content");
@@ -14,20 +15,48 @@ function mass_error_slidein() {
             <p class="mass-error-manual-text">Observed m/z</p>
             <input class="mass-error-manual-input" id="mass-error-manual-input-observed" placeholder="0.0"></input>
           </div>
+          <!-- 
           <div class="mass-error-manual-input-div-lock">
             <p class="mass-error-manual-text">Lockmass m/z</p>
             <input class="mass-error-manual-input" id="mass-error-manual-input-lock" placeholder="0.0"></input>
           </div>
+          -->
           <div class="ms1-manual-error-button-container">
             <button class="ms1-manual-error-button" id="ms1-manual-error-add-button">
-              <span class="ms1-manual-error-button-text">Add</span> 
+              <span class="ms1-manual-error-button-text">Add to list</span> 
               <span class="ms1-manual-error-button-icon">
               <ion-icon name="add-circle-outline"></ion-icon>
               </span>
             </button>
-
+          </div>
+          <!-- 
+          <div class="ms1-manual-error-button-container">
+            <button class="ms1-manual-error-button" id="ms1-manual-error-add-button">
+              <span class="ms1-manual-error-button-text">Use List</span> 
+              <span class="ms1-manual-error-button-icon">
+              <ion-icon name="arrow-forward-circle-outline"></ion-icon>
+              </span>
+            </button>
+          </div>
+          -->
+          <div class="ms1-manual-error-button-container">
+            <button class="ms1-manual-error-button" id="ms1-manual-error-import-button">
+              <span class="ms1-manual-error-button-text">Import List</span> 
+              <span class="ms1-manual-error-button-icon">
+              <ion-icon name="arrow-up-circle-outline"></ion-icon>
+              </span>
+            </button>
+          </div>
+          <div class="ms1-manual-error-button-container">
+            <button class="ms1-manual-error-button" id="ms1-manual-error-export-button">
+              <span class="ms1-manual-error-button-text">Export List</span> 
+              <span class="ms1-manual-error-button-icon">
+              <ion-icon name="arrow-down-circle-outline"></ion-icon>
+              </span>
+            </button>
           </div>
         </div>
+      </div>
         <div class="manual-mass-error-table-div">
             <table class="ms1-mass-error-table" id="ms1-mass-error-table">
                 <thead>
@@ -37,7 +66,7 @@ function mass_error_slidein() {
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="ms1-mass-error-table-body">
                     <!-- Add rows as needed -->
                 </tbody>
             </table>
@@ -64,12 +93,23 @@ function mass_error_slidein() {
     const plotData = new PlotData("#manual-mass-error-plot-div");
 
     const addErrorPointButton = document.getElementById("ms1-manual-error-add-button");
+    const importErrorPointsButton = document.getElementById("ms1-manual-error-import-button");
+    const exportErrorPointsButton = document.getElementById("ms1-manual-error-export-button");
     const theoretical_err = document.getElementById("mass-error-manual-input-theoretical") as HTMLInputElement;
     const observed_err = document.getElementById("mass-error-manual-input-observed") as HTMLInputElement;
     addErrorPointButton?.addEventListener("click", () => {
-
-      plotData.addPoint(parseFloat(theoretical_err.value), parseFloat(observed_err.value));
+      plotData.addPoint(parseFloat(theoretical_err.value), parseFloat(observed_err.value), true);
     });
+
+    importErrorPointsButton?.addEventListener("click", async () => {
+      let data: string[][] = await importFromCSV();
+      add_to_error_table(data, plotData);
+    })
+
+    exportErrorPointsButton?.addEventListener("click", () => {
+      convertTableToCSV("ms1-mass-error-table");
+    })
+
     //plotData.updateScatterplot();
     // Update scatterplot on div mouseover
     //const div = d3.select("#slide-in-bottom");
@@ -77,6 +117,26 @@ function mass_error_slidein() {
     //div.on('mouseout', () => setTimeout(plotData.updateSize, 300));
     
   }
+function parse_error_number(num: string) {
+  const parsedNumber: number = parseFloat(num);
+  if (!isNaN(parsedNumber)) {
+    return parsedNumber;
+} else {
+    return 0;
+}
+}
+  
+
+function add_to_error_table(file_contents: string[][], plotData: PlotData) {
+    const tbody = document.getElementById("ms1-mass-error-table-body")
+        tbody!.innerHTML = ""
+
+        for (let i = 0; i < file_contents.length; i++) {
+            console.log(file_contents);
+            let dat: Datum = {x: parse_error_number(file_contents[i][0]), y: parse_error_number(file_contents[i][1])}
+            plotData.addPoint(dat.x, dat.y, false);
+        }
+}
   
 
 
@@ -190,7 +250,6 @@ class PlotData {
   }
   private onMouseLeave() {
     this.updateSize(200);
-
   }
 
   public updateSize(height: number): void {
@@ -272,7 +331,6 @@ class PlotData {
     this.updateScale();
   }
 
-
   public updateScatterplot(): void {
     // Bind data
     const circles = this.svg.selectAll<SVGCircleElement, Datum>("circle").data(this.data);
@@ -303,7 +361,7 @@ class PlotData {
       .style("fill", "white")
       .style("font-size", "12px");
 
-    this.fitEquation();
+    //this.fitEquation();
   }
   
   private updateScale(): void {
@@ -327,11 +385,15 @@ class PlotData {
     this.svg.select<SVGSVGElement>("g.y-axis").call(yAxis);
   }
 
-
-
-  public addPoint(xValue: number, yValue: number): void {
-    let newYvalue = this.ppmDifference(xValue, yValue);
-    const newDataPoint: Datum = { x: xValue, y: newYvalue };
+  public addPoint(xValue: number, yValue: number, calcppm: boolean): void {
+    let newDataPoint: Datum;
+    if (calcppm) {
+      let newYvalue = this.ppmDifference(xValue, yValue);
+      newDataPoint = { x: xValue, y: newYvalue };
+    } else {
+      newDataPoint = { x: xValue, y: yValue };
+    }
+    console.log(newDataPoint);
     this.data.push(newDataPoint);
   
     this.updateScale();
@@ -340,7 +402,7 @@ class PlotData {
     this.fitEquation();
   }
   
-  private addToTable(dataPoint: Datum): void {
+  public addToTable(dataPoint: Datum): void {
     const table = document.getElementById("ms1-mass-error-table") as HTMLTableElement;
     if (table) {
       const row = table.insertRow();
@@ -359,6 +421,9 @@ class PlotData {
       deleteButton.addEventListener("click", () => {
         this.deletePoint(dataPoint);
         table.deleteRow(row.rowIndex);
+        this.updateScale()
+        this.fitEquation();
+        console.log("deleted a row")
       });
   
       deleteCell.appendChild(deleteButton);
@@ -371,6 +436,8 @@ class PlotData {
       this.data.splice(index, 1);
       this.updateScale();
       this.updateScatterplot();
+      console.log(this.data);
+      this.fitEquation();
     }
   }
 
@@ -387,48 +454,48 @@ class PlotData {
     let mass_error_input = document.getElementById("ms1-error-input-text") as HTMLInputElement;
 
 
-      const tuples: [number, number][] = this.data.map(datum => [datum.x, datum.y])
+      if (this.data.length > 0) {
+        const tuples: [number, number][] = this.data.map(datum => [datum.x, datum.y])
       let linear_coeffs: number[] = await invoke("mass_error_regression", {data: tuples})
-
       
       mass_error_input!.value = linear_coeffs.toString();
 
       // Update the plot with the linear equation
       this.updatePlotWithQuadraticEquation(linear_coeffs);
+      }
+      
     
   }
 
-private updatePlotWithQuadraticEquation(equation: number[]): void {
-  // Remove any existing line or curve
-  this.svg.select('.equation-line').remove();
-  this.svg.select('.equation-curve').remove();
+  private updatePlotWithQuadraticEquation(equation: number[]): void {
+    // Remove any existing line or curve
+    this.svg.select('.equation-line').remove();
+    this.svg.select('.equation-curve').remove();
 
-  const a = equation[0];
-  const b = equation[1];
-  const c = equation[2];
-  
+    const a = equation[0];
+    const b = equation[1];
+    const c = equation[2];
+    
 
-  // Generate a curve using the quadratic equation
-  const xValues = d3.range(this.xScale.domain()[0], this.xScale.domain()[1], 0.1);
-  const curveData = xValues.map((x) => ({ x, y: a * x * x + b * x + c }));
+    // Generate a curve using the quadratic equation
+    const xValues = d3.range(this.xScale.domain()[0], this.xScale.domain()[1], 0.1);
+    const curveData = xValues.map((x) => ({ x, y: a * x * x + b * x + c }));
 
-  // Create a curve generator
-  const curve = d3.line<{ x: number; y: number }>()
-    .x((d) => this.xScale(d.x))
-    .y((d) => this.yScale(d.y));
+    // Create a curve generator
+    const curve = d3.line<{ x: number; y: number }>()
+      .x((d) => this.xScale(d.x))
+      .y((d) => this.yScale(d.y));
 
-  // Append the curve to the plot area
-  this.svg.select<SVGSVGElement>('g.plot-area')
-    .append('path')
-    .attr('class', 'equation-curve')
-    .datum(curveData)
-    .attr('d', curve)
-    .style('stroke', 'red')
-    .style('stroke-width', '2')
-    .style('fill', 'none');
-}
-
-  
+    // Append the curve to the plot area
+    this.svg.select<SVGSVGElement>('g.plot-area')
+      .append('path')
+      .attr('class', 'equation-curve')
+      .datum(curveData)
+      .attr('d', curve)
+      .style('stroke', 'red')
+      .style('stroke-width', '2')
+      .style('fill', 'none');
+  }
 }
 
 
