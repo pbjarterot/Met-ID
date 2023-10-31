@@ -175,8 +175,8 @@ fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts: Vec
         return query;
     } else {
         query += &format!(" WHERE {met_type} {functional_group}", 
-            met_type = build_condition_query(&typ, &met_type_map, true).unwrap(),
-            functional_group = build_condition_query(&adducts, &functional_groups_map, false).unwrap())[..];
+            met_type = build_condition_query(&typ, &met_type_map, false).unwrap(),
+            functional_group = build_condition_query(&adducts, &functional_groups_map, true).unwrap())[..];
         return query;
     }
 }

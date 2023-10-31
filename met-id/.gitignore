@@ -22,7 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
 *.spec
+*.db-shm
+*.db-wal
 
 src-tauri/pyinstaller/build/*
 src-tauri/pyinstaller/dist/*
+
+ms2_query/*
+ms1_query/*

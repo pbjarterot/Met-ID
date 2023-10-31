@@ -102,11 +102,16 @@ pub fn calculate_adjusted_mass(masses: Vec<String>, mass_error: String) -> Vec<H
 pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<String>, db_mnames: Vec<String>, 
                     db_accessions: Vec<String>, db_smiles: Vec<String>, db_formulas: Vec<String>, mass_error: String, 
                     mass_window: String) -> Vec<Vec<HashMap<String, String>>>{
-
+    
     let mut res: Vec<Vec<HashMap<String, String>>> = Vec::new();
     let window: f64 = mass_window.parse::<f64>().unwrap();
     let coefficients: Option<EquationCoefficients> = parse_equation(&mass_error);
 
+    for ((mass, name), mname) in db_masses.iter().zip(&db_names).zip(&db_mnames){
+        if mass > &421.0 && mass < &422.0 {
+            println!("{:?}\t{:?}\t{:?}", mass, name, mname);
+        }
+    }
 
     for mass in input_masses {
         let mut res_vec: Vec<HashMap<String, String>> = Vec::new();
