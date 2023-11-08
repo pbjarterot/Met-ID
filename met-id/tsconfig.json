@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "CommonJS",
     "lib": ["ESNext", "DOM", "es2017", "dom", "ES6"],
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
@@ -9,7 +9,7 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "types": ["jQuery", "node", "d3"],
+    "types": ["jQuery", "node", "d3", "jest"],
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
