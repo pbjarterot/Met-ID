@@ -26,7 +26,8 @@
           {"name": "pyinstaller/dist/metabolite", "sidecar": true},
           {"name": "pyinstaller/dist/metabolite_for_db", "sidecar": true},
           {"name": "pyinstaller/dist/regression", "sidecar": true},
-          {"name": "pyinstaller/dist/validation", "sidecar": true}
+          {"name": "pyinstaller/dist/validation", "sidecar": true},
+          {"name": "pyinstaller/dist/msms_to_db", "sidecar": true}
         ]
         
       },
@@ -66,7 +67,8 @@
         "pyinstaller/dist/metabolite",
         "pyinstaller/dist/metabolite_for_db",
         "pyinstaller/dist/regression",
-        "pyinstaller/dist/validation"
+        "pyinstaller/dist/validation",
+        "pyinstaller/dist/msms_to_db"
       ],
       "icon": [
         "icons/32x32.png",
