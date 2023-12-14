@@ -1,7 +1,7 @@
 .tabs {
 	position: relative;
 	display: flex;
-	min-height: 800px;
+	min-height: 650px;
 	border-radius: 18px 18px 20px 20px;
 	overflow: hidden;
   height: 100%;

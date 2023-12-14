@@ -292,17 +292,17 @@
     display: contents; /* Hide the div by default */
   }
   
-  .hidden-row {
+.hidden-row {
     display: none; /* Hide the hidden row initially */
-  }
-  
-  .clicked + .hidden-row {
+}
+
+.clicked + .hidden-row {
     display: table-row; /* Show the hidden row when the row is clicked */
     /*height: auto;*/ /* Set the height to auto for proper adjustment */
     height: 100px;
-  }
-  
-  .row-details {
+}
+
+.row-details {
     display: grid;
     left: 0;
     right: 0;
