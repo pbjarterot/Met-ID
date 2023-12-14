@@ -12,9 +12,10 @@ export interface SpectrumPoint {
 
 export type SpectrumMap = {[key: string]: SpectrumPoint[]}
 
-export async function draw(index: number, identifier: string, adduct: string) {
-    const fetchData = async (identifier: string, adduct: string): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
-        const result = await invoke<string>('get_msms_spectra', { identifier, adduct });
+
+export async function draw(index: number, identifier: string, adduct: string, cid: string) {
+    const fetchData = async (identifier: string, adduct: string, cid: string): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
+        const result = await invoke<string>('get_msms_spectra', { identifier, adduct, cid });
         const resultMap = JSON.parse(result) as SpectrumMap;
 
         const keys: string[] = [];
@@ -31,8 +32,8 @@ export async function draw(index: number, identifier: string, adduct: string) {
 	
 
     const colors = ["red", "green", "blue", "purple", "orange", "yellow"];
-    const {keys: labels, values: dat} = await fetchData(identifier, adduct);
-	const shouldIncludeArray: boolean[] = new Array(labels.length).fill(true);
+    const {keys: labels, values: dat} = await fetchData(identifier, adduct, cid);
+		const shouldIncludeArray: boolean[] = new Array(labels.length).fill(true);
 
     const margin = { top: 40, right: 30, bottom: 30, left: 70 };
     const width = 1550 - margin.left - margin.right;
@@ -152,14 +153,15 @@ export async function draw(index: number, identifier: string, adduct: string) {
 					if(myDiv) {
 						let elementDiv: HTMLDivElement = document.createElement("div");
 						elementDiv.className = "ms2-to-compare-button";
-						elementDiv.id = `ms2-to-compare-button-${i}`
+						elementDiv.id = `ms2-to-compare-button-${name}-${adduct}-${labels[i]}`
 
 						let textSpan: HTMLSpanElement = document.createElement("span");
 						textSpan.textContent = `${name} ${adduct} ${labels[i]}`;
 						textSpan.className = "ms2-to-compare-textspan";
+						textSpan.id = `${identifier}-${adduct}-${labels[i]}`;
 						let iconSpan: HTMLSpanElement = document.createElement("span");
 						iconSpan.className = "ms2-to-compare-iconspan";
-						iconSpan.id = "ms2-to-compare-iconspan-" + i;
+						iconSpan.id = `ms2-to-compare-iconspan-${name}-${adduct}-${labels[i]}`;
 
 						let icon: HTMLElement = document.createElement("ion-icon");
 						icon.setAttribute("name", "close-outline");
@@ -171,8 +173,8 @@ export async function draw(index: number, identifier: string, adduct: string) {
 						myDiv.append(elementDiv);
 
 
-						document.getElementById('ms2-to-compare-iconspan-' + i)!.addEventListener('click', function() {
-							let targetDiv = document.getElementById('ms2-to-compare-button-' + i);
+						document.getElementById(`ms2-to-compare-iconspan-${name}-${adduct}-${labels[i]}`)!.addEventListener('click', function() {
+							let targetDiv = document.getElementById(`ms2-to-compare-button-${name}-${adduct}-${labels[i]}`);
 							if (targetDiv) {
 								targetDiv.parentNode!.removeChild(targetDiv);
 							}

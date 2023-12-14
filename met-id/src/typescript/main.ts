@@ -10,7 +10,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('titlebar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
 	document.getElementById('titlebar-close')!.addEventListener('click', () => appWindow.close());
 
-	document.getElementById("tab-2")?.click();
+	//document.getElementById("tab-2")?.click();
 	//document.getElementById("ms1-sidebar-add-matrix")?.click();
 });
 

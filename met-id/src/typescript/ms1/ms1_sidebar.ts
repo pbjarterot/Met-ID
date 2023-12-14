@@ -29,6 +29,27 @@ export async function identify() {
                                                     adducts:adducts, massError: mass_error_input, masses: input_masses,
                                                     mzwindow: massWindow});
     fill_ms1_results(ms1_results_data);
+
+    count_identified_percent();
+}
+
+function count_identified_percent() {
+    const table = document.getElementById("ms1-datatable") as HTMLTableElement;
+    const rows = table.querySelectorAll('tr');
+    var numRows: number = 0;
+    var numIdentified: number = 0;
+    rows.forEach((row) => {
+        if (row.className === "data") {
+            console.log(row.className);
+            numRows += 1;
+            const cells = row.querySelectorAll('td, th');
+            if (cells.length > 0 && cells[2].textContent != "" ) {
+                numIdentified += 1
+            }
+        }
+        
+    });
+    console.log(numRows, numIdentified, numIdentified/numRows)
 }
 
 function parse_cell_text(cell: Element) {

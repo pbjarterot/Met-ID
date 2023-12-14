@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/tauri";
+import { open } from '@tauri-apps/api/dialog';
 import { generate_ms2_small_results_card, small_results_card_expanding } from "./ms2_small_results_card";
 import { compare_msms } from "./ms2_compare";
-import { get_msms_from_mzml } from "./ms2_sidebar";
+import { get_msms_from_mzml, match_msms } from "./ms2_io";
+import { showPopup } from "./ms2_popup";
 
 //var stopRendering: boolean = false;
 
@@ -21,7 +23,7 @@ slider3!.oninput = function() {
     output3!.innerHTML = (this as HTMLInputElement).value + " mDa";
 }
 
-interface MSMSDatabase {
+export interface MSMSDatabase {
 	names: string[],
 	identifiers: string[],
 	adducts: string[],
@@ -29,6 +31,7 @@ interface MSMSDatabase {
 	windows: string[],
 	tofs: string[],
 	mzs: string[],
+	cossim: number[]
 }
 
 
@@ -46,28 +49,40 @@ const checkBackendReadiness = async () => {
   }
 }
 
-
 function delay(ms: number): Promise<void> {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 
 window.addEventListener("DOMContentLoaded", async () => {
 	checkBackendReadiness();
 	
 	document.getElementById("ms2-sidebar-open-file-button")!.addEventListener("click", async () => get_msms_from_mzml());
+	document.getElementById("ms2-sidebar-match-button")!.addEventListener("click", async () => match_msms());
+	document.getElementById("ms2-sidebar-add-to-db-button")!.addEventListener("click", async () => add_msms_to_db());
 	
-	await delay(4000)
+	await delay(100)
 	const msms: MSMSDatabase = await invoke("get_msms", {});
-	
-	await renderSmallItems(msms[0], msms[3], msms[2], msms[6], msms[1]);
 
+	await renderSmallItems(msms[0], msms[3], msms[2], msms[6], msms[1], []);
 	document.getElementById("ms2-compare")!.addEventListener("click", () => compare_msms());
 
 	//Searchbar listeners
 	addMSMSSearchbarListeners();
 
 });
+
+
+
+
+async function add_msms_to_db() {
+	console.log("Adding to DB")
+	
+	let result = await open({ directory: false, multiple: false, filters: [{ name: 'mzML', extensions: ['mzML'] }] }) as unknown as string;
+
+
+	showPopup(result);
+
+}
 
 
 
@@ -83,21 +98,31 @@ function addMSMSSearchbarListeners() {
 		if (event.target instanceof HTMLInputElement) {
 			// Trigger your update function
 			//stopRendering = true;
-			updateMSMSResults();
+			let a: MSMSDatabase = {
+				names: [],
+				identifiers: [],
+				adducts: [],
+				cids: [],
+				windows: [],
+				tofs: [],
+				mzs: [],
+				cossim: []
+			};
+			updateMSMSResults(false, a);
 		}
 		});
 	}
 }
 
-
 function isEmpty(obj: object): boolean {
     return Object.keys(obj).length === 0;
 }
 
-
 // Your update function
-async function updateMSMSResults() {
+export async function updateMSMSResults(sorted: boolean, msms: MSMSDatabase) {
 	cancellationToken.isCancelled = false;
+	//console.log(msms);
+	//let msms: MSMSDatabase;
 	
 	let name = (document.getElementById("msms-searchbar") as HTMLInputElement)!.value;
 	let fragment = (document.getElementById("msms-searchbar-fragment") as HTMLInputElement)!.value;
@@ -110,11 +135,20 @@ async function updateMSMSResults() {
 		console.log("Operation cancelled");
 		return;
 	}
-	if (fragment === "" && ms1mass === "") {
-		return
-	}
-	const msms: MSMSDatabase = await invoke("ms2_search_spectra", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
-	//console.log(msms);
+	if (sorted === false) {
+		let [names, identifiers, adducts, cids, mzs, _cossim]: [string[], string[], string[], string[], string[], number[]] = await invoke("ms2_search_spectra", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
+		let a: MSMSDatabase ={
+			names: names,
+			identifiers: identifiers,
+			adducts: adducts,
+			cids: cids,
+			windows: [],
+			tofs: [],
+			mzs: mzs,
+			cossim: new Array(mzs.length).fill(0),
+		};
+		msms = a;
+	} 
 
 	// Check the cancellation token again
 	if (cancellationToken.isCancelled) {
@@ -123,10 +157,11 @@ async function updateMSMSResults() {
 	}
 
 	if (isEmpty(msms)) {
+		console.log("msms empty")
 		return;
 	}
-	await renderSmallItems(msms[0], msms[3], msms[2], msms[6], msms[1]);
-	//console.log("Value changed, update triggered.", name);
+													//names			cids			adducts					mzs			identifiers				cossim
+	await renderSmallItems(msms.names, msms.cids, msms.adducts, msms.mzs, msms.identifiers, msms.cossim);
 }
 
 
@@ -142,13 +177,13 @@ let cancellationToken: CancellationToken = { isCancelled: false };
 
 
 
-async function renderSmallItems(names: string[], cids: string[], adducts: string[], parent_mzs: string[] | number[], identifiers: string[]) {
+async function renderSmallItems(names: string[], cids: string[], adducts: string[], parent_mzs: string[] | number[], identifiers: string[], cossim: number[]) {
 	const res_div = document.querySelector("#ms2-results-body") as HTMLDivElement;
 	res_div.innerHTML = "";
 	const batchSize = 3;
 	let i = 0;
 
-	type myTuple = [string, string];
+	type myTuple = [string, string, string];
 	let already_done: myTuple[] = [];
 
 
@@ -163,17 +198,18 @@ async function renderSmallItems(names: string[], cids: string[], adducts: string
 			if (cancellationToken.isCancelled) {
 				console.log("Operation cancelled");
 				return;
+
 			}
-			if (!already_done.some(([name, adduct]) => name === names[i] && adduct === adducts[i])) {
-				template.innerHTML = generate_ms2_small_results_card(names[i], cids[i], adducts[i], parent_mzs[i], i);
+			if (!already_done.some(([name, adduct, cid]) => name === names[i] && adduct === adducts[i] && cid === cids[i])) {
+				template.innerHTML = generate_ms2_small_results_card(names[i], cids[i], adducts[i], parent_mzs[i], cossim[i], i);
 				const templateContent = template.content;
 				res_div.appendChild(templateContent);
 				let a = document.getElementById("ms2-small-results-card-" + i.toString()) as HTMLDivElement;
 				let b = a.querySelector("div.ms2-small-results-card-name") as HTMLDivElement;
-				small_results_card_expanding(a, b, identifiers[i], i, adducts[i]);
-				already_done.push([names[i], adducts[i]])
+				small_results_card_expanding(a, b, identifiers[i], i, adducts[i], cids[i]);
+				already_done.push([names[i], adducts[i], cids[i]])
 			}
-            i++
+        i++
 		}
 		
 		if (i < names.length-1) {
@@ -194,6 +230,7 @@ export interface All_spectra_database {
 	cid: string[],
 	fragment: string[]
 }
+
 
 //const all_spectra: All_spectra_database = await invoke("load_msms");
 
