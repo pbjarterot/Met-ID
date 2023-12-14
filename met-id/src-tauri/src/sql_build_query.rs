@@ -74,7 +74,6 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
             build_custom_query(&args.adducts, &functional_groups_map, "fg").unwrap_or("".to_string())
         }
     };
-    println!("FG OR ADDUCT: {:}", fg_or_adduct);
 
 
     if !count {
@@ -125,7 +124,7 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
     
 
     let a: String = if if_fmp10 {
-        format!(r#"WHERE CASE WHEN adducts.adduct='M+FMP10' AND derivatized_by.fmp = 1 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+Anth', 'M+2Anth', 'M+2Anth_2') AND derivatized_by.fmp = 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+Anth', 'M+2Anth', 'M+2Anth_2', 'M+3Anth1', 'M+3Anth2', 'M+3Anth3') AND derivatized_by.fmp>2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 ELSE 0 END=1"#, 
+        format!(r#"WHERE CASE WHEN adducts.adduct='M+FMP10' AND derivatized_by.fmp >= 1 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b') AND derivatized_by.fmp >= 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b', 'M+3FMP10a', 'M+3FMP10b', 'M+3FMP10c') AND derivatized_by.fmp > 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 ELSE 0 END=1"#, 
         max=&max_mz.to_string(), min=&min_mz.to_string(), db=db_string, met_type = met_type_string, func_group = build_query_with_table(&args.adducts, &functional_groups_map, "functional_groups").unwrap())
     } else if pos_neg {
         format!(r#"WHERE ({met_type}) AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
@@ -158,7 +157,7 @@ pub fn build_query_with_table(types: &[String], mapping: &HashMap<&str, &str>, t
     }
 
     let query = types.iter()
-        .filter_map(|t| mapping.get(t.as_str()).map(|&field| format!("{}.{} = 1", table, field)))
+        .filter_map(|t| mapping.get(t.as_str()).map(|&field| format!("{}.{} >= 1", table, field)))
         .collect::<Vec<String>>()
         .join(" OR ");
 

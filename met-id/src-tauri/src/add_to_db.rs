@@ -6,15 +6,14 @@ pub mod add_to_db_functions {
     use crate::sql::check_if_table_exists;
     use crate::sidecar::sidecar_function;
     //use crate::metabolite::{ Metabolite, single_functional_group };
-    use crate::database_setup::get_connection;
+    use crate::database_setup::{get_connection, get_msms_connection};
     use std::collections::HashMap;
     use std::iter::repeat;
     use std::sync::mpsc;
 
     fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
         smiles.insert(0, smarts.to_owned());
-
-        let sidecar_output = sidecar_function("metabolite".to_string(), smiles.to_owned());
+        let sidecar_output: std::prelude::v1::Result<String, crate::sidecar::CommandError> = sidecar_function("metabolite".to_string(), smiles.to_owned());
         let result: Vec<usize> = match sidecar_output {
             Ok(s) => {
                 s.trim_end_matches('\r')
@@ -35,7 +34,6 @@ pub mod add_to_db_functions {
         smarts_vec.insert(0, smiles.to_owned());
 
         let sidecar_output = sidecar_function("metabolite_for_db".to_string(), smarts_vec.to_owned());
-        println!("{:?}", sidecar_output);
 
         parse_input(&sidecar_output.unwrap()[..], smarts_map).unwrap()
     }
@@ -144,7 +142,6 @@ pub mod add_to_db_functions {
     
             processed_rows += batch_smiles.len();
             let progress = (processed_rows as f32 / total_rows as f32) * 100.0;
-            println!("{:?}", progress);
             progress_sender.send(progress).unwrap();
         }
     }
@@ -207,7 +204,6 @@ pub mod add_to_db_functions {
                 }
                 Err(_) => {
                     ()
-                    //println!("Warning: {} does not exist or could not be queried.", table);
                 }
             }
         }
@@ -319,6 +315,109 @@ pub mod add_to_db_functions {
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
         conn.execute(&sql, values.as_slice()).unwrap();
     }
+
+    pub fn fill_user_msms(bin_data: Vec<u8>) {
+        // Convert &[u8] to Vec<u8>
+        let bin_data_vec = bin_data.to_vec();
+    
+        // Change data to Vec of tuples with String and Box<dyn ToSql>
+        let data: Vec<(String, Box<dyn ToSql>)> = vec![
+            ("name".to_string(), Box::new("User Input".to_string())),
+            ("identifier".to_string(), Box::new("USER2".to_string())),
+            ("adduct".to_string(), Box::new("1".to_string())),
+            ("cid".to_string(), Box::new("0eV".to_string())),
+            ("window".to_string(), Box::new("1Da".to_string())),
+            ("tof".to_string(), Box::new("0.0".to_string())),
+            ("mz".to_string(), Box::new("0.0".to_string())),
+            ("spectra".to_string(), Box::new(bin_data_vec)),
+        ];
+    
+        let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("connecting to MSMS db").unwrap();
+    
+        // Start a transaction
+        conn.execute("BEGIN", []).unwrap();
+    
+        // Prepare an update statement
+        let update_sql = format!(
+            "UPDATE MSMS SET {} WHERE identifier = ?",
+            data.iter().map(|(col, _)| format!("{} = ?", col)).collect::<Vec<_>>().join(", ")
+        );
+        let binding = "USER2".to_string();
+        let update_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).chain(std::iter::once(&binding as &dyn ToSql)).collect();
+        let updated_rows = conn.execute(&update_sql, &*update_values).unwrap();
+    
+        if updated_rows == 0 {
+            // If no rows were updated, do an insert
+            let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
+            let placeholders: Vec<&str> = std::iter::repeat("?").take(data.len()).collect();
+    
+            let insert_sql = format!(
+                "INSERT INTO MSMS ({}) VALUES ({})",
+                column_names.join(", "),
+                placeholders.join(", ")
+            );
+    
+            // Map the data to a vector of references to the trait object
+            let insert_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).collect();
+            conn.execute(&insert_sql, &*insert_values).unwrap();
+        }
+    
+        // Commit the transaction
+        conn.execute("COMMIT", []).unwrap();
+    }
+    /* 
+    pub fn add_to_USERMSMS() {
+        
+        // Convert &[u8] to Vec<u8>
+        //let bin_data_vec = bin_data.to_vec();
+    
+        // Change data to Vec of tuples with String and Box<dyn ToSql>
+        let data: Vec<(String, Box<dyn ToSql>)> = vec![
+            ("name".to_string(), Box::new("User Input".to_string())),
+            ("identifier".to_string(), Box::new("USER2".to_string())),
+            ("adduct".to_string(), Box::new("1".to_string())),
+            ("cid".to_string(), Box::new("0eV".to_string())),
+            ("window".to_string(), Box::new("1Da".to_string())),
+            ("tof".to_string(), Box::new("0.0".to_string())),
+            ("mz".to_string(), Box::new("0.0".to_string())),
+            ("spectra".to_string(), Box::new(bin_data_vec)),
+        ];
+    
+        let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("connecting to MSMS db").unwrap();
+    
+        // Start a transaction
+        conn.execute("BEGIN", []).unwrap();
+    
+        // Prepare an update statement
+        let update_sql = format!(
+            "UPDATE MSMS SET {} WHERE identifier = ?",
+            data.iter().map(|(col, _)| format!("{} = ?", col)).collect::<Vec<_>>().join(", ")
+        );
+        let binding = "USER2".to_string();
+        let update_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).chain(std::iter::once(&binding as &dyn ToSql)).collect();
+        let updated_rows = conn.execute(&update_sql, &*update_values).unwrap();
+    
+        if updated_rows == 0 {
+            // If no rows were updated, do an insert
+            let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
+            let placeholders: Vec<&str> = std::iter::repeat("?").take(data.len()).collect();
+    
+            let insert_sql = format!(
+                "INSERT INTO MSMS ({}) VALUES ({})",
+                column_names.join(", "),
+                placeholders.join(", ")
+            );
+    
+            // Map the data to a vector of references to the trait object
+            let insert_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).collect();
+            conn.execute(&insert_sql, &*insert_values).unwrap();
+        }
+    
+        // Commit the transaction
+        conn.execute("COMMIT", []).unwrap();
+        
+    }
+    */
 
     fn fill_user_endogeneity(conn: &r2d2::PooledConnection<SqliteConnectionManager>, endo_exo: &HashMap<String, bool>) {
         let column_names: Vec<String> = endo_exo.iter().map(|(col, _)| col.to_string()).collect();

@@ -14,14 +14,15 @@ fn bisect_left<T: PartialOrd>(arr: &[T], x: &T) -> usize {
     }
     lo
 }
-struct EquationCoefficients {
-    a: f64,
-    b: f64,
-    c: f64,
+#[derive(Debug, PartialEq)]
+pub struct EquationCoefficients {
+    pub a: f64,
+    pub b: f64,
+    pub c: f64,
 }
 
-fn parse_equation(input: &str) -> Option<EquationCoefficients> {
-    let values: Vec<&str> = input.split(',').collect();
+pub fn parse_equation(input: &str) -> Option<EquationCoefficients> {
+    let values: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
 
     if input.is_empty() {
         return Some(EquationCoefficients { a: 0.0, b: 0.0, c: 0.0})
@@ -53,65 +54,38 @@ fn parse_equation(input: &str) -> Option<EquationCoefficients> {
     }
 }
 
-fn calculate_y(coefficients: &EquationCoefficients, x: f64) -> Option<f64> {
+pub fn calculate_y(coefficients: &EquationCoefficients, x: f64) -> Option<f64> {
     let EquationCoefficients { a, b, c } = coefficients;
     let ppm_error: f64 = a * x * x + b * x + c;
     Some(x - (ppm_error*(x/1_000_000.0)))
 }
 
-#[tauri::command]
-pub fn calculate_adjusted_mass(masses: Vec<String>, mass_error: String) -> Vec<HashMap<String, String>> {
-    let mut input_masses: Vec<f64> = Vec::<f64>::new();
-    let mut latent_variables: Vec<String> = Vec::<String>::new();
-    for i in masses {
-        match i.parse::<f64>() {
-            Ok(num) => input_masses.push(num),
-            Err(_e ) => {
-                println!("Treating {:?} as a latent variable", i);
-                latent_variables.push(i);
-            },
-        }
+fn msms_exist(msms_db: &Vec<String>, query: String) -> String {
+    if msms_db.iter().any(|s| s == &query) {
+        return "available".to_string()
+    } else {
+        return "not-available".to_string()
     }
-
-    let mut res: Vec<HashMap<String, String>> = Vec::new();
-    let coefficients: Option<EquationCoefficients> = parse_equation(&mass_error);
-    for mass in input_masses {
-        let adj_mass: f64;
-        if let Some(ref coeff) = coefficients {
-            if let Some(result) = calculate_y(&coeff, mass) {
-                adj_mass = result;
-            } else {
-                println!("invalid_input");
-                adj_mass = mass;
-            }
-        } else {
-            println!("Invalid input");
-            adj_mass = mass;
-        }
-
-        let mut res_map: HashMap<String, String> = HashMap::new();
-        res_map.insert("oMass".to_string(), mass.to_string());
-        res_map.insert("aMass".to_string(), adj_mass.to_string());
-        res.push(res_map);
-    }
-
-    res
-
 }
+
 
 pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<String>, db_mnames: Vec<String>, 
                     db_accessions: Vec<String>, db_smiles: Vec<String>, db_formulas: Vec<String>, mass_error: String, 
-                    mass_window: String) -> Vec<Vec<HashMap<String, String>>>{
+                    mass_window: String, msms_ids: &Vec<String>) -> Vec<Vec<HashMap<String, String>>>{
     
     let mut res: Vec<Vec<HashMap<String, String>>> = Vec::new();
     let window: f64 = mass_window.parse::<f64>().unwrap();
     let coefficients: Option<EquationCoefficients> = parse_equation(&mass_error);
 
+    /* 
     for ((mass, name), mname) in db_masses.iter().zip(&db_names).zip(&db_mnames){
-        if mass > &421.0 && mass < &422.0 {
+        
+        if mass > &413.25 && mass < &413.3 {
             println!("{:?}\t{:?}\t{:?}", mass, name, mname);
         }
+        
     }
+    */
 
     for mass in input_masses {
         let mut res_vec: Vec<HashMap<String, String>> = Vec::new();
@@ -148,7 +122,7 @@ pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<Str
             res_map.insert("matrix".to_string(), " [".to_string() + &db_mnames[index] + "]");
             res_map.insert("accession".to_string(), db_accessions[index].to_string());
             res_map.insert("smiles".to_string(), db_smiles[index].to_string());
-            res_map.insert("msms".to_string(), "not-available".to_string());
+            res_map.insert("msms".to_string(), msms_exist(msms_ids, db_accessions[index].to_string()));
             res_map.insert("formula".to_string(), db_formulas[index].to_string());
             res_vec.push(res_map);
         }

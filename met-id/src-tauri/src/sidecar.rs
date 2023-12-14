@@ -23,18 +23,21 @@ pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) ->
         .expect("Failed to spawn sidecar");
     
     let (tx, rx_data) = std::sync::mpsc::channel();
-
+    println!("{:?}, {:?}", tx, rx_data);
     tauri::async_runtime::spawn(async move {
         // read events such as stdout
         while let Some(event) = rx.recv().await {
             if let CommandEvent::Stdout(line) = event {
+                println!("{:?}", &line);
                 tx.send(line).unwrap();
+                
             }
         }
     });
     // Here, we collect all the stdout lines. We could also just return the first one, depending on the requirement.
-    let mut output = String::new();
+    let mut output: String = String::new();
     while let Ok(line) = rx_data.recv() {
+        println!("{:?}", &line);
         output.push_str(&line);
     }
 

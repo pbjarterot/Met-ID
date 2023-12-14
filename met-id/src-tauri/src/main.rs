@@ -4,6 +4,7 @@
 mod files;
 mod sql;
 mod mass_match;
+mod ms2_match;
 mod regression;
 pub mod database;
 mod validation;
@@ -17,13 +18,22 @@ mod sidecar;
 mod database_setup;
 mod splashscreen;
 
+#[cfg(test)]
+mod testing;
+
 use std::path::PathBuf;
 use log::{error, info};
 use logging::LOGGER;
+use once_cell::sync::OnceCell;
 use std::panic;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use std::env;
+
+
+
+pub static MSMSPATH: OnceCell<String> = OnceCell::new(); 
+
 
 #[tauri::command]
 fn is_backend_ready() -> bool {
@@ -53,6 +63,7 @@ fn main() {
 
             let db_path: PathBuf = install_helper_functions::ensure_database_in_appdata(&app, "db.db");
             let msms_db_path: PathBuf = install_helper_functions::ensure_database_in_appdata(&app, "msms_db.db");
+            MSMSPATH.set(msms_db_path.to_string_lossy().to_string()).expect("Failed to set MSMS DB PATH");
             //let _python_path: PathBuf = install_helper_functions::ensure_python_in_appdata(&app, "");
 
             let pool: Pool<SqliteConnectionManager> = install_helper_functions::create_pool_from_app_path(&app, db_path);
@@ -74,6 +85,7 @@ fn main() {
                                                  files::read_ms1_ctrlv,
                                                  files::read_mass_error_csv,
                                                  files::save_csv,
+                                                 files::read_mzml_for_msms,
                                                  sql::sql_handler,
                                                  sql::sql_counter,
                                                  sql::get_msms,
@@ -81,13 +93,15 @@ fn main() {
                                                  sql::get_name_from_identifier_msms,
                                                  sql::find_msms_fragments,
                                                  sql::ms2_search_spectra,
+                                                 sql::match_msms_to_ui,
                                                  sql::get_functional_groups,
                                                  sql::get_matrices,
                                                  sql::get_tissues,
+                                                 //sql::add_msms_to_db,
                                                  regression::mass_error_regression,
                                                  //validation::check_smiles,
                                                  //validation::check_smarts,
-                                                 mass_match::calculate_adjusted_mass,
+                                                 //mass_match::calculate_adjusted_mass,
                                                  is_backend_ready
                                                  ])
         .run(tauri::generate_context!())
