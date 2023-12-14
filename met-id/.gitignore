@@ -31,7 +31,7 @@ dist-ssr
 
 src-tauri/pyinstaller/build/*
 src-tauri/pyinstaller/dist/*
-MetID_parse/*.ipynb
+MetID_parse/*
 
 ms2_query/*
 ms1_query/*
