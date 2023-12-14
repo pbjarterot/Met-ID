@@ -14,9 +14,6 @@ use pyo3::Python;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 
-extern crate indicatif;
-use indicatif::ProgressBar;
-
 
 fn import_tsv(path: &str) -> HashMap<String, String> {
     let file: File = File::open(path).expect("Failed to open file");
@@ -170,11 +167,9 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
     let mut sql = String::from("BEGIN;\n");
 
     let total: u64 = metabolites_len.try_into().unwrap();
-    let pb = ProgressBar::new(total);
 
     for i in 0..metabolites_len {
-        pb.inc(1);
-        println!("{:?}, {:?}", i, metabolites_len);
+        //println!("{:?}, {:?}", i, metabolites_len);
         let mets: &Vec<String> = &vecs[i];
         let fgh: &HashMap<String, String> = &maps[i];
 
@@ -184,6 +179,10 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
         let endo: i32 = metabolites[i].endo_exo.contains(&endogenous_str) as i32;
         let exo: i32 = metabolites[i].endo_exo.contains(&exogenous_str) as i32;
         let unspec: i32 = metabolites[i].endo_exo.is_empty() as i32;
+        if endo > 0 {
+            println!("{:?}, {:?}, {:?}", endo, exo, unspec);
+        }
+        
 
         let fmp10: i32 = (get_derivs(&"phenols", fgh) + get_derivs(&"primary amines", fgh)).try_into().unwrap();
         //let dpp_tahs_ca:i32 = get_derivs(&"primary amines", fgh).try_into().unwrap();
@@ -443,17 +442,19 @@ fn drop_columns_except(conn: &Connection, table_name: &str, columns_to_keep: Vec
 fn main() -> () {
     
     let db_path = "db.db";
+    //let db_path = ":memory:";
+    
     //remove the database if it already exists
-    //std::fs::remove_file(db_path).expect("Database could not be removed");
+    std::fs::remove_file(db_path).expect("Database could not be removed");
 
     let conn: Connection = Connection::open(db_path).expect("Could not open db");
-    //make_metabolite_db(&conn).unwrap();
-    //make_functional_group_smarts_table(&conn).unwrap()
-    //make_lipid_db(&conn).unwrap();
+    make_metabolite_db(&conn).unwrap();
+    make_functional_group_smarts_table(&conn).unwrap();
+    make_lipid_db(&conn).unwrap();
     //conn.execute("DROP TABLE adducts", []).unwrap();
-    //make_adduct_db(&conn).unwrap();
+    make_adduct_db(&conn).unwrap();
     //conn.execute("DROP TABLE matrices", []).unwrap();
-    //make_matrices_db(&conn).unwrap();
+    make_matrices_db(&conn).unwrap();
     //let columns_to_keep = vec!["id", "phenols", "aldehydes", "carboxylicacids", "primaryamines"];
     //drop_columns_except(&conn, "functional_groups", columns_to_keep).unwrap();
 
@@ -463,8 +464,8 @@ fn main() -> () {
     //conn.execute("DROP TABLE user_in_tissue", []).unwrap();
     //conn.execute("DROP TABLE user_db_accessions", []).unwrap();
     //conn.execute("DROP TABLE user_functional_groups", []).unwrap();
-    conn.execute("DROP TABLE user_matrices", []).unwrap();
-    conn.execute("DROP TABLE user_adducts", []).unwrap();
-    conn.execute("DROP TABLE user_functional_group_smarts", []).unwrap();
+    //conn.execute("DROP TABLE user_matrices", []).unwrap();
+    //conn.execute("DROP TABLE user_adducts", []).unwrap();
+    //conn.execute("DROP TABLE user_functional_group_smarts", []).unwrap();
 
 }

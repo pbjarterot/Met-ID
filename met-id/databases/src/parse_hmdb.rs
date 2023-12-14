@@ -40,7 +40,7 @@ pub fn parse_xml(path: String) -> Result<Vec<Metabolite>, Error> {
 
                 loop {
                     match reader.read_event().unwrap() {
-                        Event::Start(ref e) if e.name() == QName(b"accession") => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"accession") => {
                             if !found_accession {
                                 accession = reader.read_text(QName(b"accession")).unwrap().to_string();
                                 found_accession = true;
@@ -70,17 +70,21 @@ pub fn parse_xml(path: String) -> Result<Vec<Metabolite>, Error> {
                                 found_mf = true;
                             }
                         },
-                        Event::Start(ref e) if e.name() == QName(b"ontology") => {
+                        Event::Start(ref e) if e.name() == quick_xml::name::QName(b"ontology") => {
+                            //println!("ontology");
                             loop {
                                 match reader.read_event().unwrap() {
-                                    Event::Start(ref e) if e.name() == QName(b"descendants") => {
+                                    Event::Start(ref e) if e.name() == QName(b"root") => {
+                                        //println!("ontology-descendants");
                                         loop {
                                             match reader.read_event().unwrap() {
                                                 Event::Start(ref e) if e.name() == QName(b"descendant") => {
+                                                    //println!("ontology-descendants-descendant");
                                                     loop {
                                                         match reader.read_event().unwrap() {
                                                             Event::Start(ref e) if e.name() == QName(b"term") => {
                                                                 let term: String = reader.read_text(QName(b"term")).unwrap().to_string();
+                                                                //println!("ontology-descendants-descendant-term: {:?}", term);
                                                                 if term == String::from("Endogenous") && !endo_exo.contains(&term) {
                                                                     endo_exo.push("Endogenous".to_string());
                                                                     
@@ -89,21 +93,36 @@ pub fn parse_xml(path: String) -> Result<Vec<Metabolite>, Error> {
                                                                     
                                                                 }    
                                                             },
+                                                            Event::End(ref e) => {
+                                                                if e.name() == QName(b"descendant") {
+                                                                    break;
+                                                                };
+                                                            },
                                                             _ => ()
                                                         }
-                                                        break;
+                                                        //break;
                                                     }
+                                                },
+                                                Event::End(ref e) => {
+                                                    if e.name() == QName(b"root") {
+                                                        break;
+                                                    };
                                                 },
                                                 _ => ()
                                             }
-                                            break;
+                                            //break;
                                         }
+                                    },
+                                    Event::End(ref e) => {
+                                        if e.name() == QName(b"ontology") {
+                                            break;
+                                        };
                                     },
                                     _ => ()
                                 }
-                                break;
+                                //break;
                             }
-                        }
+                        },
                         Event::End(ref e) => {
                             if e.name() == QName(b"metabolite") {
 
@@ -116,8 +135,7 @@ pub fn parse_xml(path: String) -> Result<Vec<Metabolite>, Error> {
                                 metabolites.push(met);
                                 break;
                             }
-                        }
-
+                        },
                         Event::Eof => panic!("unexpected end of document"),
                         _ => (),
                     }
