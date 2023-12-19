@@ -37,41 +37,46 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-
-      #- name: Install PyOxidizer
-      #  run: |
-      #      cargo install pyoxidizer
-      #  working-directory: met-id
-
-      #- name: Main Build with PyOxidizer
-      #  run: |
-      #    # Define PyOxidizer target based on current platform
-      #    if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-      #      pyoxidizer build --target-triple x86_64-pc-windows-msvc
-      #      mv build/x86_64-pc-windows-msvc/debug/met-id_python/met-id_python.exe ./bin/met-id_python-x86_64-pc-windows-msvc.exe
-      #    elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
-      #      mkdir bin
-      ##      pyoxidizer build --target-triple aarch64-unknown-linux-gnu
-      #      mv ./build/aarch64-unknown-linux-gnu/debug/met-id_python/met-id_python ./bin/met-id_python-aarch64-unknown-linux-gnu
-      #    elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-      #      pyoxidizer build --target-triple x86_64-apple-darwin
-      #      mv ./build/x86_64-apple-darwin/debug/met-id_python/met-id_python ./bin/met-id_python-x86_64-apple-darwin
-      #    fi
-      #  working-directory: met-id/src-tauri
       
-      
-      - name: use pyinstaller
+
+
+      - name: Use Pyinstaller (Windows)
+        if: matrix.platform == 'windows-latest'
         run: |
-          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            ./make_executables.ps1
-          elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
-            chmod +x make_linux_executables.sh
-            ./make_linux_executables.sh
-          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            chmod +x make_macos_executables.sh
-            ./make_macos_executables.sh
-          fi
+          ./make_executables.ps1
         working-directory: met-id/src-tauri/pyinstaller
+        shell: pwsh
+
+      - name: Use Pyinstaller (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+      - name: Use Pyinstaller (Linux)
+        if: matrix.platform == 'ubuntu-20.04'
+        run: |
+          chmod +x make_linux_executables.sh
+          ./make_linux_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+
+      
+      #- name: Use Pyinstaller
+      #  run: |
+      #    if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+      #      ./make_executables.ps1
+      #    elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
+      #      chmod +x make_linux_executables.sh
+      #      ./make_linux_executables.sh
+      #    elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+      #      chmod +x make_macos_executables.sh
+      #      ./make_macos_executables.sh
+      #    fi
+      #  working-directory: met-id/src-tauri/pyinstaller
       
       
       - name: List binaries directory
