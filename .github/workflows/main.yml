@@ -39,7 +39,6 @@ jobs:
           pip install pyinstaller
       
 
-
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
@@ -63,26 +62,6 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
 
-
-      
-      #- name: Use Pyinstaller
-      #  run: |
-      #    if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-      #      ./make_executables.ps1
-      #    elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
-      #      chmod +x make_linux_executables.sh
-      #      ./make_linux_executables.sh
-      #    elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-      #      chmod +x make_macos_executables.sh
-      #      ./make_macos_executables.sh
-      #    fi
-      #  working-directory: met-id/src-tauri/pyinstaller
-      
-      
-      - name: List binaries directory
-        run: |
-          ls -lR met-id/src-tauri
-      # Note: The following step needs to be properly defined, and steps should not be nested.
       - name: Upload Bin
         run: |
           # Add your upload commands here
