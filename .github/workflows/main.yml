@@ -28,26 +28,42 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Install PyOxidizer
-        run: |
-            cargo install pyoxidizer
-        working-directory: met-id
+      #- name: Install PyOxidizer
+      #  run: |
+      #      cargo install pyoxidizer
+      #  working-directory: met-id
 
-      - name: Main Build with PyOxidizer
+      #- name: Main Build with PyOxidizer
+      #  run: |
+      #    # Define PyOxidizer target based on current platform
+      #    if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+      #      pyoxidizer build --target-triple x86_64-pc-windows-msvc
+      #      mv build/x86_64-pc-windows-msvc/debug/met-id_python/met-id_python.exe ./bin/met-id_python-x86_64-pc-windows-msvc.exe
+      #    elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
+      #      mkdir bin
+      ##      pyoxidizer build --target-triple aarch64-unknown-linux-gnu
+      #      mv ./build/aarch64-unknown-linux-gnu/debug/met-id_python/met-id_python ./bin/met-id_python-aarch64-unknown-linux-gnu
+      #    elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+      #      pyoxidizer build --target-triple x86_64-apple-darwin
+      #      mv ./build/x86_64-apple-darwin/debug/met-id_python/met-id_python ./bin/met-id_python-x86_64-apple-darwin
+      #    fi
+      #  working-directory: met-id/src-tauri
+      
+      
+      - name: use pyinstaller
         run: |
-          # Define PyOxidizer target based on current platform
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            pyoxidizer build --target-triple x86_64-pc-windows-msvc
-            mv build/x86_64-pc-windows-msvc/debug/met-id_python/met-id_python.exe ./bin/met-id_python-x86_64-pc-windows-msvc.exe
+            ./make_executables.ps1
           elif [ "${{ matrix.platform }}" == "ubuntu-20.04" ]; then
-            mkdir bin
-            pyoxidizer build --target-triple aarch64-unknown-linux-gnu
-            mv ./build/aarch64-unknown-linux-gnu/debug/met-id_python/met-id_python ./bin/met-id_python-aarch64-unknown-linux-gnu
+            chmod +x make_linux_executables.sh
+            ./make_linux_executables.sh
           elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            pyoxidizer build --target-triple x86_64-apple-darwin
-            mv ./build/x86_64-apple-darwin/debug/met-id_python/met-id_python ./bin/met-id_python-x86_64-apple-darwin
+            chmod +x make_macos_executables.sh
+            ./make_macos_executables.sh
           fi
-        working-directory: met-id/src-tauri
+        working-directory: met-id/src-tauri/pyinstaller
+      
+      
       - name: List binaries directory
         run: |
           ls -lR met-id/src-tauri
