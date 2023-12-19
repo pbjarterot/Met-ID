@@ -3,10 +3,11 @@ import * as d3 from 'd3';
 
 
 
-export function generate_ms2_small_results_card(name: string, _cid: string, adduct: string, parent_mz: string | number, cossim: number, index: number) {
+export function generate_ms2_small_results_card(name: string, _cid: string, adduct: string, parent_mz: string | number, cossim: number, matrix: string, index: number) {
     if (!cossim) {
         cossim = 0.0;
     } 
+    console.log(parent_mz, matrix)
     let template = `<div class="ms2-small-results-card" id="ms2-small-results-card-${index}">
                         <div class="ms2-small-results-card-top">
                             <div class="ms2-small-results-card-textbox">
@@ -37,7 +38,7 @@ export function generate_ms2_small_results_card(name: string, _cid: string, addu
                                             <p>Matrix</p>
                                         </div>
                                         <div class="small-ms2-dashbox-text">
-                                            <p>FMP-10</p>
+                                            <p>${matrix}</p>
                                         </div>
                                     </div>
 

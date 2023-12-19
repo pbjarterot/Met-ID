@@ -59,6 +59,7 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
 
     let if_fmp10: bool = args.matrix == "FMP-10".to_string();
     let pos_neg: bool = args.matrix == "Positive mode".to_string() || args.matrix == "Negative mode".to_string();
+    println!("{:?}\n{:?}", args.met_type, met_type_map);
     let met_type_string: String = build_query_with_table(&args.met_type, &met_type_map, "endogeneity").unwrap();
     let chosen_deriv_string: &str = &args.matrix;
 
@@ -77,9 +78,14 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
 
 
     if !count {
-        //query += "SELECT (CAST(metabolites.mz AS REAL) + CAST(matrices.deltamass AS REAL)), ";
-        query += &format!(r#"SELECT (CAST(metabolites.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz,"#, fg_or_adduct=fg_or_adduct);
-        query += "metabolites.name, adducts.adduct, db_accessions.hmdb, metabolites.smiles, metabolites.chemicalformula FROM";
+        if args.metabolome.starts_with("HMDB") {
+            query += &format!(r#"SELECT (CAST(metabolites.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz,"#, fg_or_adduct=fg_or_adduct);
+            query += "metabolites.name, adducts.adduct, db_accessions.hmdb, metabolites.smiles, metabolites.chemicalformula FROM";
+        } else {
+            query += &format!(r#"SELECT (CAST(lipids.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz,"#, fg_or_adduct=fg_or_adduct);
+            query += "lipids.name, adducts.adduct, lipids.smiles, lipids.smiles, lipids.formula FROM";
+        }
+        
     } else {
         query += "SELECT COUNT(*) FROM";
     }
@@ -118,20 +124,28 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
         }
     };
 
-    //query += "a INNER JOIN (matrices b, db_accessions d, endogeneity e, functional_groups f) ";
-    query += "INNER JOIN db_accessions ON metabolites.id = db_accessions.id INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id INNER JOIN derivatized_by ON metabolites.id = derivatized_by.id ";
-    query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
+    if args.metabolome.starts_with("HMDB") {
+        query += "INNER JOIN db_accessions ON metabolites.id = db_accessions.id INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id INNER JOIN derivatized_by ON metabolites.id = derivatized_by.id ";
+        query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
+    } else {
+        query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
+    }
     
 
     let a: String = if if_fmp10 {
         format!(r#"WHERE CASE WHEN adducts.adduct='M+FMP10' AND derivatized_by.fmp >= 1 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b') AND derivatized_by.fmp >= 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b', 'M+3FMP10a', 'M+3FMP10b', 'M+3FMP10c') AND derivatized_by.fmp > 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 ELSE 0 END=1"#, 
         max=&max_mz.to_string(), min=&min_mz.to_string(), db=db_string, met_type = met_type_string, func_group = build_query_with_table(&args.adducts, &functional_groups_map, "functional_groups").unwrap())
     } else if pos_neg {
-        format!(r#"WHERE ({met_type}) AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
-        max=&max_mz.to_string(), min=&min_mz.to_string(), 
-        //db=db_string, 
-        met_type=met_type_string, 
-        adduct=build_csv_query(&args.adducts, &adduct_map).unwrap().replace("\\", ""))
+        if args.metabolome.starts_with("HMDB") {
+            format!(r#"WHERE ({met_type}) AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
+            max=&max_mz.to_string(), min=&min_mz.to_string(), 
+            met_type=met_type_string, 
+            adduct=build_csv_query(&args.adducts, &adduct_map).unwrap().replace("\\", ""))
+        } else {
+            format!(r#"WHERE CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
+            max=&max_mz.to_string(), min=&min_mz.to_string(),
+            adduct=build_csv_query(&args.adducts, &adduct_map).unwrap().replace("\\", ""))
+        }
 
     } else {
         format!(r#"WHERE adducts.adduct ='M+{deriv}' AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group})"#, 
@@ -145,7 +159,11 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
     };
     query += &a;
     if !count {
-        query += " ORDER BY CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL)";
+        if args.metabolome.starts_with("HMDB") {
+            query += " ORDER BY CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL)";
+        } else {
+            query += " ORDER BY CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL)";
+        }
     }
     query
 }
@@ -153,7 +171,7 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
 
 pub fn build_query_with_table(types: &[String], mapping: &HashMap<&str, &str>, table: &str) -> Option<String> {
     if types.is_empty() {
-        return None;
+        return Some("".to_string());
     }
 
     let query = types.iter()

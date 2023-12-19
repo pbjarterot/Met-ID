@@ -9,15 +9,7 @@ let result: string | string[] | null = "";
 let MatchListener: ((e: MouseEvent) => void) | null = null;
 
 async function read_input_mzml(result: string) {
-  let metname = "User";
-  let adduct = "1A";
-  let mz = "0.0";
-  let cid = "0eV";
-  let tof = "0.6";
-  let mzwindow = "1Da";
-  let identifier = "USER1";
-
-  const parsed_mzml: string = await invoke("read_mzml_for_msms", {path: result, metname:metname, adduct:adduct, mz:mz, cid:cid, tof:tof, mzwindow:mzwindow, identifier:identifier });
+  const parsed_mzml: string = await invoke("read_mzml_for_msms", {path: result});
   console.log("parsed_csv: ", parsed_mzml)
   return parsed_mzml
 }
@@ -35,7 +27,8 @@ export async function get_msms_from_mzml() {
 				windows: [],
 				tofs: [],
 				mzs: [],
-        cossim: []
+        cossim: [],
+        matrices: []
 			};
 			updateMSMSResults(false, a);
 
@@ -121,7 +114,7 @@ async function run_msms_match() {
   hideMatchPopup();
 
   let binsize: number = Number(inputElement!.value);
-  let [names, identifiers, adducts, cids, mzs, cossim]: [string[], string[], string[], string[], string[], number[]] = await invoke("match_msms_to_ui", {binsize:binsize});
+  let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui", {binsize:binsize});
 
   //console.log(identifiers, adducts, cids, mzs, cossim);
   let a: MSMSDatabase ={
@@ -133,6 +126,7 @@ async function run_msms_match() {
     tofs: [],
     mzs: mzs,
     cossim: cossim,
+    matrices: matrices
   };
   updateMSMSResults(true, a);
   

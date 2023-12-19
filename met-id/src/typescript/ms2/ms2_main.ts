@@ -31,7 +31,8 @@ export interface MSMSDatabase {
 	windows: string[],
 	tofs: string[],
 	mzs: string[],
-	cossim: number[]
+	cossim: number[],
+	matrices: string[]
 }
 
 
@@ -61,9 +62,22 @@ window.addEventListener("DOMContentLoaded", async () => {
 	document.getElementById("ms2-sidebar-add-to-db-button")!.addEventListener("click", async () => add_msms_to_db());
 	
 	await delay(100)
-	const msms: MSMSDatabase = await invoke("get_msms", {});
+	let [names, identifiers, adducts, cids, mzs, _windows, _tofs, matrices]: [string[], string[], string[], string[], string[], string[], string[], string[]] = await invoke("get_msms", {});
 
-	await renderSmallItems(msms[0], msms[3], msms[2], msms[6], msms[1], []);
+	let msms: MSMSDatabase ={
+		names: names,
+		identifiers: identifiers,
+		adducts: adducts,
+		cids: cids,
+		windows: _windows,
+		tofs: _tofs,
+		mzs: mzs,
+		cossim: new Array(mzs.length).fill(0),
+		matrices: matrices
+	};
+	console.log(mzs);
+
+	await renderSmallItems(msms.names, msms.cids, msms.adducts, msms.mzs, msms.identifiers, msms.cossim, msms.matrices);
 	document.getElementById("ms2-compare")!.addEventListener("click", () => compare_msms());
 
 	//Searchbar listeners
@@ -72,20 +86,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 
-
-
 async function add_msms_to_db() {
-	console.log("Adding to DB")
-	
 	let result = await open({ directory: false, multiple: false, filters: [{ name: 'mzML', extensions: ['mzML'] }] }) as unknown as string;
-
 
 	showPopup(result);
 
 }
-
-
-
 
 function addMSMSSearchbarListeners() {
 	// Fetch the parent div by its id
@@ -106,7 +112,8 @@ function addMSMSSearchbarListeners() {
 				windows: [],
 				tofs: [],
 				mzs: [],
-				cossim: []
+				cossim: [],
+				matrices: []
 			};
 			updateMSMSResults(false, a);
 		}
@@ -121,8 +128,7 @@ function isEmpty(obj: object): boolean {
 // Your update function
 export async function updateMSMSResults(sorted: boolean, msms: MSMSDatabase) {
 	cancellationToken.isCancelled = false;
-	//console.log(msms);
-	//let msms: MSMSDatabase;
+
 	
 	let name = (document.getElementById("msms-searchbar") as HTMLInputElement)!.value;
 	let fragment = (document.getElementById("msms-searchbar-fragment") as HTMLInputElement)!.value;
@@ -136,16 +142,17 @@ export async function updateMSMSResults(sorted: boolean, msms: MSMSDatabase) {
 		return;
 	}
 	if (sorted === false) {
-		let [names, identifiers, adducts, cids, mzs, _cossim]: [string[], string[], string[], string[], string[], number[]] = await invoke("ms2_search_spectra", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
+		let [names, identifiers, adducts, cids, windows, tofs, mzs, _cossim, matrices]: [string[], string[], string[], string[], string[], string[], string[], number[], string[]] = await invoke("ms2_search_spectra", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
 		let a: MSMSDatabase ={
 			names: names,
 			identifiers: identifiers,
 			adducts: adducts,
 			cids: cids,
-			windows: [],
-			tofs: [],
+			windows: windows,
+			tofs: tofs,
 			mzs: mzs,
 			cossim: new Array(mzs.length).fill(0),
+			matrices: matrices
 		};
 		msms = a;
 	} 
@@ -161,23 +168,20 @@ export async function updateMSMSResults(sorted: boolean, msms: MSMSDatabase) {
 		return;
 	}
 													//names			cids			adducts					mzs			identifiers				cossim
-	await renderSmallItems(msms.names, msms.cids, msms.adducts, msms.mzs, msms.identifiers, msms.cossim);
+	await renderSmallItems(msms.names, msms.cids, msms.adducts, msms.mzs, msms.identifiers, msms.cossim, msms.matrices);
 }
 
-
-
 // Create a cancellation token object
-interface CancellationToken {
+export interface CancellationToken {
 	isCancelled: boolean;
 }
 
 let cancellationToken: CancellationToken = { isCancelled: false };
 
 
-
-
-
-async function renderSmallItems(names: string[], cids: string[], adducts: string[], parent_mzs: string[] | number[], identifiers: string[], cossim: number[]) {
+async function renderSmallItems(names: string[], cids: string[], adducts: string[], parent_mzs: string[] | number[], identifiers: string[], cossim: number[], matrices: string[]) {
+	console.log("here");
+	console.log(parent_mzs);
 	const res_div = document.querySelector("#ms2-results-body") as HTMLDivElement;
 	res_div.innerHTML = "";
 	const batchSize = 3;
@@ -201,7 +205,7 @@ async function renderSmallItems(names: string[], cids: string[], adducts: string
 
 			}
 			if (!already_done.some(([name, adduct, cid]) => name === names[i] && adduct === adducts[i] && cid === cids[i])) {
-				template.innerHTML = generate_ms2_small_results_card(names[i], cids[i], adducts[i], parent_mzs[i], cossim[i], i);
+				template.innerHTML = generate_ms2_small_results_card(names[i], cids[i], adducts[i], parent_mzs[i], cossim[i], matrices[i], i);
 				const templateContent = template.content;
 				res_div.appendChild(templateContent);
 				let a = document.getElementById("ms2-small-results-card-" + i.toString()) as HTMLDivElement;
@@ -231,39 +235,3 @@ export interface All_spectra_database {
 	fragment: string[]
 }
 
-
-//const all_spectra: All_spectra_database = await invoke("load_msms");
-
-/*
-function renderItems() {
-	const batchSize = 3;
-	let i = 0;
-
-	function appendBatch() {
-		const template = document.createElement("template");
-		for (let j = 0; j < batchSize && i < 2; j++) {
-
-            template.innerHTML = generate_result_card(all_spectra, i);
-
-            const script = document.createElement('script');
-            script.innerHTML = `
-                        SmiDrawer.apply();
-                        `;
-            const templateContent = template.content;
-            templateContent.appendChild(script);
-
-            
-            res_div.appendChild(templateContent);
-            draw(i);
-            i++
-		}
-		
-		if (i < 4){//length_) {
-			setTimeout(appendBatch, 0);
-		}
-	}
-	appendBatch();
-}
-
-renderItems();
-*/

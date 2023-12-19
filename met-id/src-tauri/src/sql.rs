@@ -6,7 +6,7 @@ use thiserror::Error;
 use r2d2_sqlite::SqliteConnectionManager;
 use std::mem;
 use rusqlite::{params, Result};//, TransactionBehavior};//, Connection};
-use byteorder::{ByteOrder, LittleEndian};
+//use byteorder::{ByteOrder, LittleEndian};
 use std::cmp::Ordering;
 //use crate::validation::mass_from_smiles;
 use crate::sql_build_query::{build_query, build_condition_query};
@@ -38,6 +38,21 @@ struct MS2DbRow {
     tof: String,
     mz: String,
     data: (Vec<f64>, Vec<i64>),
+    matrix: String
+}
+
+#[derive(Debug)]
+struct MS2DbRow2 {
+    id: usize,
+    name: String,
+    identifier: String,
+    adduct: String,
+    cid: String,
+    window: String,
+    tof: String,
+    mz: String,
+    data: (Vec<f64>, Vec<i64>),
+    matrix: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -75,6 +90,7 @@ fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<String>
     let conn = get_connection().unwrap();
     //query
     let mut stmt: rusqlite::Statement = conn.prepare(query).expect("Query cannot be run");
+    
     //collect results from the database query
     
     let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
@@ -138,8 +154,8 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     }
 
 
-    let mut min_peak: f64 = 0.0;
-    let mut max_peak: f64 = 1000.0;
+    let mut min_peak: f64 = 5000.0;
+    let mut max_peak: f64 = 0.0;
 
     for &num in &input_masses {
         if num < min_peak {
@@ -279,7 +295,8 @@ fn get_names_from_identifiers(input_data: &Vec<String>) -> rusqlite::Result<Hash
 #[tauri::command]
 pub fn get_msms() -> Vec<Vec<String>>{
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_msms").unwrap();
-    let mut stmt: rusqlite::Statement = conn.prepare("SELECT identifier, adduct, cid, window, tof, mz, spectra FROM MSMS").expect("Query cannot be run");
+    check_if_table_exists_msms("MSMS", "user_MSMS").unwrap();
+    let mut stmt: rusqlite::Statement = conn.prepare("SELECT identifier, adduct, cid, window, tof, mz, spectra, matrix FROM MSMS UNION ALL SELECT identifier, adduct, cid, window, tof, mz, spectra, matrix FROM user_MSMS").expect("Query cannot be run");
     let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
         let adduct_value = row.get(1).unwrap_or("".to_string());
         let adduct_final_value = if adduct_value.is_empty() {
@@ -296,6 +313,7 @@ pub fn get_msms() -> Vec<Vec<String>>{
             tof: row.get(4).unwrap_or("".to_string()),
             mz: row.get(5).unwrap_or("".to_string()),
             data: (Vec::new(), Vec::new()),
+            matrix: row.get(7).unwrap_or("".to_string())
             //data: row.get(6).unwrap_or(Vec::new()),
         })
     }).unwrap();
@@ -307,6 +325,7 @@ pub fn get_msms() -> Vec<Vec<String>>{
     let mut tofs: Vec<String> = Vec::new();
     let mut mzs: Vec<String> = Vec::new();
     let mut datas: Vec<(Vec<f64>, Vec<i64>)> = Vec::new();
+    let mut matrices: Vec<String> = Vec::new();
 
     //parse results for passing back to the parent function
     for (index, item) in db_iter.enumerate() {
@@ -318,6 +337,7 @@ pub fn get_msms() -> Vec<Vec<String>>{
         tofs.insert(index, row.tof);
         mzs.insert(index, row.mz);
         datas.insert(index, row.data);
+        matrices.insert(index, row.matrix);
     }
     let mut identifiers2: Vec<String> = identifiers.clone();
     identifiers2.sort();
@@ -329,7 +349,7 @@ pub fn get_msms() -> Vec<Vec<String>>{
         let name = conversions.get(id).unwrap_or(&"U".to_string()).to_owned();
         names.insert(index, name);
     }
-    let return_data: Vec<Vec<String>> = vec![names, identifiers, adducts, cids, windows, tofs, mzs];
+    let return_data: Vec<Vec<String>> = vec![names, identifiers, adducts, cids, mzs, windows, tofs, matrices];
     return_data
 }
 
@@ -351,7 +371,7 @@ struct MSMSBinary {
 fn get_single_msms_spectra(identifier: String, adduct: String, cid:String) -> (Vec<(Vec<f64>, Vec<i64>)>, Vec<String>) {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_single_msms_spectra").unwrap();
 
-    let sql: String = format!("SELECT spectra, cid FROM MSMS WHERE identifier = '{}' AND adduct = '{}' AND cid = '{}'", identifier, adduct, cid);
+    let sql: String = format!("SELECT spectra, cid FROM MSMS WHERE identifier = '{}' AND adduct = '{}' AND cid = '{}'  UNION SELECT spectra, cid FROM user_MSMS WHERE identifier = '{}' AND adduct = '{}' AND cid = '{}'", identifier, adduct, cid, identifier, adduct, cid);
 
     let mut stmt = conn.prepare(&sql).unwrap();
     let rows = stmt.query_map([], |row| {
@@ -419,6 +439,7 @@ pub fn get_name_from_identifier_msms(identifier: String) -> String {
 
 }
 
+/* 
 fn match_fragment(blob: &[u8], min_mz: f64, max_mz: f64) -> Option<(f64, i64)> {
     let float_bytes = &blob[0..8]; // First 8 bytes for f64
     let int_bytes = &blob[8..16]; // Next 8 bytes for i64
@@ -432,12 +453,13 @@ fn match_fragment(blob: &[u8], min_mz: f64, max_mz: f64) -> Option<(f64, i64)> {
     
     None
 }
-
+*/
+/* 
 #[tauri::command]
 pub fn find_msms_fragments(mass: f64, window: f64) -> () {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("find_msms_fragments").unwrap();
 
-    let mut stmt: rusqlite::Statement<'_> = conn.prepare("SELECT name, cid, adduct, spectra FROM MSMS").unwrap();
+    let mut stmt: rusqlite::Statement<'_> = conn.prepare("SELECT name, cid, adduct, spectra FROM MSMS UNION SELECT name, cid, adduct, spectra FROM user_MSMS").unwrap();
     let mut rows: rusqlite::Rows<'_> = stmt.query(params![]).unwrap();
 
 
@@ -457,6 +479,7 @@ pub fn find_msms_fragments(mass: f64, window: f64) -> () {
         }
     }
 }
+*/
 
 #[allow(unused_assignments)]
 fn contains_between_a_and_b(vec: &[f64], min_mz: f64, max_mz: f64) -> bool {
@@ -482,18 +505,18 @@ fn contains_between_a_and_b(vec: &[f64], min_mz: f64, max_mz: f64) -> bool {
 #[tauri::command]
 pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragmentslider: String, _ms1massslider: String) -> Vec<Vec<String>> {
     //let conn: r2d2::PooledConnection<SqliteConnectionManager> = MSMS_POOL.get().unwrap();
-    let table: &str = "MSMS";
+    //let table1: &str = "MSMS";
+    //let table2: &str = "user_MSMS";
     let name_condition: &str = &name.as_str();
     let sort_field: &str = "name";
     
-    let mut query = format!("SELECT identifier, adduct, cid, window, tof, mz, spectra FROM {}", table);
+    let mut query: String = "SELECT identifier, adduct, cid, window, tof, mz, spectra, name, matrix FROM MSMS ".to_string();
     
     if name_condition != "" {
         query.push_str(" WHERE name LIKE '%");
         query.push_str(name_condition);
         query.push_str("%' ")
     }
-    
 
     if let Ok(ms1) = ms1mass.parse::<f64>() {
         if query.contains(" WHERE ") {
@@ -504,7 +527,18 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
         query.push_str(&(ms1 + 0.5).to_string());
         query.push_str(" AND CAST(mz AS REAL) > ");
         query.push_str(&(ms1 - 0.5).to_string());
-    }
+    } 
+
+    query.push_str(" UNION ALL SELECT identifier, adduct, cid, window, tof, mz, spectra, name, matrix FROM user_MSMS");
+
+    if let Ok(ms1) = ms1mass.parse::<f64>() {
+
+        query.push_str(" WHERE CAST(mz AS REAL) < ");
+        
+        query.push_str(&(ms1 + 0.5).to_string());
+        query.push_str(" AND CAST(mz AS REAL) > ");
+        query.push_str(&(ms1 - 0.5).to_string());
+    } 
 
     if !sort_field.is_empty() {
         query.push_str(" ORDER BY ");
@@ -519,8 +553,10 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
         let mut tofs: Vec<String> = Vec::new();
         let mut mzs: Vec<String> = Vec::new();
         let mut datas: Vec<(Vec<f64>, Vec<i64>)> = Vec::new();
+        let mut names: Vec<String> = Vec::new();
+        let mut matrices: Vec<String> = Vec::new();
 
-
+        
 
         let db_iter: Box<dyn Iterator<Item = rusqlite::Result<Option<MS2DbRow>>>> = if let Ok(fragment_mz) = fragment.parse::<f64>() {
             let min_mz = fragment_mz - (fragmentslider.parse::<f64>().unwrap_or(0.0) /2000.0);
@@ -535,14 +571,39 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
                         adduct_value
                     };
                     Ok(Some(MS2DbRow {
-                        name: "".to_string(),
+                        name: row.get(7).unwrap_or("".to_string()),
                         identifier: row.get(0).unwrap_or("".to_string()),
-                        adduct: adduct_final_value,
+                        adduct:  adduct_final_value,
                         cid: row.get(2).unwrap_or("".to_string()),
                         window: row.get(3).unwrap_or("".to_string()),
                         tof: row.get(4).unwrap_or("".to_string()),
                         mz: row.get(5).unwrap_or("".to_string()),
                         data: spectrum,
+                        matrix: row.get(8).unwrap_or("".to_string())
+
+                    }))
+                } else {
+                    Ok(None)
+                }
+            }).unwrap())
+        } else if let Ok(fragment_mz) = ms1mass.parse::<f64>() {
+            let min_mz = fragment_mz - (_ms1massslider.parse::<f64>().unwrap_or(0.0) /2000.0);
+            let max_mz = fragment_mz + (_ms1massslider.parse::<f64>().unwrap_or(0.0) /2000.0);
+            Box::new(stmt.query_map([], move |row: &rusqlite::Row<'_>| {
+                let spectrum = collect_msms_spectra(BinaryData {binary: row.get(6).unwrap_or(Vec::new())});
+                let mz: f64 = row.get(5).unwrap_or("".to_string()).parse::<f64>().unwrap_or(0.0);
+                
+                if mz < max_mz && mz > min_mz {
+                    Ok(Some(MS2DbRow {
+                        name: row.get(7).unwrap_or("".to_string()),
+                        identifier: row.get(0).unwrap_or("".to_string()),
+                        adduct: row.get(1).unwrap_or("".to_string()),
+                        cid: row.get(2).unwrap_or("".to_string()),
+                        window: row.get(3).unwrap_or("".to_string()),
+                        tof: row.get(4).unwrap_or("".to_string()),
+                        mz: row.get(5).unwrap_or("".to_string()),
+                        data: spectrum,
+                        matrix: row.get(8).unwrap_or("".to_string())
 
                     }))
                 } else {
@@ -558,7 +619,7 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
                     adduct_value
                 };
                 Ok(Some(MS2DbRow {
-                    name: "".to_string(),
+                    name: row.get(7).unwrap_or("".to_string()),
                     identifier: row.get(0).unwrap_or("".to_string()),
                     adduct: adduct_final_value,
                     cid: row.get(2).unwrap_or("".to_string()),
@@ -566,31 +627,11 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
                     tof: row.get(4).unwrap_or("".to_string()),
                     mz: row.get(5).unwrap_or("".to_string()),
                     data: (Vec::new(), Vec::new()),
+                    matrix: row.get(8).unwrap_or("".to_string())
                 }))
             }).unwrap())
         };
 
-        /* 
-        // Execute query and process results here
-        let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
-            let spectrum = collect_msms_spectra(BinaryData {binary: row.get(6).unwrap_or(Vec::new())});
-            if contains_between_a_and_b(&spectrum.0, 0.0, 1.0) {
-                Ok(Some(MS2DbRow {
-                    identifier: row.get(0).unwrap_or("".to_string()),
-                    adduct: row.get(1).unwrap_or("".to_string()),
-                    cid: row.get(2).unwrap_or("".to_string()),
-                    window: row.get(3).unwrap_or("".to_string()),
-                    tof: row.get(4).unwrap_or("".to_string()),
-                    mz: row.get(5).unwrap_or("".to_string()),
-                    data: spectrum,
-                }))
-            } else {
-                Ok(None)
-            }
-
-        }).unwrap();
-
-        */
         let filtered_iter = db_iter.filter_map(|result| {
             match result {
                 Ok(Some(db_row)) => Some(Ok(db_row)),
@@ -602,32 +643,22 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
         //parse results for passing back to the parent function
         for (index, item) in filtered_iter.enumerate() {
             let row: MS2DbRow = item.unwrap();
+            names.insert(index, row.name);
             identifiers.insert(index, row.identifier);
             adducts.insert(index, row.adduct);
             cids.insert(index, row.cid);
             windows.insert(index, row.window);
             tofs.insert(index, row.tof);
             mzs.insert(index, row.mz);
-            datas.insert(index, row.data);//collect_msms_spectra(BinaryData { binary: row.data }));
+            datas.insert(index, row.data);
+            matrices.insert(index, row.matrix);
             
         }
 
-
-        let mut identifiers2: Vec<String> = identifiers.clone();
-        identifiers2.sort();
-        identifiers2.dedup();
-        let conversions: HashMap<String, String> = get_names_from_identifiers(&identifiers2).unwrap();
-
-        let mut names: Vec<String> = Vec::new();
-        for (index, id) in identifiers.iter().enumerate() {
-            let name = conversions.get(id).unwrap_or(&"".to_string()).to_owned();
-            names.insert(index, name);
-        }
         let vector_len = names.len();
+        move_to_front(&mut names, &mut identifiers, &mut adducts, &mut cids, &mut windows, &mut tofs, &mut mzs, &mut matrices, "User Input".to_string(), vector_len);
 
-        move_to_front(&mut names, &mut identifiers, &mut adducts, &mut cids, &mut windows, &mut tofs, &mut mzs, "User Input".to_string(), vector_len);
-
-        let return_data: Vec<Vec<String>> = vec![names, identifiers, adducts, cids, windows, tofs, mzs, Vec::new()];
+        let return_data: Vec<Vec<String>> = vec![names, identifiers, adducts, cids, windows, tofs, mzs, Vec::new(), matrices];
         return return_data
     } else {
         return Vec::new()
@@ -636,7 +667,7 @@ pub fn ms2_search_spectra(name: String, fragment: String, ms1mass: String, fragm
 
 
 fn move_to_front<T: PartialEq>(names: &mut Vec<T>, identifiers: &mut Vec<T>, adducts: &mut Vec<T>, cids: &mut Vec<T>, windows: &mut Vec<T>, 
-                                tofs: &mut Vec<T>,  mzs: &mut Vec<T>, item: T, vector_len: usize) {
+                                tofs: &mut Vec<T>,  mzs: &mut Vec<T>, matrices: &mut Vec<T>, item: T, vector_len: usize) {
     if let Some(index) = names.iter().position(|x| *x == item) {
         names.rotate_right(vector_len - index);
         identifiers.rotate_right(vector_len - index);
@@ -645,11 +676,10 @@ fn move_to_front<T: PartialEq>(names: &mut Vec<T>, identifiers: &mut Vec<T>, add
         windows.rotate_right(vector_len - index);
         tofs.rotate_right(vector_len- index);
         mzs.rotate_right(vector_len - index);
+        matrices.rotate_right(vector_len - index);
         
     }
 }
-
-
 
 
 pub fn add_to_db_rust(name: String, smiles_smarts_mz: String, met_type: String, 
@@ -664,10 +694,6 @@ pub fn add_to_db_rust(name: String, smiles_smarts_mz: String, met_type: String,
     }
     true
 }
-
-
-
-
 
 
 fn get_fg() -> Result<Vec<String>> {
@@ -783,6 +809,36 @@ pub fn check_if_table_exists(source_table: &str, new_table: &str) -> Result<()>{
     Ok(())
 }
 
+pub fn check_if_table_exists_msms(source_table: &str, new_table: &str) -> Result<()>{
+    extern crate rusqlite;
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("").unwrap();
+
+    let mut stmt = conn.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?1",
+    )?;
+    let mut rows = stmt.query(params![new_table])?;
+    if rows.next()?.is_some() {
+        return Ok(());
+    }
+
+    let mut stmt = conn.prepare(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name=?1",
+    )?;
+    let mut rows = stmt.query(params![source_table])?;
+    if let Some(row) = rows.next()? {
+        let schema: String = row.get(0)?;
+
+        let new_schema = schema.replace(source_table, new_table);
+
+        conn.execute(&new_schema, [])?;
+
+        println!("Table {} has been created.", new_table);
+    } else {
+        println!("Source table {} does not exist.", source_table);
+    }
+
+    Ok(())
+}
 
 
 
@@ -793,9 +849,10 @@ fn sort_by_corresponding_f64(
     vec_str2: &mut Vec<String>,
     vec_str3: &mut Vec<String>,
     vec_str4: &mut Vec<String>,
-    vec_str5: &mut Vec<String>
+    vec_str5: &mut Vec<String>,
+    vec_str6: &mut Vec<String>
     ) {
-    let mut combined: Vec<(_, _, _, _, _, _)> = vec_f64
+    let mut combined: Vec<(_, _, _, _, _, _, _)> = vec_f64
         .iter()
         .cloned()
         .zip(vec_str1.iter().cloned())
@@ -803,26 +860,28 @@ fn sort_by_corresponding_f64(
         .zip(vec_str3.iter().cloned())
         .zip(vec_str4.iter().cloned())
         .zip(vec_str5.iter().cloned())
-        .map(|(((((a, b), c), d), e), f)| (a, b, c, d, e, f))
+        .zip(vec_str6.iter().cloned())
+        .map(|((((((a, b), c), d), e), f), g)| (a, b, c, d, e, f, g))
         .collect();
 
     combined.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
 
-    for (i, (num, text1, text2, text3, text4, text5)) in combined.into_iter().enumerate() {
+    for (i, (num, text1, text2, text3, text4, text5, text6)) in combined.into_iter().enumerate() {
         vec_f64[i] = num;
         vec_str1[i] = text1;
         vec_str2[i] = text2;
         vec_str3[i] = text3;
         vec_str4[i] = text4;
         vec_str5[i] = text5;
+        vec_str6[i] = text6;
     }
 }
 
 
 #[tauri::command]
-pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>){
+pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>){
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_msms").unwrap();
-    let mut stmt: rusqlite::Statement = conn.prepare("SELECT name, identifier, adduct, cid, window, tof, mz, spectra FROM MSMS").expect("Query cannot be run");
+    let mut stmt: rusqlite::Statement = conn.prepare("SELECT name, identifier, adduct, cid, window, tof, mz, spectra, matrix FROM MSMS UNION SELECT name, identifier, adduct, cid, window, tof, mz, spectra, matrix FROM user_MSMS").expect("Query cannot be run");
     let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
         let adduct_value = row.get(2).unwrap_or("".to_string());
         let spectrum = collect_msms_spectra(BinaryData {binary: row.get(7).unwrap_or(Vec::new())});
@@ -840,8 +899,9 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
             tof: row.get(5).unwrap_or("".to_string()),
             mz: row.get(6).unwrap_or("".to_string()),
             //data: (Vec::new(), Vec::new()),
-            data: spectrum
+            data: spectrum,
             //data: row.get(6).unwrap_or((Vec::new(), Vec::new())),
+            matrix: row.get(8).unwrap_or("".to_string())
         })
     }).unwrap();
     let mut names: Vec<String> = Vec::new();
@@ -852,6 +912,7 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
     let mut tofs: Vec<String> = Vec::new();
     let mut mzs: Vec<String> = Vec::new();
     let mut datas: Vec<(Vec<f64>, Vec<i64>)> = Vec::new();
+    let mut matrices: Vec<String> = Vec::new();
 
     //parse results for passing back to the parent function
     for (index, item) in db_iter.enumerate() {
@@ -865,6 +926,7 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
         tofs.insert(index, row.tof);
         mzs.insert(index, row.mz);
         datas.insert(index, row.data);
+        matrices.insert(index, row.matrix);
     }
 
 
@@ -877,33 +939,101 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
             break;
         }
     }
-    let user_spectrum: (Vec<f64>, Vec<i64>) = datas[index_to_remove.unwrap()].clone();
-    // Remove the item if it exists
-    /* 
-    if let Some(index) = index_to_remove {
-        names.remove(index);
-        identifiers.remove(index);
-        adducts.remove(index);
-        cids.remove(index);
-        datas.remove(index);
-        mzs.remove(index);
-    }
-    */
-    let mut cossim: Vec<f64> = ms2_matcher(user_spectrum, datas.clone(), binsize);
+    let mut cossim: Vec<f64>;
+    match index_to_remove {
+        Some(index) => {
+            let user_spectrum: (Vec<f64>, Vec<i64>) = datas[index].clone();
 
-    sort_by_corresponding_f64(&mut cossim, &mut identifiers, &mut adducts, &mut cids, &mut names, &mut mzs);
+            cossim = ms2_matcher(user_spectrum, datas.clone(), binsize);
+        },
+        None => {
+            cossim = Vec::new();
+        },
+        
+    } 
+    
+
+    sort_by_corresponding_f64(&mut cossim, &mut identifiers, &mut adducts, &mut cids, &mut names, &mut mzs, &mut matrices);
 
 
-    (names, identifiers, adducts, cids, mzs, cossim)
+    (names, identifiers, adducts, cids, mzs, cossim, matrices)
 
 }
 
-/* 
+
 #[tauri::command]
-pub fn add_msms_to_db() -> () {
-    add_to_USERMSMS();
-    return
+pub fn add_msms_to_db(name: String, adduct: String, mz: String, cid: String, tof: String, mzwindow: String, identifier: String, path: String, matrix: String) -> String {
+    add_to_usermsms(name, adduct, mz, cid, tof, mzwindow, identifier, path, matrix);
+    
+    String::from("Done")
 }
-*/
+#[tauri::command]
+pub fn show_user_msms_db() -> Vec<Vec<String>> {
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_msms").unwrap();
+    let mut stmt: rusqlite::Statement = conn.prepare("SELECT id, name, identifier, adduct, cid, window, tof, mz, spectra, matrix FROM user_MSMS").expect("Query cannot be run");
+    let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
+        let adduct_value = row.get(3).unwrap_or("".to_string());
+        let adduct_final_value = if adduct_value.is_empty() {
+            row.get(5).unwrap_or("".to_string())
+        } else {
+            adduct_value
+        };
+        let id_value = row.get(0).unwrap();
+        Ok(MS2DbRow2 {
+            id: id_value,
+            name: row.get(1).unwrap_or("".to_string()),
+            identifier: row.get(2).unwrap_or("".to_string()),
+            adduct: adduct_final_value,
+            cid: row.get(4).unwrap_or("".to_string()),
+            window: row.get(5).unwrap_or("".to_string()),
+            tof: row.get(6).unwrap_or("".to_string()),
+            mz: row.get(7).unwrap_or("".to_string()),
+            data: (Vec::new(), Vec::new()),
+            matrix: row.get(9).unwrap_or("".to_string()),
+            //data: row.get(6).unwrap_or(Vec::new()),
+        })
+    }).unwrap();
 
+    let mut ids: Vec<String> = Vec::new();
+    let mut names: Vec<String> = Vec::new();
+    let mut identifiers: Vec<String> = Vec::new();
+    let mut adducts: Vec<String> = Vec::new();
+    let mut cids: Vec<String> = Vec::new();
+    let mut windows: Vec<String> = Vec::new();
+    let mut tofs: Vec<String> = Vec::new();
+    let mut mzs: Vec<String> = Vec::new();
+    let mut datas: Vec<(Vec<f64>, Vec<i64>)> = Vec::new();
+    let mut matrices: Vec<String> = Vec::new();
+
+    //parse results for passing back to the parent function
+    for (index, item) in db_iter.enumerate() {
+        let row: MS2DbRow2 = item.unwrap();
+        ids.insert(index, row.id.to_string());
+        names.insert(index, row.name);
+        identifiers.insert(index, row.identifier);
+        adducts.insert(index, row.adduct);
+        cids.insert(index, row.cid);
+        windows.insert(index, row.window);
+        tofs.insert(index, row.tof);
+        mzs.insert(index, row.mz);
+        datas.insert(index, row.data);
+        matrices.insert(index, row.matrix)
+    }
+    let mut identifiers2: Vec<String> = identifiers.clone();
+    identifiers2.sort();
+    identifiers2.dedup();
+
+    
+    let return_data: Vec<Vec<String>> = vec![ids, names, identifiers, adducts, cids, windows, tofs, mzs, matrices];
+    return_data
+    
+}
+
+#[tauri::command]
+pub fn remove_row_from_msms_user_db(rowid: usize) -> usize {
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_msms").unwrap();
+    let sql = "DELETE FROM user_MSMS WHERE id = ?1";
+    conn.execute(sql, params![rowid]).unwrap();
+    return 1
+}
 

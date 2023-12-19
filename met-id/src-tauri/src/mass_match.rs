@@ -112,13 +112,18 @@ pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<Str
 
 
         for index in low_idx..high_idx {
+            let db_name: String = if db_names[index].to_string() == "".to_string() {
+                "Unknown Name".to_string()
+            } else {
+                db_names[index].to_string()
+            };
             let mut res_map: HashMap<String, String> = HashMap::new();
             res_map.insert("oMass".to_string(), mass.to_string());
             res_map.insert("aMass".to_string(), adj_mass.to_string());
             res_map.insert("tMass".to_string(), db_masses[index].to_string());
             res_map.insert("dMass".to_string(), (adj_mass - db_masses[index]).to_string());
             res_map.insert("dPPM".to_string(), (((adj_mass - db_masses[index])/db_masses[index])*1E6).to_string());
-            res_map.insert("names".to_string(), db_names[index].to_string());
+            res_map.insert("names".to_string(), db_name);
             res_map.insert("matrix".to_string(), " [".to_string() + &db_mnames[index] + "]");
             res_map.insert("accession".to_string(), db_accessions[index].to_string());
             res_map.insert("smiles".to_string(), db_smiles[index].to_string());

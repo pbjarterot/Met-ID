@@ -615,7 +615,7 @@ fn extract_top_10(data: &TypedData, top_ten_thou_indices: &Vec<usize>) -> Vec<f6
 
 
 #[tauri::command]
-pub fn read_mzml_for_msms(path: String, metname: String, adduct: String, mz: String, cid: String, tof: String, mzwindow: String, identifier: String) -> String {
+pub fn read_mzml_for_msms(path: String) -> String {
 
     let (mz_data, intensity_data) = read_mzml_for_msms2(path);
 
@@ -641,6 +641,32 @@ pub fn read_mzml_for_msms(path: String, metname: String, adduct: String, mz: Str
     crate::add_to_db::add_to_db_functions::fill_user_msms(blob);
 
     String::from("Done")
+}
+
+pub fn read_mzml_for_msms_to_add_to_db(path: String) -> Vec<u8> {
+
+    let (mz_data, intensity_data) = read_mzml_for_msms2(path);
+
+    // Ensure both mz_data and intensity_data have the same length
+    assert_eq!(mz_data.len(), intensity_data.len());
+
+    // Serialize the data
+    let mut blob: Vec<u8> = Vec::new();
+
+    // Interleave mz_data and intensity_data
+    for (&mz_value, &intensity_value) in mz_data.iter().zip(intensity_data.iter()) {
+        // Serialize mz_value as f64
+        let mut mz_buf: [u8; 8] = [0u8; 8];
+        LittleEndian::write_f64(&mut mz_buf, mz_value);
+        blob.write_all(&mz_buf).unwrap();
+
+        // Serialize intensity_value as i64
+        let mut intensity_buf: [u8; 8] = [0u8; 8];
+        LittleEndian::write_i64(&mut intensity_buf, intensity_value as i64);
+        blob.write_all(&intensity_buf).unwrap();
+    }
+
+    blob
 }
 
 

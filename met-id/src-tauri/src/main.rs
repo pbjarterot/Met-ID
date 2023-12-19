@@ -10,7 +10,6 @@ pub mod database;
 mod validation;
 mod sql_build_query;
 mod add_to_db;
-mod metabolite;
 mod multiprocessing;
 mod logging;
 mod install_helper_functions;
@@ -91,13 +90,15 @@ fn main() {
                                                  sql::get_msms,
                                                  sql::get_msms_spectra,
                                                  sql::get_name_from_identifier_msms,
-                                                 sql::find_msms_fragments,
+                                                 //sql::find_msms_fragments,
                                                  sql::ms2_search_spectra,
                                                  sql::match_msms_to_ui,
                                                  sql::get_functional_groups,
                                                  sql::get_matrices,
                                                  sql::get_tissues,
-                                                 //sql::add_msms_to_db,
+                                                 sql::add_msms_to_db,
+                                                 sql::show_user_msms_db,
+                                                 sql::remove_row_from_msms_user_db,
                                                  regression::mass_error_regression,
                                                  //validation::check_smiles,
                                                  //validation::check_smarts,
