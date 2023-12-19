@@ -8,8 +8,8 @@
   },
   
   "package": {
-    "productName": "met-id",
-    "version": "0.0.1"
+    "productName": "Met-ID",
+    "version": "0.1.0"
   },
   "tauri": {
     "systemTray": {
