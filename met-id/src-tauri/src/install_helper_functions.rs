@@ -15,25 +15,34 @@ fn check_or_create(path: &PathBuf) {
 
 
 
-pub fn ensure_database_in_appdata(app: &tauri::App, resource_name: &str) -> std::path::PathBuf {
-  // 1. Resolve the AppData path
-  let mut app_data_path: PathBuf = app.path_resolver().app_data_dir().expect("Failed to resolve AppData path");
-  check_or_create(&app_data_path);
-  app_data_path.push("met-id");
-  check_or_create(&app_data_path);
-  app_data_path.push("DBs");
-  check_or_create(&app_data_path);
+pub fn ensure_database_in_appdata(app: &App, resource_name: &str) -> std::path::PathBuf {
+  // Resolve the appropriate App Data path for the OS
+  let mut app_data_path: PathBuf = app.path_resolver().app_data_dir()
+      .expect("Failed to resolve AppData path");
+
+  // Create directories if they don't exist
+  let dirs_to_create = ["met-id", "DBs"];
+  for dir in &dirs_to_create {
+      app_data_path.push(dir);
+      if !app_data_path.exists() {
+          fs::create_dir_all(&app_data_path)
+              .expect("Failed to create directory");
+      }
+  }
   app_data_path.push(resource_name);
 
-  // 2. Check if the database exists in AppData
+  // Check if the database exists in AppData, if not, copy from resources
   if !app_data_path.exists() {
-      let resource_path: PathBuf = get_executable_path().parent().unwrap().to_path_buf().join("DBs").join(resource_name);
-      info!("Resource path is {:?}", resource_path);
+      let resource_path: PathBuf = app.path_resolver().resource_dir().expect("Failed to resolve resource directory")
+          .join("DBs")
+          .join(resource_name);
 
-      // Perform the actual copy
-      fs::create_dir_all(app_data_path.parent().unwrap()).expect("Failed to create directories");
-      fs::copy(&resource_path, &app_data_path).expect("Failed to copy database");
+      fs::create_dir_all(app_data_path.parent().unwrap())
+          .expect("Failed to create directories");
+      fs::copy(&resource_path, &app_data_path)
+          .expect("Failed to copy database");
   }
+
   app_data_path
 }
 
