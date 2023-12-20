@@ -4,16 +4,6 @@ use log::info;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use tauri::App;
-use std::env;
-
-
-fn check_or_create(path: &PathBuf) {
-  if !path.exists() {
-    fs::create_dir_all(&path).expect("Failed to create AppData directory");
-  }
-}
-
-
 
 pub fn ensure_database_in_appdata(app: &App, resource_name: &str) -> std::path::PathBuf {
   // Resolve the appropriate App Data path for the OS
@@ -21,12 +11,11 @@ pub fn ensure_database_in_appdata(app: &App, resource_name: &str) -> std::path::
       .expect("Failed to resolve AppData path");
 
   // Create directories if they don't exist
-  let dirs_to_create = ["met-id", "DBs"];
+  let dirs_to_create: [&str; 2] = ["met-id", "DBs"];
   for dir in &dirs_to_create {
       app_data_path.push(dir);
       if !app_data_path.exists() {
-          fs::create_dir_all(&app_data_path)
-              .expect("Failed to create directory");
+          fs::create_dir_all(&app_data_path).expect("Failed to create directory");
       }
   }
   app_data_path.push(resource_name);
@@ -37,12 +26,9 @@ pub fn ensure_database_in_appdata(app: &App, resource_name: &str) -> std::path::
           .join("DBs")
           .join(resource_name);
 
-      fs::create_dir_all(app_data_path.parent().unwrap())
-          .expect("Failed to create directories");
-      fs::copy(&resource_path, &app_data_path)
-          .expect("Failed to copy database");
+      fs::create_dir_all(app_data_path.parent().unwrap()).expect("Failed to create directories");
+      fs::copy(&resource_path, &app_data_path).expect("Failed to copy database");
   }
-
   app_data_path
 }
 
@@ -52,8 +38,4 @@ pub fn create_pool_from_app_path(_app: &App, resource_path: PathBuf) -> Pool<Sql
   info!("looking in: {:?}", resource_path);
   let manager = SqliteConnectionManager::file(resource_path);
   Pool::new(manager).expect("Failed to create pool.")
-}
-
-pub fn get_executable_path() -> std::path::PathBuf {
-  env::current_exe().expect("Failed to get current executable path")
 }
