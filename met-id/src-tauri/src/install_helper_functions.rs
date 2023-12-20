@@ -28,7 +28,7 @@ pub fn ensure_database_in_appdata(app: &tauri::App, resource_name: &str) -> std:
   // 2. Check if the database exists in AppData
   if !app_data_path.exists() {
       let resource_path: PathBuf = get_executable_path().parent().unwrap().to_path_buf().join("DBs").join(resource_name);
-
+      info!("Resource path is {:?}", resource_path);
 
       // Perform the actual copy
       fs::create_dir_all(app_data_path.parent().unwrap()).expect("Failed to create directories");
