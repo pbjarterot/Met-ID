@@ -1,3 +1,4 @@
+
 ![Square310x310Logo](https://github.com/pbjarterot/Met-ID/assets/46728406/115bcc2d-3c16-42ab-8f50-484b2dd5d253)
 
 
@@ -12,7 +13,7 @@
 ## How to Install
 At the moment, we have yet to fix the automatic code signing of the software which means that they will have to be opened in unsafe mode, files to install Met-ID are located on the right hand side under "Releases" or can be found by clicking [here](https://github.com/pbjarterot/Met-ID/releases).
 
-## Preprint/Paper
+## Preprint / Paper
 To be updated
 
 ## Platforms 
