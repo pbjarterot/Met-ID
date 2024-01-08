@@ -1,7 +1,7 @@
 
 ![Square310x310Logo](https://github.com/pbjarterot/Met-ID/assets/46728406/115bcc2d-3c16-42ab-8f50-484b2dd5d253)
 
-<img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="120" height="50">
+
 
 
 
@@ -33,6 +33,9 @@ To be updated
 [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
 [![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)](https://en.wikipedia.org/wiki/HTML5)
 [![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)](https://en.wikipedia.org/wiki/CSS)
+
+## License
+<img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="120" height="50">
 
 ## Contact
 [![Linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://linktr.ee/patrikbja)
