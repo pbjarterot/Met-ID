@@ -12,6 +12,9 @@
 ## How to Install
 At the moment, we have yet to fix the automatic code signing of the software which means that they will have to be opened in unsafe mode, files to install Met-ID are located on the right hand side under "Releases" or can be found by clicking [here](https://github.com/pbjarterot/Met-ID/releases).
 
+## Preprint/Paper
+To be updated
+
 ## Platforms 
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 ![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)
