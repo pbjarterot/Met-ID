@@ -1,8 +1,8 @@
 
 ![Square310x310Logo](https://github.com/pbjarterot/Met-ID/assets/46728406/115bcc2d-3c16-42ab-8f50-484b2dd5d253)
 
+<img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="120" height="50">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
 
