@@ -1,6 +1,4 @@
-
-![Square310x310Logo](https://github.com/pbjarterot/Met-ID/assets/46728406/115bcc2d-3c16-42ab-8f50-484b2dd5d253)
-
+<img src="https://github.com/pbjarterot/Met-ID/assets/46728406/115bcc2d-3c16-42ab-8f50-484b2dd5d253" width="120" height="120">
 
 ![example workflow](https://github.com/pbjarterot/Met-ID/actions/workflows/main.yml/badge.svg)
 
@@ -58,6 +56,14 @@ Coming soon...
 
 ## Contact
 [![Linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://linktr.ee/patrikbja)
+
+
+
+
+
+
+
+
 
 
 
