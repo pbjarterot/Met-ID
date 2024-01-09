@@ -233,30 +233,11 @@ pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedro
             return Vec::new() // or handle the error in some other way
         }
     };
-    /* 
-    for line in reader.records() {
-        println!("{:?}", &line);
-        let rec: csv::StringRecord = line.unwrap();
-        let record_str: &str = rec.get(0).unwrap();
-        let res: Vec<String> = record_str.split(&delimiter).map(|s| s.to_string()).collect();
-        res_rows.push(res);
-    }
-    */
+
     // Transpose the dataset if `transpose` is true
     if transpose {
         res_rows = transpose_vec(res_rows);
     }
-    /* 
-    // Remove rows specified in `deleted_rows`
-    let filtered_rows: Vec<Vec<String>> = res_rows
-        .into_iter()
-        .enumerate()
-        .filter(|(i, _)| !deleted_rows.contains(i))
-        .map(|(_, row)| row)
-        .collect();
-    
-    filtered_rows
-    */
 
     res_rows
 }
@@ -299,38 +280,6 @@ pub fn save_csv(path: String, csvcontent: String) {
     };
 }
 
-/* 
-#[tauri::command]
-fn parse_text_file(file_path: &str) -> io::Result<Vec<f64>> {
-    let path = Path::new(file_path);
-    let file = File::open(path)?;
-    let reader = io::BufReader::new(file);
-
-    let mut numbers = Vec::new();
-    let mut is_first_row = true;
-
-    for line in reader.lines() {
-        if let Ok(line) = line {
-            let values: Vec<f64> = line
-                .split_whitespace()
-                .map(|v| v.parse::<f64>())
-                .filter_map(Result::ok)
-                .collect();
-
-            if is_first_row && values.len() > 1 {
-                numbers.extend(values);
-                break; // Stop processing rows
-            } else if !is_first_row && values.len() == 1 {
-                numbers.push(values[0]);
-            }
-
-            is_first_row = false;
-        }
-    }
-
-    Ok(numbers)
-}
-*/
 
 
 #[tauri::command]
@@ -356,72 +305,6 @@ pub fn read_mass_error_csv(path: String) -> Vec<Vec<String>> {
     res_rows
 }
 
-
-
-/*
-fn read_and_decompress(file_path: &str, offset: u64, num_elements: usize, data_type: BinaryDataType, compression: Compression) -> io::Result<Vec<u8>> {
-    let mut file = File::open(file_path)?;
-    let mut encoded_data = String::new();
-    file.read_to_string(&mut encoded_data)?;
-
-
-
-    let mut cursor = Cursor::new(encoded_data);
-    cursor.set_position(offset as u64);
-
-    
-
-
-    let element_size = match data_type {
-        BinaryDataType::Float64 => size_of::<f64>(),
-        BinaryDataType::Float32 => size_of::<f32>(),
-        BinaryDataType::Undefined => size_of::<u32>(),
-    };
-
-    // Calculate the actual offset and length in the decoded data
-    let actual_offset = offset as usize * element_size;
-    let actual_length = num_elements * element_size;
-
-    //let decoded_length = (num_elements * 3) / 4;
-    let mut buffer = vec![0; num_elements];
-
-    // Decode the entire Base64 data using the standard configuration
-    let mut decoder: DecoderReader<'_, base64::engine::GeneralPurpose, Cursor<String>> = DecoderReader::new(cursor, &general_purpose::STANDARD);
-    match decoder.read_exact(&mut buffer) {
-        Ok(_) => {
-            // Handle successfully read data
-        },
-        Err(e) => {
-            eprintln!("Failed to decode Base64 data: {:?}", e);
-            // Handle the error
-        }
-    }
-
-    // Validate the offset and length
-    if actual_offset + actual_length > buffer.len() {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Offset and length exceed decoded data size"));
-    }
-
-    let sliced_data = &buffer[actual_offset..actual_offset + actual_length];
-
-    let buffer = match compression {
-        Compression::Zlib => {
-            let mut decoder = ZlibDecoder::new(sliced_data);
-            let mut decompressed_buffer = Vec::new();
-            decoder.read_to_end(&mut decompressed_buffer)?;
-            decompressed_buffer
-        },
-        Compression::None => {
-            sliced_data.to_vec()
-        },
-        Compression::Undefined => {
-            sliced_data.to_vec()
-        },
-    };
-
-    Ok(buffer)
-}
-*/
 
 fn read_characters(file_path: &str, start: u64, end: u64) -> io::Result<String> {
     let mut file = File::open(file_path)?;
@@ -506,30 +389,6 @@ fn convert_to_type(buffer: Vec<u8>, data_type: BinaryDataType) -> Result<TypedDa
     }
 }
 
-/* 
-fn extract_and_print_first_10(data: &TypedData) {
-    match data {
-        TypedData::F64Data(vec) => {
-            println!("{:?}\t{:?}\n{:?}", vec.iter().max_by(|a, b| a.partial_cmp(b).unwrap()), vec.iter().min_by(|a, b| a.partial_cmp(b).unwrap()), vec.len());
-            for &value in vec.iter().take(10) {
-                println!("{}", value);
-            }
-        }
-        TypedData::F32Data(vec) => {
-            println!("{:?}\t{:?}\n{:?}", vec.iter().max_by(|a, b| a.partial_cmp(b).unwrap()), vec.iter().min_by(|a, b| a.partial_cmp(b).unwrap()), vec.len());
-            for &value in vec.iter().take(10) {
-                println!("{}", value);
-            }
-        }
-        TypedData::U32Data(vec) => {
-            println!("{:?}\t {:?}", vec.iter().min(), vec.iter().max());
-            for &value in vec.iter().take(10) {
-                println!("{}", value);
-            }
-        }
-    }
-}
-*/
 
 
 fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) ->TypedData {
@@ -546,33 +405,7 @@ fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) ->TypedData {
     typed_data
 }
 
-/* 
-fn extract_and_print_details(data: &TypedData) {
-    match data {
-        TypedData::F64Data(vec) => {
-            print_vector_details(vec.iter());
-        }
-        TypedData::F32Data(vec) => {
-            ()//print_vector_details(vec.iter());
-        }
-        TypedData::U32Data(vec) => {
-            () //print_vector_details(vec.iter());
-        }
-    }
-}
 
-
-fn print_vector_details(iter: std::slice::Iter<'_, f64>) {
-    let max = iter.clone().max();
-    let min = iter.clone().min();
-    println!("Max: {:?}", max);
-    println!("Min: {:?}", min);
-
-    for &value in iter.take(10) {
-        println!("{}", value);
-    }
-}
-*/
 
 
 fn top_ten_thousand<T: PartialOrd + Copy>(vec: Vec<T>) -> Vec<usize> {
