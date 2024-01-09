@@ -1,6 +1,5 @@
 import { open } from '@tauri-apps/api/dialog';
 import { invoke } from '@tauri-apps/api/tauri';
-//import { generate_ms2_small_results_card, small_results_card_expanding } from "./ms2_small_results_card";
 import { MSMSDatabase, updateMSMSResults } from './ms2_main';
 
 let result: string | string[] | null = "";
@@ -116,7 +115,6 @@ async function run_msms_match() {
   let binsize: number = Number(inputElement!.value);
   let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui", {binsize:binsize});
 
-  //console.log(identifiers, adducts, cids, mzs, cossim);
   let a: MSMSDatabase ={
     names: names,
     identifiers: identifiers,
@@ -140,33 +138,4 @@ export function match_msms() {
   }
 
   showMatchPopup();
-  //run_msms_match();
 }
-
-/*
-function addUserSpectra() {
-
-	// Step 1: Select the parent container
-	const parentContainer = document.querySelector("#ms2-results-body") as HTMLDivElement;
-
-	if (parentContainer) {
-		// Step 2: Create a new <div> element
-		const template = document.createElement("template");
-
-
-		template.innerHTML = generate_ms2_small_results_card("User Spectra", "_", "_", "_", 0.0, -1);
-		const templateContent = template.content;
-
-
-		// Step 4: Insert the new <div> element at the beginning of the parent container
-		// You can use either appendChild or insertBefore, here's an example using insertBefore
-		parentContainer.insertBefore(templateContent, parentContainer.firstChild);
-
-
-
-    let a = document.getElementById("ms2-small-results-card-" + "-1") as HTMLDivElement;
-		let b = a.querySelector("div.ms2-small-results-card-name") as HTMLDivElement;
-		small_results_card_expanding(a, b, "USER1", -1, "0");
-	}
-}
-*/

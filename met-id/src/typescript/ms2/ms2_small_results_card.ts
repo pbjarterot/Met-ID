@@ -64,7 +64,6 @@ export function small_results_card_expanding(expandableDiv: HTMLDivElement, list
         if (expandableDiv.classList.contains('open')) {
             // Collapse the div
             expandableDiv.classList.remove('open');
-            //expandableDiv.classList.add('closed');
             // Remove additional divs
             const additionalDiv = document.getElementById('ms2-small-results-card-plot-' + index.toString());
             additionalDiv!.remove();
@@ -72,13 +71,11 @@ export function small_results_card_expanding(expandableDiv: HTMLDivElement, list
         } else {
             // Expand the div
             expandableDiv.classList.add('open');
-            //expandableDiv.classList.remove('closed');
-            // Add additional divs
-            //for (let i = 0; i < 5; i++) {
+
             const newDiv = document.createElement('div');
             newDiv.className = 'ms2-small-results-card-plot';
             newDiv.id = 'ms2-small-results-card-plot-' + index.toString();
-            //newDiv.textContent = `Additional div ${1}`;
+
             expandableDiv.appendChild(newDiv);
             draw(index, identifier, adduct, cid);
 
