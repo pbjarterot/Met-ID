@@ -21,16 +21,26 @@ export async function identify() {
         adducts[i] = dictionary[adducts[i]]?.value ?? adducts[i]
     }
 
+    
+
     let mass_error_input: string = (document.getElementById("ms1-error-input-text") as HTMLInputElement)!.value as string;
     let massWindow: string = (document.getElementById("mzWindow") as HTMLInputElement)!.value as string;
     let input_masses: string[] = get_ms1_input_peaks();
 
+    let startTime = performance.now();
+
     let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, 
                                                     adducts:adducts, massError: mass_error_input, masses: input_masses,
                                                     mzwindow: massWindow});
+
+    let endTime = performance.now();
+    let timeTaken = endTime - startTime;
+    console.log(`Time taken: ${timeTaken} milliseconds`)
     fill_ms1_results(ms1_results_data);
 
     count_identified_percent();
+
+    
 }
 
 function count_identified_percent() {
@@ -40,7 +50,6 @@ function count_identified_percent() {
     var numIdentified: number = 0;
     rows.forEach((row) => {
         if (row.className === "data") {
-            console.log(row.className);
             numRows += 1;
             const cells = row.querySelectorAll('td, th');
             if (cells.length > 0 && cells[2].textContent != "" ) {

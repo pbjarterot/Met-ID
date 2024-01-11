@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 use crate::mass_match::mass_matcher;
 
 use super::build_query::build_query;
@@ -50,8 +51,13 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     
     let db_input_array: Box<[f64]> = db_input.0.into_boxed_slice();
     let db_input_array_ref: &[f64] = &*db_input_array;
-                                                        
+
+
+    let start = Instant::now();                                      
     let output: Vec<Vec<HashMap<String, String>>> = mass_matcher(input_masses, db_input_array_ref, db_input.1, db_input.2, db_input.3, db_input.4, db_input.5, _mass_error, mzwindow, &msms_ids);    
+    let duration = start.elapsed();
+    println!("Time elapsed in ms1 matcher is: {:?}", duration);
+    
     output
 }
 

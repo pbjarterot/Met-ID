@@ -43,7 +43,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         const keys: string[] = [];
         const values: SpectrumPoint[][] = [];
         for (let i = 0; i < identifiers.length; i++) {
-            const result = await invoke<string>('get_msms_spectra', { identifier:identifiers[i], adduct:adducts[i], cid:cids[i] });
+            const result = await invoke<string>('get_msms_spectra_tauri', { identifier:identifiers[i], adduct:adducts[i], cid:cids[i] });
             const resultMap = JSON.parse(result) as SpectrumMap;
             for (const key in resultMap) {
                 keys.push(key);

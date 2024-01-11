@@ -15,7 +15,7 @@ export type SpectrumMap = {[key: string]: SpectrumPoint[]}
 
 export async function draw(index: number, identifier: string, adduct: string, cid: string) {
     const fetchData = async (identifier: string, adduct: string, cid: string): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
-        const result = await invoke<string>('get_msms_spectra', { identifier, adduct, cid });
+        const result = await invoke<string>('get_msms_spectra_tauri', { identifier, adduct, cid });
         const resultMap = JSON.parse(result) as SpectrumMap;
 
         const keys: string[] = [];

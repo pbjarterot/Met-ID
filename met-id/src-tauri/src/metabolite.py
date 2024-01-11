@@ -2,6 +2,7 @@ import sys
 from rdkit import Chem
 
 def substruct_matches(smiles_strings, smarts_pattern):
+    print(smarts_pattern)
     smarts_mol = Chem.MolFromSmarts(smarts_pattern)
     if smarts_mol is None:
         return "Invalid SMARTS pattern"

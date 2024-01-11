@@ -75,7 +75,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 		cossim: new Array(mzs.length).fill(0),
 		matrices: matrices
 	};
-	console.log(mzs);
 
 	await renderSmallItems(msms.names, msms.cids, msms.adducts, msms.mzs, msms.identifiers, msms.cossim, msms.matrices);
 	document.getElementById("ms2-compare")!.addEventListener("click", () => compare_msms());
@@ -180,8 +179,6 @@ let cancellationToken: CancellationToken = { isCancelled: false };
 
 
 async function renderSmallItems(names: string[], cids: string[], adducts: string[], parent_mzs: string[] | number[], identifiers: string[], cossim: number[], matrices: string[]) {
-	console.log("here");
-	console.log(parent_mzs);
 	const res_div = document.querySelector("#ms2-results-body") as HTMLDivElement;
 	res_div.innerHTML = "";
 	const batchSize = 3;

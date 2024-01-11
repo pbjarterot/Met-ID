@@ -6,7 +6,6 @@ mod mass_match;
 mod ms2_match;
 mod regression;
 pub mod sql_mod;
-mod validation;
 mod add_to_db;
 mod multiprocessing;
 mod logging;
@@ -85,6 +84,7 @@ fn main() {
                                                  files::read_mzml_for_msms,
                                                  sql_mod::sql_handler_tauri,
                                                  sql_mod::sql_counter_tauri,
+                                                 sql_mod::get_msms_spectra_tauri,
                                                  sql_mod::get_msms_tauri,
                                                  sql_mod::get_name_from_identifier_msms_tauri,
                                                  sql_mod::ms2_search_spectra_tauri,
