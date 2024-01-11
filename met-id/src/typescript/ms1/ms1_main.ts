@@ -57,7 +57,7 @@ async function check_options_for_sql_counter() {
     let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
     let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
 
-    let count: number = await invoke("sql_counter", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
+    let count: number = await invoke("sql_counter_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
     let db_size = document.getElementById("db_size");
     
     if (db_size !== null) {

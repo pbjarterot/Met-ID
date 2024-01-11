@@ -113,7 +113,7 @@ async function run_msms_match() {
   hideMatchPopup();
 
   let binsize: number = Number(inputElement!.value);
-  let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui", {binsize:binsize});
+  let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui_tauri", {binsize:binsize});
 
   let a: MSMSDatabase ={
     names: names,

@@ -437,12 +437,12 @@ async function addToHTML(submit_id: string, add_term: string, inputs: string[][]
 	if (add_term === "Metabolite") {
 		checkboxes = generateCheckboxes(["Endogenous", "Exogenous", "Unspecified"], "Type of Metabolite");
 
-		let checkbox_labels: string[] = await invoke("get_tissues", {});
+		let checkbox_labels: string[] = await invoke("get_tissues_tauri", {});
 		checkboxes += generateCheckboxes(checkbox_labels, "Found in tissue:");
 
 
 	} else if (add_term === "Matrix") {
-		let checkbox_labels: string[] = await invoke("get_functional_groups", {});
+		let checkbox_labels: string[] = await invoke("get_functional_groups_tauri", {});
 		checkboxes = generateCheckboxes(checkbox_labels, "Derivatizes:");
 		adducts += 
 		`
@@ -470,7 +470,7 @@ async function addToHTML(submit_id: string, add_term: string, inputs: string[][]
 
 	} else if (add_term === "Functional Group") {
 		let checkbox_labels: string[] = [];
-		checkbox_labels = await invoke("get_matrices", {});
+		checkbox_labels = await invoke("get_matrices_tauri", {});
 		checkboxes = generateCheckboxes(checkbox_labels, "Derivatized by:");
 		progressbar += `
 		<li>

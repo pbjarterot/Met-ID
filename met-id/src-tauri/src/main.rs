@@ -2,13 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod files;
-mod sql;
 mod mass_match;
 mod ms2_match;
 mod regression;
-pub mod database;
+pub mod sql_mod;
 mod validation;
-mod sql_build_query;
 mod add_to_db;
 mod multiprocessing;
 mod logging;
@@ -85,24 +83,19 @@ fn main() {
                                                  files::read_mass_error_csv,
                                                  files::save_csv,
                                                  files::read_mzml_for_msms,
-                                                 sql::sql_handler,
-                                                 sql::sql_counter,
-                                                 sql::get_msms,
-                                                 sql::get_msms_spectra,
-                                                 sql::get_name_from_identifier_msms,
-                                                 //sql::find_msms_fragments,
-                                                 sql::ms2_search_spectra,
-                                                 sql::match_msms_to_ui,
-                                                 sql::get_functional_groups,
-                                                 sql::get_matrices,
-                                                 sql::get_tissues,
-                                                 sql::add_msms_to_db,
-                                                 sql::show_user_msms_db,
-                                                 sql::remove_row_from_msms_user_db,
+                                                 sql_mod::sql_handler_tauri,
+                                                 sql_mod::sql_counter_tauri,
+                                                 sql_mod::get_msms_tauri,
+                                                 sql_mod::get_name_from_identifier_msms_tauri,
+                                                 sql_mod::ms2_search_spectra_tauri,
+                                                 sql_mod::match_msms_to_ui_tauri,
+                                                 sql_mod::get_functional_groups_tauri,
+                                                 sql_mod::get_matrices_tauri,
+                                                 sql_mod::get_tissues_tauri,
+                                                 sql_mod::add_msms_to_db_tauri,
+                                                 sql_mod::show_user_msms_db_tauri,
+                                                 sql_mod::remove_row_from_msms_user_db_tauri,
                                                  regression::mass_error_regression,
-                                                 //validation::check_smiles,
-                                                 //validation::check_smarts,
-                                                 //mass_match::calculate_adjusted_mass,
                                                  is_backend_ready
                                                  ])
         .run(tauri::generate_context!())

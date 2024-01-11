@@ -62,7 +62,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 	document.getElementById("ms2-sidebar-add-to-db-button")!.addEventListener("click", async () => add_msms_to_db());
 	
 	await delay(100)
-	let [names, identifiers, adducts, cids, mzs, _windows, _tofs, matrices]: [string[], string[], string[], string[], string[], string[], string[], string[]] = await invoke("get_msms", {});
+	let [names, identifiers, adducts, cids, mzs, _windows, _tofs, matrices]: [string[], string[], string[], string[], string[], string[], string[], string[]] = await invoke("get_msms_tauri", {});
 
 	let msms: MSMSDatabase ={
 		names: names,
@@ -142,7 +142,7 @@ export async function updateMSMSResults(sorted: boolean, msms: MSMSDatabase) {
 		return;
 	}
 	if (sorted === false) {
-		let [names, identifiers, adducts, cids, windows, tofs, mzs, _cossim, matrices]: [string[], string[], string[], string[], string[], string[], string[], number[], string[]] = await invoke("ms2_search_spectra", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
+		let [names, identifiers, adducts, cids, windows, tofs, mzs, _cossim, matrices]: [string[], string[], string[], string[], string[], string[], string[], number[], string[]] = await invoke("ms2_search_spectra_tauri", {name: name, fragment:fragment, ms1mass:ms1mass, fragmentslider:fragmentslider, ms1massslider:ms1massslider});
 		let a: MSMSDatabase ={
 			names: names,
 			identifiers: identifiers,

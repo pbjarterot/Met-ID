@@ -1,7 +1,7 @@
 use std::thread;
 use std::sync::mpsc;
 use std::collections::HashMap;
-use crate::sql::add_to_db_rust;
+use crate::add_to_db::add_to_db_functions::add_to_db_rust;
 use tauri::Window;
 
 #[derive(serde::Deserialize)]

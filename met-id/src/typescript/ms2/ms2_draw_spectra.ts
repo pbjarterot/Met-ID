@@ -144,7 +144,7 @@ export async function draw(index: number, identifier: string, adduct: string, ci
 					// Implement the compare functionality here.
 					// You can use the current index "i" to determine which item to compare.
 					
-					let name = await invoke<string>("get_name_from_identifier_msms", {identifier:identifier})
+					let name = await invoke<string>("get_name_from_identifier_msms_tauri", {identifier:identifier})
 					console.log(`Comparing item ${name} ${adduct} ${labels[i]}`);
 
 					// Grab the div using its ID

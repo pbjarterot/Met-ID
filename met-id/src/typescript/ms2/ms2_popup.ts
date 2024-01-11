@@ -46,7 +46,7 @@ const removeFromDBInstance = new removeFromDBListeners();
 
 async function update_user_msms() {
 
-    const msms: MSMSDatabase = await invoke("show_user_msms_db", {});
+    const msms: MSMSDatabase = await invoke("show_user_msms_db_tauri", {});
     
     console.log(msms);
     await renderSmallItems_for_user_msms(msms[0], msms[1], msms[2], msms[3], msms[4], msms[5], msms[6], msms[7], msms[8]);
@@ -56,7 +56,7 @@ async function remove_row_from_msms_db(row_id: string) {
     const parts = row_id.split("-");
     const lastpart = parts[parts.length - 1];
     const rowid = parseInt(lastpart);
-    const done: number = await invoke("remove_row_from_msms_user_db", {rowid:rowid});
+    const done: number = await invoke("remove_row_from_msms_user_db_tauri", {rowid:rowid});
     return done;
 }
 
@@ -223,7 +223,7 @@ async function add_to_msms_db() {
     var path = document.getElementById('ms2-popup-filename-window-name')!.textContent;
     console.log(path);
 
-    const _parsed_mzml: string = await invoke("add_msms_to_db", {name:name, adduct:adduct, mz:mz, cid:cid, tof:tof, mzwindow:mzwindow, identifier:identifier, path:path, matrix:matrix});
+    const _parsed_mzml: string = await invoke("add_msms_to_db_tauri", {name:name, adduct:adduct, mz:mz, cid:cid, tof:tof, mzwindow:mzwindow, identifier:identifier, path:path, matrix:matrix});
     
     console.log("adding", _parsed_mzml);
     return

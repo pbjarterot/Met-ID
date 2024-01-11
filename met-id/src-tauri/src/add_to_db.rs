@@ -3,7 +3,7 @@ pub mod add_to_db_functions {
     use r2d2_sqlite::SqliteConnectionManager;
     use rusqlite::{params, Result, ToSql};
     //use crate::validation::mass_from_formula;
-    use crate::sql::{check_if_table_exists, check_if_table_exists_msms};
+    use crate::sql_mod::table::{check_if_table_exists, check_if_table_exists_msms};
     use crate::sidecar::sidecar_function;
     //use crate::metabolite::{ Metabolite, single_functional_group };
     use crate::database_setup::{get_connection, get_msms_connection};
@@ -583,4 +583,16 @@ pub mod add_to_db_functions {
 
     }
 
+    pub fn add_to_db_rust(name: String, smiles_smarts_mz: String, met_type: String, endo_exo_or_other: HashMap<String, bool>, in_tissue: HashMap<String, bool>, adducts: HashMap<String, String>, progress_sender: &mpsc::Sender<f32>) -> bool {
+        let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+
+        match &met_type[..] {
+        "metabolite" => add_metabolite_to_db(conn, name, smiles_smarts_mz, in_tissue, endo_exo_or_other),
+        "matrix" => add_matrix_to_db(conn, name, smiles_smarts_mz, endo_exo_or_other, adducts),
+        "fg" => add_fg_to_db(conn, name, smiles_smarts_mz, endo_exo_or_other, progress_sender),
+        _ => ()
+        }
+
+        true
+    }
 }

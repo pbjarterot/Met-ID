@@ -25,7 +25,7 @@ export async function identify() {
     let massWindow: string = (document.getElementById("mzWindow") as HTMLInputElement)!.value as string;
     let input_masses: string[] = get_ms1_input_peaks();
 
-    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler", {met: met_selected, mat: matrix_selected, typ: met_type, 
+    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, 
                                                     adducts:adducts, massError: mass_error_input, masses: input_masses,
                                                     mzwindow: massWindow});
     fill_ms1_results(ms1_results_data);

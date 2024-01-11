@@ -1,4 +1,4 @@
-use crate::sql::Args;
+use super::Args;
 use std::collections::HashMap;
 use maplit::hashmap;
 
@@ -255,4 +255,38 @@ pub fn build_custom_query(types: &[String], mapping: &HashMap<&str, &str>, fg_or
         .join(", ");
 
     Some(query)
+}
+
+pub fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts: Vec<String>) -> String {
+  let mut query: String = "SELECT COUNT(*) FROM ".to_string();
+
+  let functional_groups_map: HashMap<&str, &str> = hashmap!{
+      "Phenols" => "functional_groups.phenols",
+      "Aldehydes" => "functional_groups.aldehydes",
+      "Carboxylic" => "functional_groups.carboxylicacids",
+      "Primary" => "functional_groups.primaryamines",
+  };
+
+  let met_type_map: HashMap<&str, &str> = hashmap!{
+      "Endogenous" => "endogeneity.endogenous",
+      "Exogenous" => "endogeneity.exogenous",
+      "Unspecified" => "endogeneity.unspecified"
+  };
+
+  if met.starts_with("HMDB") {
+      query += "metabolites INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id";
+  } else {
+      query += "lipids";
+      return query;
+  };
+  if matrix == "Positive mode".to_string() || matrix == "Negative mode".to_string() {
+      query += &format!(" WHERE {met_type} ", 
+          met_type= build_condition_query(&typ, &met_type_map, false).unwrap())[..];
+      return query;
+  } else {
+      query += &format!(" WHERE {met_type} {functional_group}", 
+          met_type = build_condition_query(&typ, &met_type_map, false).unwrap(),
+          functional_group = build_condition_query(&adducts, &functional_groups_map, true).unwrap())[..];
+      return query;
+  }
 }
