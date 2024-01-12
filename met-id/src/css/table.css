@@ -433,3 +433,18 @@
     width: 100px;
 
 }
+
+#ms1-searchbar-input {
+    color: white;
+}
+#ms1-searchbar-input::placeholder {
+    color: white;
+}
+
+#add-to-ms1-table-input {
+    color: white;
+}
+
+#add-to-ms1-table-input::placeholder {
+    color: white;
+}

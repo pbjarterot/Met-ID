@@ -5,6 +5,7 @@ import { fill_dropdown, fill_under_dropdown } from "../dropdown";
 import "./ms1_mass_error";
 import "./ms1_table";
 import "./ms1_popup";
+import { addSearchbarListener } from "./ms1_searchbar";
 import {add_matrix, add_metabolite, add_functional_group} from "./ms1_add_buttons";
 import { convertTableToCSV } from './ms1_io';
 
@@ -40,6 +41,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ms1-sidebar-export-button")!.addEventListener("click", () => {
         convertTableToCSV("ms1-datatable");
     })
+
+    addSearchbarListener();
 })
 
 

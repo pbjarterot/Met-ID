@@ -21,8 +21,8 @@ export async function convertTableToCSV(table_id: string) {
   try {
     // Open a save file dialog
     const result = await save({
-      filters: [{name: 'CSV Files', extensions: [".csv",]}],
-      defaultPath: 'met-id-errors.csv', // Default file name
+      filters: [{name: 'CSV Files', extensions: ["csv",]}],
+      defaultPath: 'met-id-results.csv', // Default file name
     });
 
     await invoke("save_csv", {path:result, csvcontent: csvContent});
