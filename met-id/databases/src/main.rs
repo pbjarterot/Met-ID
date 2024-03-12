@@ -1,5 +1,6 @@
 
 mod parse_hmdb;
+mod coverage;
 mod metabolite;
 //mod draw_molecules;
 
@@ -41,8 +42,8 @@ fn import_tsv2(path: &str) -> HashMap<String, Vec<String>> {
         let line: String = line.expect("Failed to read line");
         let parts: Vec<_> = line.split("\t").collect();
 
-        if parts.len() == 5 {
-            my_map.insert(parts[0].to_string(), vec![parts[1].to_string(), parts[2].to_string(), parts[3].to_string(), parts[4].to_string()]);
+        if parts.len() == 6 {
+            my_map.insert(parts[0].to_string(), vec![parts[1].to_string(), parts[2].to_string(), parts[3].to_string(), parts[4].to_string(), parts[5].to_string()]);
         }
     }
     my_map
@@ -72,26 +73,11 @@ fn create_tables(conn: &Connection) -> () {
     []
     ).unwrap();
 
-    /* 
     conn.execute("CREATE TABLE functional_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                phenols INTEGER NOT NULL, 
-                catechols INTEGER NOT NULL, 
-                carbonyls INTEGER NOT NULL, 
-                aldehydes INTEGER NOT NULL, 
-                carboxylicacids INTEGER NOT NULL, 
-                primaryamines INTEGER NOT NULL,
-                triols INTEGER NOT NULL, 
-                diols INTEGER NOT NULL, 
-                hydroxyls INTEGER NOT NULL)",
-                []
-    ).unwrap();
-    */
-
-    conn.execute("CREATE TABLE functional_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        phenols INTEGER NOT NULL,  
-        aldehydes INTEGER NOT NULL, 
-        carboxylicacids INTEGER NOT NULL, 
-        primaryamines INTEGER NOT NULL)",
+        'Phenolic Hydroxyls' INTEGER NOT NULL,  
+        'Aldehydes' INTEGER NOT NULL, 
+        'Carboxylic Acids' INTEGER NOT NULL, 
+        'Primary Amines' INTEGER NOT NULL)",
         []
     ).unwrap();
 
@@ -100,19 +86,6 @@ fn create_tables(conn: &Connection) -> () {
             ampp INTEGER NOT NULL)",
     []
     ).unwrap();
-    /* 
-    conn.execute("CREATE TABLE derivatized_by (id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fmp INTEGER NOT NULL, 
-        dpp INTEGER NOT NULL, 
-        tahs INTEGER NOT NULL, 
-        ca INTEGER NOT NULL, 
-        girardp INTEGER NOT NULL, 
-        girardt INTEGER NOT NULL, 
-        ampp INTEGER NOT NULL, 
-        boronicacid INTEGER NOT NULL)",
-    []
-    ).unwrap();
-    */
 
     conn.execute("CREATE TABLE in_tissue (id INTEGER PRIMARY KEY AUTOINCREMENT,
         csf INTEGER NOT NULL, 
@@ -166,10 +139,7 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
     // Building the SQL statement dynamically
     let mut sql = String::from("BEGIN;\n");
 
-    let total: u64 = metabolites_len.try_into().unwrap();
-
     for i in 0..metabolites_len {
-        //println!("{:?}, {:?}", i, metabolites_len);
         let mets: &Vec<String> = &vecs[i];
         let fgh: &HashMap<String, String> = &maps[i];
 
@@ -179,17 +149,15 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
         let endo: i32 = metabolites[i].endo_exo.contains(&endogenous_str) as i32;
         let exo: i32 = metabolites[i].endo_exo.contains(&exogenous_str) as i32;
         let unspec: i32 = metabolites[i].endo_exo.is_empty() as i32;
-        if endo > 0 {
-            println!("{:?}, {:?}, {:?}", endo, exo, unspec);
-        }
+        //if endo > 0 {
+        //    println!("{:?}, {:?}, {:?}", endo, exo, unspec);
+        //}
         
 
-        let fmp10: i32 = (get_derivs(&"phenols", fgh) + get_derivs(&"primary amines", fgh)).try_into().unwrap();
-        //let dpp_tahs_ca:i32 = get_derivs(&"primary amines", fgh).try_into().unwrap();
-        //let girard: i32 = get_derivs(&"carbonyls", fgh).try_into().unwrap();
-        let ampp: i32 = (get_derivs(&"carboxylic acids", fgh) + get_derivs(&"aldehydes", fgh)).try_into().unwrap();
-        //let ba: i32 = (get_derivs(&"diols", fgh) + get_derivs(&"catechols", fgh)).try_into().unwrap();
-
+        let fmp10: i32 = (get_derivs(&"Phenolic Hydroxyls", fgh) + get_derivs(&"Primary Amines", fgh)).try_into().unwrap();
+        let ampp: i32 = (get_derivs(&"Carboxylic Acids", fgh) + get_derivs(&"Aldehydes", fgh)).try_into().unwrap();
+        
+        println!("fmp10: {:?}, ampp: {:?}", fmp10, ampp);
         // Append SQL statements to the string
         sql.push_str(&format!(
             "INSERT INTO metabolites (name, smiles, chemicalformula, mz) VALUES (\"{}\", \"{}\", \"{}\", \"{}\");\n",
@@ -197,27 +165,13 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
         ));
 
         sql.push_str(&format!(
-            "INSERT INTO functional_groups (phenols, aldehydes, carboxylicacids, primaryamines) VALUES ({}, {}, {}, {});\n",
-            get_fgh("phenols", fgh),
-            get_fgh("aldehydes", fgh),
-            get_fgh("carboxylic acids", fgh),
-            get_fgh("primary amines", fgh),
+            "INSERT INTO functional_groups ('Phenolic Hydroxyls', Aldehydes, 'Carboxylic Acids', 'Primary Amines') VALUES ({}, {}, {}, {});\n",
+            get_fgh("Phenolic Hydroxyls", fgh),
+            get_fgh("Aldehydes", fgh),
+            get_fgh("Carboxylic Acids", fgh),
+            get_fgh("Primary Amines", fgh),
         ));
 
-        /* 
-        sql.push_str(&format!(
-            "INSERT INTO functional_groups (phenols, catechols, carbonyls, aldehydes, carboxylicacids, primaryamines, triols, diols, hydroxyls) VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {});\n",
-            get_fgh("phenols", fgh),
-            //get_fgh("catechols", fgh),
-            //get_fgh("carbonyls", fgh),
-            get_fgh("aldehydes", fgh),
-            get_fgh("carboxylic acids", fgh),
-            get_fgh("primary amines", fgh),
-            //get_fgh("triols", fgh),
-            //get_fgh("diols", fgh),
-            //get_fgh("hydroxyls", fgh)
-        ));
-        */
         sql.push_str(&format!(
             "INSERT INTO derivatized_by (fmp, ampp) VALUES ({}, {});\n",
             fmp10, ampp
@@ -340,15 +294,15 @@ fn make_adduct_db(conn: &Connection) -> Result<(), rusqlite::Error> {
     let matrices: HashMap<String, Vec<String>> = import_tsv2("database/adducts.tsv");
     println!("{:?}", matrices);
     conn.execute(
-        "CREATE TABLE adducts (adduct TEXT NOT NULL, mname TEXT NOT NULL, numfunctionalgroups TEXT NOT NULL, formula TEXT NOT NULL, deltamass TEXT NOT NULL)",
+        "CREATE TABLE adducts (adduct TEXT NOT NULL, mname TEXT NOT NULL, numfunctionalgroups INTEGER NOT NULL, formula TEXT NOT NULL, deltamass REAL NOT NULL, maxcoverage INTEGER NOT NULL)",
         [],
     )?;
 
     for (key, value) in matrices {
         println!("{}, {:?}", key, value);
-        let a: [&String; 5] = [&key, &value[0], &value[1], &value[2], &value[3]];    
+        let a: [&String; 6] = [&key, &value[0], &value[1], &value[2], &value[3], &value[4]];    
         let mut stmt: rusqlite::Statement = conn.prepare(
-            "INSERT INTO adducts (adduct, mname, numfunctionalgroups, formula, deltamass) VALUES (:adduct, :mname, :numfunctionalgroups, :formula, :deltamass)").unwrap();
+            "INSERT INTO adducts (adduct, mname, numfunctionalgroups, formula, deltamass, maxcoverage) VALUES (:adduct, :mname, :numfunctionalgroups, :formula, :deltamass, :maxcoverage)").unwrap();
         stmt.execute(&a).unwrap();
     }
 
@@ -367,26 +321,26 @@ fn make_matrices_db(conn: &Connection) -> Result<(), rusqlite::Error> {
         my_map.push(parts[0].to_string());
     }
     conn.execute(
-        "CREATE TABLE matrices (matrix TEXT NOT NULL, phenols TEXT NOT NULL, 'primary amines' TEXT NOT NULL, aldehydes TEXT NOT NULL, 'carboxylic acids' TEXT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS matrices (matrix TEXT NOT NULL, 'Phenolic Hydroxyls' TEXT NOT NULL, 'Primary Amines' TEXT NOT NULL, Aldehydes TEXT NOT NULL, 'Carboxylic Acids' TEXT NOT NULL)",
         [],
     )?;
 
     for matrix in my_map {
-        if matrix == "FMP10".to_string() {
+        if matrix == "FMP-10".to_string() {
             let a: [&String; 5] = [&matrix, &"1".to_string(), &"1".to_string(), &"0".to_string(), &"0".to_string()];    
             let mut stmt: rusqlite::Statement = conn.prepare(
-                "INSERT INTO matrices (matrix, phenols, 'primary amines', aldehydes, 'carboxylic acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
             stmt.execute(&a).unwrap();
 
         } else if matrix=="AMPP"{
             let a: [&String; 5] = [&matrix, &"0".to_string(), &"0".to_string(), &"1".to_string(), &"1".to_string()];    
             let mut stmt: rusqlite::Statement = conn.prepare(
-                "INSERT INTO matrices (matrix, phenols, 'primary amines', aldehydes, 'carboxylic acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
             stmt.execute(&a).unwrap();
         } else {
             let a: [&String; 5] = [&matrix, &"0".to_string(), &"0".to_string(), &"0".to_string(), &"0".to_string()];    
             let mut stmt: rusqlite::Statement = conn.prepare(
-                "INSERT INTO matrices (matrix, phenols, 'primary amines', aldehydes, 'carboxylic acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
             stmt.execute(&a).unwrap();
         }
             
@@ -445,16 +399,17 @@ fn main() -> () {
     //let db_path = ":memory:";
     
     //remove the database if it already exists
-    std::fs::remove_file(db_path).expect("Database could not be removed");
+    //std::fs::remove_file(db_path).expect("Database could not be removed");
 
     let conn: Connection = Connection::open(db_path).expect("Could not open db");
-    make_metabolite_db(&conn).unwrap();
-    make_functional_group_smarts_table(&conn).unwrap();
-    make_lipid_db(&conn).unwrap();
+    //make_metabolite_db(&conn).unwrap();
+    //conn.execute("DROP TABLE functional_group_smarts", []).unwrap();
+    //make_functional_group_smarts_table(&conn).unwrap();
+    //make_lipid_db(&conn).unwrap();
     //conn.execute("DROP TABLE adducts", []).unwrap();
-    make_adduct_db(&conn).unwrap();
+    //make_adduct_db(&conn).unwrap();
     //conn.execute("DROP TABLE matrices", []).unwrap();
-    make_matrices_db(&conn).unwrap();
+    //make_matrices_db(&conn).unwrap();
     //let columns_to_keep = vec!["id", "phenols", "aldehydes", "carboxylicacids", "primaryamines"];
     //drop_columns_except(&conn, "functional_groups", columns_to_keep).unwrap();
 
@@ -467,5 +422,7 @@ fn main() -> () {
     //conn.execute("DROP TABLE user_matrices", []).unwrap();
     //conn.execute("DROP TABLE user_adducts", []).unwrap();
     //conn.execute("DROP TABLE user_functional_group_smarts", []).unwrap();
-
+    let fg_string: &str = "functional_groups.'Aldehydes'";
+    let matrix: &str = "FMP-10";
+    coverage::coverage_string(&conn, fg_string, matrix);
 }

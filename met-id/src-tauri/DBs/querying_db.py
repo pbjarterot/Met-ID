@@ -5,8 +5,7 @@ database_path = 'msms_db.db'
 
 # SQL command to alter the table
 sql_command = """
-ALTER TABLE MSMS
-ADD COLUMN matrix TEXT DEFAULT 'FMP-10';
+SELECT name, adduct FROM MSMS;
 """
 
 # Connect to the SQLite database
@@ -17,9 +16,13 @@ try:
     cursor = conn.cursor()
     cursor.execute(sql_command)
 
-    # Commit the changes
-    conn.commit()
-    print("Column added successfully.")
+    names = []
+    for i in cursor.fetchall():
+        if i[1] in ["1A", "2A", "2B"]:
+            names.append(f"{i[0]}, {i[1]}")
+
+    print(len(list(set(names))))
+
 
 except sqlite3.Error as error:
     print("Error while executing SQL script:", error)

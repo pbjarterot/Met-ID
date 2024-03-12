@@ -131,7 +131,7 @@ struct MSMSSpectra {
     fragment: String
 }
 
-
+/* 
 #[tauri::command]
 pub fn load_msms() -> Vec<Vec<std::string::String>> {
     //needed: name, adduct, matrix, parent mass, smiles, spectra
@@ -155,7 +155,7 @@ pub fn load_msms() -> Vec<Vec<std::string::String>> {
     // Use the data as needed
     return_data
 }
-
+*/
 
 #[tauri::command]
 pub fn parse_ms1_csv(path: String) -> Vec<f64>{

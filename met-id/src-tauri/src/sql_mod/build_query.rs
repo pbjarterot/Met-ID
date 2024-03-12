@@ -1,88 +1,80 @@
+use crate::database_setup::get_connection;
 use super::Args;
 use std::collections::HashMap;
 use maplit::hashmap;
 
+struct Adduct {
+    adduct: String
+}
+
+fn get_adducts(matrix: String) -> Vec<String> {
+    let conn = get_connection().unwrap();
+    let adduct_query = format!("SELECT adduct FROM adducts WHERE mname IN ('{}')", matrix);
+    let mut stmt = conn.prepare(&adduct_query[..]).expect("Query cannot be run");
+
+    let mut adducts: Vec<String> = Vec::new();
+    let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
+        Ok(Adduct {
+            adduct: row.get(0).unwrap_or("".to_string()),
+        })
+    }).unwrap();
+
+    for (index, item) in db_iter.enumerate() {
+        let row: Adduct = item.unwrap();
+        adducts.insert(index, format!("'{}'", row.adduct));
+    }
+
+    adducts
+}
+
+fn get_fgs(fgs: &Vec<String>) -> Vec<String> {
+    let mut new_vec = Vec::new();
+    for index in 0..fgs.len() {
+        new_vec.insert(index, format!("'{}'", fgs[index]))
+    }
+    new_vec
+}
+
+fn parse_fgs(fgs: &Vec<String>) -> String {
+    let mut res_string = "".to_string();
+    for i in 0..fgs.len() - 1 {
+        res_string += &format!("'{}', ", fgs[i]);
+    }
+    res_string += &format!("'{}'", fgs[fgs.len()-1]);
+
+    res_string
+}
 
 pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String {
-    let met_type_map: HashMap<&str, &str> = hashmap!{
-        "Endogenous" => "endogenous",
-        "Exogenous" => "exogenous",
-        "Unspecified" => "unspecified"
-    };
-
-    let _matrix_map: HashMap<&str, &str> = hashmap!{
-        "FMP-10" => "fmp",
-        "DPP" => "dpp",
-        "TAHS" => "tahs",
-        "CA" => "ca",
-        "Girard P" => "girardp",
-        "Girard T" => "girardt",
-        "AMPP" => "ampp",
-        "Boronic Acid" => "boronicacid"
-    };
-
-    let functional_groups_map: HashMap<&str, &str> = hashmap!{
-        "Phenols" => "phenols",
-        "Catechols" => "catechols",
-        "Carbonyls" => "carbonyls",
-        "Aldehydes" => "aldehydes",
-        "Carboxylic" => "carboxylicacids",
-        "Primary" => "primaryamines",
-        "Triols" => "triols",
-        "Diols" => "diols",
-        "Hydroxyls" => "hydroxyls"
-    };
-
-    let adduct_map: HashMap<&str, &str> = hashmap!{
-        "[M+K]+" => "M+K",
-        "[M+H]+" => "M+H",
-        "[M+Na]+" => "M+Na",
-        "[M+K-2H]-" => "M+K-H2",
-        "[M-H]-" => "M-H",
-        "[M+Na-2H]-" => "M+Na-H2",
-        "[M+Cl]-" => "M+Cl",
-        "M+FMP10" => "M+FMP10",
-        "M+2FMP10a" => "M+2FMP10a",
-        "M+2FMP10b" => "M+2FMP10b",
-        "M+3FMP10a" => "M+3FMP10a",
-        "M+3FMP10b" => "M+3FMP10b",
-        "M+3FMP10c" => "M+3FMP10c",
-        //extend for more matrices
-    };
-
     let tissue_map: HashMap<&str, &str> = hashmap!{
         "HMDB (CSF)" => "csf",
         "HMDB (Urine)" => "urine",
-        "HMDB (Serum)" =>"serum",
+        "HMDB (Serum)" => "serum",
     };
 
-
-    let if_fmp10: bool = args.matrix == "FMP-10".to_string();
-    let pos_neg: bool = args.matrix == "Positive mode".to_string() || args.matrix == "Negative mode".to_string();
-    println!("{:?}\n{:?}", args.met_type, met_type_map);
-    let met_type_string: String = build_query_with_table(&args.met_type, &met_type_map, "endogeneity").unwrap();
-    let chosen_deriv_string: &str = &args.matrix;
+    let conventional_matrix: bool = args.matrix == "Positive Mode".to_string() || args.matrix == "Negative Mode".to_string();
+    let met_type_string: String = build_query_with_table(&args.met_type,  "endogeneity").unwrap();
 
     let mut query: String = String::new();
 
-    let fg_or_adduct: String = {
-        if if_fmp10 {
-            let adduct_args: Vec<String> = vec![String::from("M+FMP10"), String::from("M+2FMP10a"), String::from("M+2FMP10b"), String::from("M+3FMP10a"), String::from("M+3FMP10b"), String::from("M+3FMP10c")];
-            build_custom_query(&adduct_args, &adduct_map, "adduct").unwrap_or("".to_string())
-        } else if pos_neg {
-            build_custom_query(&args.adducts, &adduct_map, "adduct").unwrap_or("".to_string())
-        } else {
-            build_custom_query(&args.adducts, &functional_groups_map, "fg").unwrap_or("".to_string())
-        }
-    };
 
+    let fg_or_adduct: String = get_adducts(args.matrix.clone()).join(", ");
 
     if !count {
         if args.metabolome.starts_with("HMDB") {
-            query += &format!(r#"SELECT (CAST(metabolites.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz,"#, fg_or_adduct=fg_or_adduct);
-            query += "metabolites.name, adducts.adduct, db_accessions.hmdb, metabolites.smiles, metabolites.chemicalformula FROM";
+            
+            if !conventional_matrix {
+                query += &format!(r#"SELECT (CAST(metabolites.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
+                query += "metabolites.name, adducts.adduct, db_accessions.hmdb, metabolites.smiles, metabolites.chemicalformula, ";
+                query += &coverage_string(&build_condition_query3(&args.adducts).unwrap(), &args.matrix);
+                query += " FROM";
+            } else {
+                query += &format!(r#"SELECT (CAST(metabolites.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=parse_fgs(&args.adducts));
+                let num_adducts = args.adducts.len();
+                query += &format!("metabolites.name, adducts.adduct, db_accessions.hmdb, metabolites.smiles, metabolites.chemicalformula, {} FROM ", num_adducts);
+            }
         } else {
-            query += &format!(r#"SELECT (CAST(lipids.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz,"#, fg_or_adduct=fg_or_adduct);
+            query += &format!(r#"SELECT (CAST(lipids.mz AS REAL) + CASE WHEN adducts.adduct IN ({fg_or_adduct}) THEN CAST(adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
             query += "lipids.name, adducts.adduct, lipids.smiles, lipids.smiles, lipids.formula FROM";
         }
         
@@ -90,16 +82,14 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
         query += "SELECT COUNT(*) FROM";
     }
 
-    let mut db_string: String;
+    let db_string: String;
 
     match args.metabolome.starts_with("HMDB") {
         true => {
             query += " metabolites ";
             match tissue_map.get(&args.metabolome[..]){
                 Some(x) => {
-                    db_string = "AND (".to_string();
-                    db_string += x;
-                    db_string += &String::from(" >0 )");
+                    db_string = format!("AND (in_tissue.'{}' > 0)", x);
                 },
                 None => db_string = "".to_string(),
             }
@@ -110,52 +100,42 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
             db_string = String::from("");
         },
     }
-
-
-    let cross_join_args = {
-        if if_fmp10 {
-            let adduct_args: Vec<String> = vec![String::from("M+FMP10"), String::from("M+2FMP10a"), String::from("M+2FMP10b"), String::from("M+3FMP10a"), String::from("M+3FMP10b"), String::from("M+3FMP10c")];
-            build_select_query(&adduct_args, &adduct_map).unwrap_or("".to_string())
-        } else if pos_neg {
-            build_select_query(&args.adducts, &adduct_map).unwrap_or("".to_string())
-        } else {
-            //extend this for more matrices
-            build_select_query(&args.adducts, &adduct_map).unwrap_or("".to_string())
-        }
+    let tissue_string:String = match tissue_map.get(&args.metabolome[..]){
+        Some(x) => {
+            format!("AND (in_tissue.'{}' >0 )", x)
+        },
+        None => "".to_string(),
     };
-
-    if args.metabolome.starts_with("HMDB") {
-        query += "INNER JOIN db_accessions ON metabolites.id = db_accessions.id INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id INNER JOIN derivatized_by ON metabolites.id = derivatized_by.id ";
-        query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
+    
+    let cross_join_args;
+    if !conventional_matrix {
+        cross_join_args = build_select_query(&get_adducts(args.matrix.clone())).unwrap_or("".to_string());
     } else {
-        query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
-    }
+        cross_join_args = build_select_query(&get_fgs(&args.adducts)).unwrap_or("".to_string());
+    };
+    if args.metabolome.starts_with("HMDB") {
+        if !conventional_matrix {
+            query += "INNER JOIN db_accessions ON metabolites.id = db_accessions.id INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id INNER JOIN derivatized_by ON metabolites.id = derivatized_by.id INNER JOIN in_tissue ON metabolites.id = in_tissue.id ";
+        } else {
+            query += "INNER JOIN db_accessions ON metabolites.id = db_accessions.id INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN in_tissue ON metabolites.id = in_tissue.id ";
+        }
+    } 
+    query += &format!(r#"CROSS JOIN ({a}) AS m LEFT JOIN adducts ON m.mname = adducts.adduct "#, a=&cross_join_args);
+
+
     
 
-    let a: String = if if_fmp10 {
-        format!(r#"WHERE CASE WHEN adducts.adduct='M+FMP10' AND derivatized_by.fmp >= 1 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b') AND derivatized_by.fmp >= 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 WHEN adducts.adduct IN ('M+FMP10', 'M+2FMP10a', 'M+2FMP10b', 'M+3FMP10a', 'M+3FMP10b', 'M+3FMP10c') AND derivatized_by.fmp > 2 AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group}) THEN 1 ELSE 0 END=1"#, 
-        max=&max_mz.to_string(), min=&min_mz.to_string(), db=db_string, met_type = met_type_string, func_group = build_query_with_table(&args.adducts, &functional_groups_map, "functional_groups").unwrap())
-    } else if pos_neg {
+    let a: String = if !conventional_matrix {
+        format!("WHERE adducts.numfunctionalgroups <= {} AND adjusted_mz < {} AND adjusted_mz > {} {} AND ({})", &build_condition_query3(&args.adducts).unwrap(), &max_mz.to_string(), &min_mz.to_string(), db_string, met_type_string)
+    } else {
         if args.metabolome.starts_with("HMDB") {
-            format!(r#"WHERE ({met_type}) AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
-            max=&max_mz.to_string(), min=&min_mz.to_string(), 
-            met_type=met_type_string, 
-            adduct=build_csv_query(&args.adducts, &adduct_map).unwrap().replace("\\", ""))
+            format!(r#"WHERE ({met_type}) AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {tissue}"#, 
+            max=&max_mz.to_string(), min=&min_mz.to_string(), met_type=met_type_string, tissue=tissue_string)
         } else {
-            format!(r#"WHERE CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} AND adducts.adduct IN ({adduct})"#, 
-            max=&max_mz.to_string(), min=&min_mz.to_string(),
-            adduct=build_csv_query(&args.adducts, &adduct_map).unwrap().replace("\\", ""))
+            format!(r#"WHERE CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(lipids.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min}"#, 
+            max=&max_mz.to_string(), min=&min_mz.to_string())
         }
 
-    } else {
-        format!(r#"WHERE adducts.adduct ='M+{deriv}' AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) < {max} AND CAST(metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {db} AND ({met_type}) AND ({func_group})"#, 
-        max=&max_mz.to_string(), 
-        min=&min_mz.to_string(),
-        db=db_string, 
-        met_type = met_type_string, 
-        func_group=build_query_with_table(&args.adducts, &functional_groups_map, "functional_groups").unwrap(),
-        deriv = chosen_deriv_string
-        )
     };
     query += &a;
     if !count {
@@ -168,34 +148,33 @@ pub fn build_query(args: Args, min_mz: f64, max_mz: f64, count: bool) -> String 
     query
 }
 
-
-pub fn build_query_with_table(types: &[String], mapping: &HashMap<&str, &str>, table: &str) -> Option<String> {
+pub fn build_query_with_table(types: &[String], table: &str) -> Option<String> {
     if types.is_empty() {
         return Some("".to_string());
     }
 
     let query = types.iter()
-        .filter_map(|t| mapping.get(t.as_str()).map(|&field| format!("{}.{} >= 1", table, field)))
+        .filter_map(|t| Some(t).map(|field| format!("{}.'{}' >= 1", table, field.to_lowercase())))
         .collect::<Vec<String>>()
         .join(" OR ");
 
     Some(query)
 }
 
-pub fn build_csv_query(types: &[String], mapping: &HashMap<&str, &str>) -> Option<String> {
+pub fn build_csv_query(types: &[String]) -> Option<String> {
     if types.is_empty() {
-        return None;
+        return Some("".to_string());
     }
     let query = types.iter()
-        .filter_map(|t| mapping.get(t.as_str()))
-        .map(|&field| format!("'{}'", field))
+        .filter_map(|t| Some(t))
+        .map(|field| format!("'{}'", field))
         .collect::<Vec<String>>()
         .join(", ");
 
     Some(query)
 }
 
-pub fn build_condition_query(types: &[String], mapping: &HashMap<&str, &str>, start_with_and: bool) -> Option<String> {
+pub fn build_condition_query(types: &[String], start_with_and: bool) -> Option<String> {
     if types.is_empty() {
         return Some("".into());
     }
@@ -207,8 +186,46 @@ pub fn build_condition_query(types: &[String], mapping: &HashMap<&str, &str>, st
     };
 
     query += &types.iter()
-        .filter_map(|t| mapping.get(t.as_str()))
-        .map(|&field| format!("{} > 0", field))
+        .filter_map(|t| Some(t)
+        .map(|field| format!("functional_groups.'{}' ", field)))
+        .collect::<Vec<String>>()
+        .join(" + ");
+
+    query += " > 0)";
+    Some(query)
+}
+
+pub fn build_condition_query3(types: &[String]) -> Option<String> {
+    if types.is_empty() {
+        return Some("".into());
+    }
+
+    let mut query: String ="(".to_string();
+
+    query += &types.iter()
+        .filter_map(|t| Some(t)
+        .map(|field| format!("functional_groups.'{}'", field)))
+        .collect::<Vec<String>>()
+        .join(" + ");
+
+    query += ")";
+    Some(query)
+}
+
+pub fn build_condition_query2(types: &[String], start_with_and: bool) -> Option<String> {
+    if types.is_empty() {
+        return Some("".into());
+    }
+
+    let mut query = if start_with_and {
+        " AND (".to_string()
+    } else {
+        "(".to_string()
+    };
+
+    query += &types.iter()
+        .filter_map(|t| Some(t)
+        .map(|field| format!("endogeneity.'{}' >= 1", field.to_lowercase())))
         .collect::<Vec<String>>()
         .join(" OR ");
 
@@ -216,17 +233,17 @@ pub fn build_condition_query(types: &[String], mapping: &HashMap<&str, &str>, st
     Some(query)
 }
 
-pub fn build_select_query(types: &[String], mapping: &HashMap<&str, &str>) -> Option<String> {
+pub fn build_select_query(types: &[String]) -> Option<String> {
     if types.is_empty() {
         return None;
     }
     
     let query = types.iter().enumerate()
-        .filter_map(|(index, t)| mapping.get(t.as_str()).map(|&field| {
+        .filter_map(|(index, t)| Some(t).map(|field| {
             if index == 0 {
-                format!("SELECT '{}' AS mname", field)
+                format!("SELECT {} AS mname", field)
             } else {
-                format!("UNION SELECT '{}'", field)
+                format!("UNION SELECT {}", field)
             }
         }))
         .collect::<Vec<String>>()
@@ -235,18 +252,19 @@ pub fn build_select_query(types: &[String], mapping: &HashMap<&str, &str>) -> Op
     Some(query)
 }
 
-pub fn build_custom_query(types: &[String], mapping: &HashMap<&str, &str>, fg_or_adduct: &str) -> Option<String> {
+pub fn build_custom_query(types: &[String], fg_or_adduct: &str) -> Option<String> {
     if types.is_empty() {
         return None;
     }
 
+
     let query = types.iter()
-        .filter_map(|t| mapping.get(t.as_str()))
-        .map(|&field| {
+        .filter_map(|t| Some(t))
+        .map(|field| {
             if fg_or_adduct == "adduct" {
                 format!("'{}'", field)
             } else if fg_or_adduct == "fg" {
-                format!("functional_groups.{}", field)
+                format!("functional_groups.'{}'", field)
             } else {
                 "".to_string()
             }
@@ -257,36 +275,80 @@ pub fn build_custom_query(types: &[String], mapping: &HashMap<&str, &str>, fg_or
     Some(query)
 }
 
-pub fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts: Vec<String>) -> String {
-  let mut query: String = "SELECT COUNT(*) FROM ".to_string();
+pub fn coverage_string(fg_string: &str, matrix: &str) -> String {
+    let conn = get_connection().unwrap();
+    let sql: &str = &format!("SELECT numfunctionalgroups, maxcoverage FROM adducts WHERE mname = '{}'", matrix);
+    let mut stmt = conn.prepare(sql).unwrap();
+    let adducts_iter = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_,i32>(0).unwrap(),
+        row.get::<_,i32>(1).unwrap(),
+    ))
+    }).unwrap();
 
-  let functional_groups_map: HashMap<&str, &str> = hashmap!{
-      "Phenols" => "functional_groups.phenols",
-      "Aldehydes" => "functional_groups.aldehydes",
-      "Carboxylic" => "functional_groups.carboxylicacids",
-      "Primary" => "functional_groups.primaryamines",
-  };
+    let mut fg_vec: Vec<i32> = Vec::new();
+    let mut cov_vec: Vec<i32> = Vec::new();
 
-  let met_type_map: HashMap<&str, &str> = hashmap!{
-      "Endogenous" => "endogeneity.endogenous",
-      "Exogenous" => "endogeneity.exogenous",
-      "Unspecified" => "endogeneity.unspecified"
-  };
+    for adduct in adducts_iter {
+    match adduct {
+        Ok((fg, cov)) => {
+        if !fg_vec.contains(&fg) {
+            fg_vec.push(fg);
+            cov_vec.push(cov);
+        }
+        },
+        Err(e) => println!("Error: {}", e)
+    }
+    }
 
-  if met.starts_with("HMDB") {
-      query += "metabolites INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id";
-  } else {
-      query += "lipids";
-      return query;
-  };
-  if matrix == "Positive mode".to_string() || matrix == "Negative mode".to_string() {
-      query += &format!(" WHERE {met_type} ", 
-          met_type= build_condition_query(&typ, &met_type_map, false).unwrap())[..];
-      return query;
-  } else {
-      query += &format!(" WHERE {met_type} {functional_group}", 
-          met_type = build_condition_query(&typ, &met_type_map, false).unwrap(),
-          functional_group = build_condition_query(&adducts, &functional_groups_map, true).unwrap())[..];
-      return query;
-  }
+    let max_index = fg_vec.iter()
+                        .enumerate()
+                        .max_by_key(|&(_, value)| value)
+                        .map(|(index, _)| index)
+                        .unwrap();
+
+
+    let mut sql = "CASE ".to_string();
+
+    sql += &format!("WHEN {} > {} THEN {} ", fg_string, fg_vec[max_index], cov_vec[max_index]);
+
+    for index in 0..fg_vec.len() {
+    sql += &format!("WHEN {} = {} THEN {} ", fg_string, fg_vec[index], cov_vec[index])
+    }
+    sql += "END as coverage_value";
+    sql
 }
+
+pub fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts: Vec<String>) -> String {
+    let tissue_map: HashMap<&str, &str> = hashmap!{
+        "HMDB (CSF)" => "csf",
+        "HMDB (Urine)" => "urine",
+        "HMDB (Serum)" => "serum",
+    };
+    /* 
+    let tissue_string: String = match tissue_map.get(&args.metabolome[..]){
+        Some(x) => {
+            format!("AND (in_tissue.'{}' >0 )", x)
+        },
+        None => "".to_string(),
+    };
+    */
+    let mut query: String = "SELECT COUNT(*) FROM ".to_string();
+    if met.starts_with("HMDB") {
+        query += "metabolites INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id";
+    } else {
+        query += "lipids";
+        return query;
+    };
+    if matrix == "Positive Mode".to_string() || matrix == "Negative Mode".to_string() {
+        query += &format!(" WHERE {met_type} ", 
+            met_type= build_condition_query2(&typ, false).unwrap())[..];
+        return query;
+    } else {
+        query += &format!(" WHERE {met_type} {functional_group}", 
+            met_type = build_condition_query2(&typ, false).unwrap(),
+            functional_group = build_condition_query(&adducts, true).unwrap())[..];
+        return query;
+    }
+}
+

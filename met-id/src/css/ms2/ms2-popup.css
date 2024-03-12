@@ -336,8 +336,7 @@ margin: 1.5rem 0;
     margin: 0px;
     text-align: center;
     vertical-align: center;
-    min-width: 10px;
-    
+    min-width: 10px;  
 }
 
 .ms2-popup-spreadsheet-div th {
@@ -395,4 +394,40 @@ margin: 1.5rem 0;
   background-color: rgba(0, 0, 0, 0);
   border: 0;
   color: white;
+}
+
+.ms2-popup-export-button-div {
+  position: fixed;
+  right: 40px;
+  top: 10px;
+}
+#ms2-popup-export-button {
+  border-radius: 10px;
+  height: 40px;
+  width: 200px;
+  color:white;
+  background-color: #434343;
+  border: 1px solid white;
+}
+#ms2-popup-export-button:hover {
+  background-color: rgb(100, 100, 100);
+}
+
+#ms2-popup-export-button:active {
+  background-color: rgb(180, 180, 180);
+}
+#ms2-popup-export-csv-button {
+  border-radius: 10px;
+  height: 40px;
+  width: 200px;
+  color:white;
+  background-color: #434343;
+  border: 1px solid white;
+}
+#ms2-popup-export-csv-button:hover {
+  background-color: rgb(100, 100, 100);
+}
+
+#ms2-popup-export-csv-button:active {
+  background-color: rgb(180, 180, 180);
 }

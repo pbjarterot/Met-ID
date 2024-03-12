@@ -2,7 +2,6 @@
 pub mod add_to_db_functions {
     use r2d2_sqlite::SqliteConnectionManager;
     use rusqlite::{params, Result, ToSql};
-    //use crate::validation::mass_from_formula;
     use crate::sql_mod::table::{check_if_table_exists, check_if_table_exists_msms};
     use crate::sidecar::sidecar_function;
     //use crate::metabolite::{ Metabolite, single_functional_group };
@@ -11,6 +10,7 @@ pub mod add_to_db_functions {
     use std::iter::repeat;
     use std::sync::mpsc;
     use crate::files::read_mzml_for_msms_to_add_to_db;
+    use regex::Regex;
 
     fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
         smiles.insert(0, smarts.to_owned());
@@ -39,22 +39,34 @@ pub mod add_to_db_functions {
         parse_input(&sidecar_output.unwrap()[..], smarts_map).unwrap()
     }
 
+    fn matrix_for_db_sidecar(smiles: String) -> String {
+        let mut smiles_vec: Vec<_> = Vec::new();
+        smiles_vec.insert(0, smiles.clone());
+        let sidecar_output: std::prelude::v1::Result<String, crate::sidecar::CommandError> = sidecar_function("matrix_for_db".to_string(), smiles_vec);
+
+        
+        let re: Regex = Regex::new(r"[\r\n]").unwrap();
+        let sc_o: String = re.replace_all(&sidecar_output.unwrap_or("".to_string()), "").to_string();
+        println!("sidecar_output: {:?}", sc_o);
+
+        sc_o
+    }
+
     fn parse_input(input: &str, smarts_map: &mut HashMap<String, String>) -> Result<(String, String, HashMap<String, String>), &'static str> {
-        use regex::Regex;
         //let input = "C3H8 44.062600255999996 [0, 0, 0, 0]\r";
 
         // Extract molecule formula
-        let molecule_re = Regex::new(r"([A-Z][a-z]*\d*)+").unwrap();
-        let molecule = molecule_re.find(input).unwrap().as_str();
+        let molecule_re: Regex = Regex::new(r"([A-Z][a-z]*\d*)+").unwrap();
+        let molecule: &str = molecule_re.find(input).unwrap().as_str();
 
         // Extract float number
-        let float_re = Regex::new(r"\d+\.\d+").unwrap();
+        let float_re: Regex = Regex::new(r"\d+\.\d+").unwrap();
         let float_number: f64 = float_re.find(input).unwrap().as_str().parse().unwrap();
 
         // Extract numbers from the array
-        let array_start = input.find('[').unwrap();
-        let array_end = input.find(']').unwrap();
-        let array_str = &input[array_start + 1..array_end];
+        let array_start: usize = input.find('[').unwrap();
+        let array_end: usize = input.find(']').unwrap();
+        let array_str: &str = &input[array_start + 1..array_end];
         let array: Vec<i32> = array_str
             .split(", ")
             .filter_map(|s| s.trim().parse().ok())
@@ -75,7 +87,7 @@ pub mod add_to_db_functions {
         let match_counts: Vec<usize> = single_functional_group(smarts);
     }
     */
-     
+    
     pub fn update_functional_groups(table_name: &str, table2_name: &str, name: &String, smarts: &String, progress_sender: &mpsc::Sender<f32>) {
         const BATCH_SIZE: usize = 50;
         
@@ -525,38 +537,42 @@ pub mod add_to_db_functions {
     pub fn add_matrix_to_db(conn: r2d2::PooledConnection<SqliteConnectionManager>, name: String, _smiles_mz: String, checkboxes: HashMap<String, bool>, adducts: HashMap<String, String>) -> () {
         check_if_table_exists("matrices", "user_matrices").unwrap();
         check_if_table_exists("adducts", "user_adducts").unwrap();    
+
+        let array_length: usize = adducts.len()/3;
         
         //filling user_adducts
-        let mut adduct_vec: Vec<String> = Vec::new();
-        let mut mx_formula_vec: Vec<String> = Vec::new();
-        let mut fg_vec: Vec<String> = Vec::new();
+        let mut adduct_arr: [&str; 20] = [""; 20];
+        let mut mx_formula_arr: [&str; 20] = [""; 20];
+        let mut fg_arr: [&str; 20] = [""; 20];
         let mut deltamass_vec: Vec<String> = Vec::new();
 
+        println!("here, {:?}", adducts.len()/3);
+
         for (key, value) in adducts.iter() {
-            if let Some((prefix, number)) = split_key(key) {
-                let _column = match prefix.as_str() {
-                    "add-adduct-name-" => adduct_vec.insert(number as usize, value.to_string()),
-                    "add-matrix-formula-" => {
-                        mx_formula_vec.insert(number as usize, value.to_string()); 
-                        deltamass_vec.insert(number as usize, "0".to_string());//mass_from_formula(value).to_string());
-                    },
-                    "add-fg-" => {
-                        if value.to_string() == "".to_string() {
-                            fg_vec.insert(number as usize, "1".to_string());
-                        } else {
-                            fg_vec.insert(number as usize, value.to_string());
-                        }
-                    },
-                    _ => continue, // skip if not one of the expected prefixes
-                };
+            let (prefix, number) = if let Some(result) = split_key(key) {
+                result
+            } else {
+                continue; // Skip if key doesn't match expected format
+            };
+
+            match prefix.as_str() {
+                "add-adduct-name-" => adduct_arr[number as usize] = value,
+                "add-matrix-formula-" => {
+                    deltamass_vec.insert(number as usize, matrix_for_db_sidecar(value.clone()));
+                    mx_formula_arr[number as usize] = &value[..];
+                },
+                "add-fg-" => {
+                    fg_arr[number as usize] = if value.is_empty() { "1" } else { value };
+                },
+                _ => {}, // Other cases
             }
         }
 
         // Iterate over the vectors and insert the data into the table
-        for i in 0..adduct_vec.len() {
+        for i in 0..array_length {
             conn.execute(
                 "INSERT INTO user_adducts (adduct, mname, numfunctionalgroups, formula, deltamass) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![adduct_vec[i], name, fg_vec[i], mx_formula_vec[i], deltamass_vec[i]],
+                params![adduct_arr[i], name, fg_arr[i], mx_formula_arr[i], deltamass_vec[i]],
             ).unwrap();
         }
 

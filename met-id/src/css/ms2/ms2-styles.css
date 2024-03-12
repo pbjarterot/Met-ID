@@ -524,19 +524,22 @@ width: 50%;
   }
 
 #ms2-popup-plot {
-    height: 100%;
+    height: 90%;
     width: 97%;
     position: fixed;
     left: 0px;
+    top: 70px;
+    background-color: #2F2F2F;
 }
 
 .ms2-popup-compare-names {
     position: fixed;
     top: 0px;
     left: 10%;
-    width: 80%;
+    width: 70%;
     color: rgb(203, 203, 203);
     font-size: 20px;
+    background-color: #2F2F2F;
 }
 
 #ms2-match-popup {
@@ -548,7 +551,7 @@ width: 50%;
     background-color: #2f2f2f;
     padding: 5px;
     z-index: 10000; /* Ensure the popup is on top of the overlay */
-    height: 110px;
+    height: 170px;
     width: 30%;
     border-radius: 20px;
 
@@ -595,8 +598,7 @@ width: 50%;
     top: 10px;
     left: 10px;
     position:relative;
-    width: 100%;
-    height: 100%;
+    color: white;
     display: grid;
     grid-template-columns: auto auto;
 }
@@ -607,12 +609,13 @@ width: 50%;
 
 }
 .ms2-match-option-row .ms2-match-option-binsize {
-    width: 90%;
+    width: 150px;
+}
+.ms2-match-option-row .ms2-match-option-threshold {
+    width: 150px;
 }
 
-.ms2-match-option-binsize p {
-    color: white;
-}
+
 
 #ms2-add-to-db-add-button {
     border-radius: 10px;

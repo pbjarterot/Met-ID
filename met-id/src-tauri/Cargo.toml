@@ -1,9 +1,9 @@
 [package]
-name = "met-id"
-version = "0.0.1"
+name = "Met-ID"
+version = "0.0.4"
 description = "A Tauri App"
 authors = ["you"]
-license = ""
+license = "CC BY-NC"
 repository = ""
 edition = "2021"
 

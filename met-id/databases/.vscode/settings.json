@@ -1,5 +1,5 @@
 {
     "rust-analyzer.linkedProjects": [
-        ".\\src\\making_structure_images\\Cargo.toml"
+        ".\\Cargo.toml"
     ]
 }

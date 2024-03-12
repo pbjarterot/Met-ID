@@ -45,16 +45,18 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     }
 
     let query_str: String = build_query(args, min_peak - 1.0, max_peak + 1.0, count);
+    println!("{:?}", query_str);
 
-    let db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>) = sql_query(&query_str);
+    let db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str);
     let msms_ids: Vec<String> = get_msms_ids();
+
     
     let db_input_array: Box<[f64]> = db_input.0.into_boxed_slice();
     let db_input_array_ref: &[f64] = &*db_input_array;
 
 
     let start = Instant::now();                                      
-    let output: Vec<Vec<HashMap<String, String>>> = mass_matcher(input_masses, db_input_array_ref, db_input.1, db_input.2, db_input.3, db_input.4, db_input.5, _mass_error, mzwindow, &msms_ids);    
+    let output: Vec<Vec<HashMap<String, String>>> = mass_matcher(input_masses, db_input_array_ref, db_input.1, db_input.2, db_input.3, db_input.4, db_input.5, db_input.6, _mass_error, mzwindow, &msms_ids);    
     let duration = start.elapsed();
     println!("Time elapsed in ms1 matcher is: {:?}", duration);
     
