@@ -24,7 +24,8 @@
         "sidecar": true,
         "scope": [
           {"name": "pyinstaller/dist/metabolite", "sidecar": true},
-          {"name": "pyinstaller/dist/metabolite_for_db", "sidecar": true}
+          {"name": "pyinstaller/dist/metabolite_for_db", "sidecar": true},
+          {"name": "pyinstaller/dist/matrix_for_db", "sidecar": true}
         ]
         
       },
@@ -62,7 +63,8 @@
       "active": true,
       "externalBin": [
         "pyinstaller/dist/metabolite",
-        "pyinstaller/dist/metabolite_for_db"
+        "pyinstaller/dist/metabolite_for_db",
+        "pyinstaller/dist/matrix_for_db"
       ],
       "icon": [
         "icons/32x32.png",

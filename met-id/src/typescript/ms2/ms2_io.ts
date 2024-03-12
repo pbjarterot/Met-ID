@@ -49,9 +49,16 @@ export function showMatchPopup (this: any) {
                                   <div class="ms2-match-option-binsize">
                                     <p>Bin size (Da)</p>
                                   </div>
-                                  <input type="text" class="ms2-match-option-input" id="ms2-match-option-binsize-input" oninput="validateInput(this)">
+                                  <input type="text" class="ms2-match-option-input" id="ms2-match-option-binsize-input" oninput="validateInput(this)" required>
+                                </div>
+                                <div class="ms2-match-option-row">
+                                  <div class="ms2-match-option-threshold">
+                                    <p>Maximum m/z (Da)</p>
+                                  </div>
+                                  <input type="text" class="ms2-match-option-input" id="ms2-match-option-threshold-input" oninput="validateInput(this)">
                                 </div>`;
     const inputElement = document.getElementById("ms2-match-option-binsize-input");
+    const inputElement2 = document.getElementById("ms2-match-option-threshold-input");
 
     if (inputElement) {
         inputElement.oninput = function(event) {
@@ -60,6 +67,14 @@ export function showMatchPopup (this: any) {
     } else {
         console.error("Element with ID 'ms2-match-option-binsize-input' not found.");
     }
+
+    if (inputElement2) {
+      inputElement2.oninput = function(event) {
+          validateInput(event.target as HTMLInputElement);
+      };
+  } else {
+      console.error("Element with ID 'ms2-match-option-threshold-input' not found.");
+  }
                                 
 
     const continuePopupButton = document.getElementById("ms2-match-popup-continue-button");
@@ -109,11 +124,26 @@ function hideMatchPopup() {
 
 async function run_msms_match() {
   const inputElement = document.getElementById("ms2-match-option-binsize-input") as HTMLInputElement;
+  const inputElement2 = document.getElementById("ms2-match-option-threshold-input") as HTMLInputElement;
   console.log(inputElement!.value);
+
+  if (inputElement!.value === "") {
+    console.log("bin size is empty")
+    return;
+  }
+
+
   hideMatchPopup();
 
   let binsize: number = Number(inputElement!.value);
-  let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui_tauri", {binsize:binsize});
+  let threshold: number = 0.0
+  if  (inputElement2!.value === "") {
+
+  } else {
+    threshold = Number(inputElement2!.value)
+  }
+
+  let [names, identifiers, adducts, cids, mzs, cossim, matrices]: [string[], string[], string[], string[], string[], number[], string[]] = await invoke("match_msms_to_ui_tauri", {binsize:binsize, threshold:threshold});
 
   let a: MSMSDatabase ={
     names: names,

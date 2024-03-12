@@ -3,6 +3,7 @@ import './ms2/ms2_main';
 import './ms1/ms1_main';
 import { get_ctrl_v_data } from './ms1/ms1_popup';
 import { invoke } from '@tauri-apps/api/tauri'
+import { new_tgt_matrix } from './dropdown';
 
 window.addEventListener("DOMContentLoaded", () => {
 	invoke('close_splashscreen')
@@ -10,8 +11,9 @@ window.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('titlebar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
 	document.getElementById('titlebar-close')!.addEventListener('click', () => appWindow.close());
 
-	//document.getElementById("tab-2")?.click();
-	//document.getElementById("ms1-sidebar-add-matrix")?.click();
+	document.getElementById("tab-2")?.click();
+	//document.getElementById("ms1-sidebar-add-metabolite")?.click();
+	new_tgt_matrix()
 });
 
 
@@ -45,5 +47,7 @@ document.addEventListener("keydown", async function(e) {
 		
 	  }
 });
+
+
 
 

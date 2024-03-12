@@ -36,8 +36,12 @@
           <div id="ms2-overlay"></div>
           <div id="ms2-popup">
             <div class="ms2-popup-compare-names" id="ms2-popup-compare-names"></div>
-            <div class="ms2-popup-plot" id="ms2-popup-plot">
+            <div class="ms2-popup-export-button-div">
+              <button class="ms2-popup-export-button" id="ms2-popup-export-button">Export as Image</button>
+              <button class="ms2-popup-export-button" id="ms2-popup-export-csv-button">Export as CSV</button>
             </div>
+            
+            <div class="ms2-popup-plot" id="ms2-popup-plot"></div>
           </div>
           <div id="ms2-add-to-db-overlay">
           </div>
@@ -170,7 +174,7 @@
                     </div>
                     <div class="ms2-searchbar-row">
                       <div class="ms2-searchbar-name">
-                        <p>Fragment m/z</p>
+                        <p>Product ion m/z</p>
                       </div>
                       <input type="text" class="ms2-searchbar-input" id="msms-searchbar-fragment">
                     </div>
@@ -501,6 +505,7 @@
                           <th>Matched difference (ppm)</th>
                           <th>Matched theoretical mass</th>
                           <th>MSMS available?</th>
+                          <th>Coverage</th>
                         </tr>
                       </thead>
                       <tbody id="ms1-table-body">

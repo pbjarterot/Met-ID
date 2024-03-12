@@ -196,12 +196,12 @@ export async function draw(index: number, identifier: string, adduct: string, ci
         const transform = event.transform;
         const xNewScale = transform.rescaleX(xScale);
         const filteredData = dat.flatMap((data, index) => {
-			if (shouldIncludeArray[index]) {
-				return data.filter(d => d.x >= xNewScale.domain()[0] && d.x <= xNewScale.domain()[1]);
-			} else {
-				return []; // Exclude this data array
-			}
-		});
+					if (shouldIncludeArray[index]) {
+						return data.filter(d => d.x >= xNewScale.domain()[0] && d.x <= xNewScale.domain()[1]);
+					} else {
+						return []; // Exclude this data array
+					}
+				});
         const yMaxInView = d3.max(filteredData, d => d.y)!;
         const yNewScale = d3.scaleLinear().domain([yMaxInView, 0]).range([0, height]);
 

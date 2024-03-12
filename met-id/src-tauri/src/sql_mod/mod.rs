@@ -6,6 +6,8 @@ mod msms;
 mod functional_groups;
 mod tissues;
 mod matrices;
+mod mtx_dropdown;
+mod user_tables;
 pub mod table;
 
 use self::sql_handler::sql_handler;
@@ -14,6 +16,8 @@ use self::msms::{ get_msms, get_msms_spectra, get_name_from_identifier_msms, ms2
 use self::functional_groups::get_functional_groups;
 use self::tissues::get_tissues;
 use self::matrices::get_matrices;
+use self::user_tables::{ update_user_metabolites, remove_row_from_user_metabolites, remove_row_from_user_matrices, update_user_matrices, update_user_fgs, remove_user_fgs};
+use self::mtx_dropdown::matrix_dropdown;
 
 use std::collections::HashMap;
 use serde::{ Serialize, Deserialize };
@@ -35,7 +39,8 @@ pub struct MS1DbRow {
     mname: String,
     accession: String,
     smiles: String,
-    formula: String
+    formula: String,
+    possible_derivs: i32
 }
 
 #[derive(Debug)]
@@ -112,22 +117,22 @@ pub fn ms2_search_spectra_tauri(name: String, fragment: String, ms1mass: String,
 
 #[tauri::command]
 pub fn get_functional_groups_tauri() -> Vec<String> {
-  get_functional_groups()
+    get_functional_groups()
 }
 
 #[tauri::command]
 pub fn get_tissues_tauri() -> Vec<String> {
-  get_tissues()
+    get_tissues()
 }
 
 #[tauri::command]
 pub fn get_matrices_tauri() -> Vec<String> {
-  get_matrices()
+    get_matrices()
 }
 
 #[tauri::command]
-pub fn match_msms_to_ui_tauri(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>) {
-  match_msms_to_ui(binsize)
+pub fn match_msms_to_ui_tauri(binsize: f64, threshold: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>) {
+    match_msms_to_ui(binsize, threshold)
 }
 
 #[tauri::command]
@@ -137,13 +142,51 @@ pub fn add_msms_to_db_tauri(name: String, adduct: String, mz: String, cid: Strin
 
 #[tauri::command]
 pub fn show_user_msms_db_tauri() -> Vec<Vec<String>> {
-  show_user_msms_db()
+    show_user_msms_db()
 }
 
 #[tauri::command]
 pub fn remove_row_from_msms_user_db_tauri(rowid: usize) -> usize {
     remove_row_from_msms_user_db(rowid)
 }
+
+#[tauri::command]
+pub fn update_user_metabolites_tauri() -> Vec<Vec<String>> {
+    update_user_metabolites()
+}
+
+#[tauri::command]
+pub fn remove_row_from_user_metabolites_tauri(rowid: usize) -> usize {
+    remove_row_from_user_metabolites(rowid)
+}
+
+
+#[tauri::command]
+pub fn update_user_matrices_tauri() -> Vec<Vec<String>> {
+    update_user_matrices()
+}
+
+#[tauri::command]
+pub fn remove_row_from_user_matrices_tauri(rowid: usize) -> usize {
+    remove_row_from_user_matrices(rowid)
+}
+
+
+#[tauri::command]
+pub fn update_user_fgs_tauri() -> Vec<Vec<String>> {
+    update_user_fgs()
+}
+
+#[tauri::command]
+pub fn remove_from_user_fgs_tauri(rowid: usize, toremove: &str) -> usize {
+    remove_user_fgs(rowid, toremove)
+}
+
+#[tauri::command]
+pub fn matrix_dropdown_tauri() -> HashMap<String, Vec<String>> {
+    matrix_dropdown()
+}
+
 
 
 

@@ -10,16 +10,7 @@ export async function identify() {
 
     let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
     let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
-
-
-    const dictionary = {
-    "Carboxylic": "caboxylicacids",
-    "Primary": "primaryamines",
-    }
-
-    for (let i = 0; i < adducts.length; i++) {
-        adducts[i] = dictionary[adducts[i]]?.value ?? adducts[i]
-    }
+    console.log(adducts);    
 
     
 
@@ -146,9 +137,9 @@ function createDataCells(data: string) {
     return td;
 }
 
-async function renderImagesAsync(names_for_img: string[], smiles_for_img: string[]): Promise<HTMLElement> {
+async function renderImagesAsync(names_for_img: string[], smiles_for_img: string[], hmdb_id: string[]): Promise<HTMLElement> {
     const image_area = document.createElement("td");
-    image_area.setAttribute("colspan", "10");
+    image_area.setAttribute("colspan", "11");
 
     const row_details = document.createElement("div");
     row_details.setAttribute("class", "row-details");
@@ -169,7 +160,7 @@ async function renderImagesAsync(names_for_img: string[], smiles_for_img: string
 
         const imcontainer2 = document.createElement("div");
         imcontainer2.className = "im-container2";
-        imcontainer2.innerHTML = `<p class="ms1-molecule-name">${name}</p>`;
+        imcontainer2.innerHTML = `<p class="ms1-molecule-name" onclick="window.open('https://hmdb.ca/metabolites/${hmdb_id[index]}', '_blank')">${name}</p> `; //<button onclick="window.open('https://hmdb.ca/metabolites/${hmdb_id[index]}', '_blank')">HMDB</button>`;
 
         setTimeout(() => {
             const script = document.createElement("script");
@@ -213,7 +204,7 @@ async function fill_ms1_results(ms1_results_data:  Array<Array<Record<string, st
             // Check if topRow has the 'clicked' class
             if (topRow.classList.contains('clicked')) {
                 // When topRow is clicked for the first time
-                let image_area = await renderImagesAsync(dataRows.names, dataRows.smiles);
+                let image_area = await renderImagesAsync(dataRows.names, dataRows.smiles, dataRows.hmdb);
                 bottomRow!.appendChild(image_area);
             } else {
                 // When topRow is clicked again
@@ -248,6 +239,8 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
     let ms2: string[] = [];
     let smiles: string[] = [];
     let formula: string[] = [];
+    let hmdb: string[] = []
+    let coverage: string[] = []
 
     for (const result of resultGroup) {
         checkbox.push('<input type="checkbox" /></td>');
@@ -261,6 +254,8 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
         ms2.push(`<span class="${result.msms}"></span>`);
         smiles.push(result.smiles);
         formula.push(result.formula);
+        hmdb.push(result.accession);
+        coverage.push(`${result.coverage} / ${result.possible_derivs}`);
     }
 
     return {
@@ -274,7 +269,9 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
         dPPM,
         ms2,
         smiles,
-        formula
+        formula,
+        hmdb,
+        coverage
     };
 }
 
@@ -293,7 +290,7 @@ function adjustedProcessDataGroup(resultGroup: Record<string, string>[]) {
     };
 }
 
-function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles?: string[]; names_for_img?: string[]; formula: any; }, index: number) {
+function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles?: string[]; names_for_img?: string[]; formula: any; coverage: any}, index: number) {
     const row = document.createElement("tr");
     row.className = "data";
     row.id = "data-" + index;
@@ -308,7 +305,8 @@ function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: 
         dataRows.dMass,
         dataRows.dPPM,
         dataRows.tMass,
-        dataRows.ms2
+        dataRows.ms2,
+        dataRows.coverage
     ];
     for (const cellData of dataCells) {
         row.appendChild(createDataCells(cellData.join("<br>")));

@@ -407,7 +407,8 @@
 }
 .datatable-container .datatable th:nth-child(5),
 .datatable-container .datatable td:nth-child(5) {
-    width: 80px;
+    width: 150px;
+
 }
 
 .datatable-container .datatable th:nth-child(6),
@@ -431,6 +432,11 @@
 .datatable-container .datatable th:nth-child(10),
 .datatable-container .datatable td:nth-child(10) {
     width: 100px;
+
+}
+.datatable-container .datatable th:nth-child(11),
+.datatable-container .datatable td:nth-child(11) {
+    width: 30px;
 
 }
 

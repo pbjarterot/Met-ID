@@ -1,13 +1,16 @@
 import { invoke } from '@tauri-apps/api';
 import { get_csv } from './ms1_popup';
 import { identify, get_adjusted_ms1 } from './ms1_sidebar';
-import { fill_dropdown, fill_under_dropdown } from "../dropdown";
+import { fill_dropdown, fill_under_dropdown, new_tgt_matrix } from "../dropdown";
 import "./ms1_mass_error";
 import "./ms1_table";
 import "./ms1_popup";
 import { addSearchbarListener } from "./ms1_searchbar";
-import {add_matrix, add_metabolite, add_functional_group} from "./ms1_add_buttons";
 import { convertTableToCSV } from './ms1_io';
+import { add_metabolite } from './add_buttons/metabolites';
+import { add_matrix } from './add_buttons/matrices';
+import { add_functional_group } from "./add_buttons/functional_groups";
+
 
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -16,7 +19,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ms1-sidebar-add-functional-group")!.addEventListener("click", async () => add_functional_group());
 
     fill_dropdown(["HMDB (All)", "HMDB (Brain)", "HMDB (CSF)", "Lipidmaps"], "metabolome-dropdown");
-    fill_dropdown(["Positive mode", "Negative mode", "FMP-10", "AMPP"], "matrix-dropdown");
+    //fill_dropdown(["Positive mode", "Negative mode", "FMP-10", "AMPP", "Norharmane"], "matrix-dropdown");
+    fill_dropdown(Object.keys(await new_tgt_matrix()), "matrix-dropdown")
 
     fill_under_dropdown.metabolites("metabolome-dropdown", "metabolome-checkbox-container")
     fill_under_dropdown.matrices("matrix-dropdown", "matrix-checkbox-container")

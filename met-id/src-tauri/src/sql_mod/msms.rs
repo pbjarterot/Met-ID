@@ -399,7 +399,7 @@ fn move_to_front<T: PartialEq>(names: &mut Vec<T>, identifiers: &mut Vec<T>, add
 }
 
 
-pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>){
+pub fn match_msms_to_ui(binsize: f64, threshold: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>){
   let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("get_msms").unwrap();
   let mut stmt: rusqlite::Statement = conn.prepare("SELECT name, identifier, adduct, cid, window, tof, mz, spectra, matrix FROM MSMS UNION SELECT name, identifier, adduct, cid, window, tof, mz, spectra, matrix FROM user_MSMS").expect("Query cannot be run");
   let db_iter = stmt.query_map([], |row: &rusqlite::Row<'_>| {
@@ -464,7 +464,7 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
       Some(index) => {
           let user_spectrum: (Vec<f64>, Vec<i64>) = datas[index].clone();
           let start = Instant::now();
-          cossim = ms2_matcher(&user_spectrum, &datas.clone(), binsize);
+          cossim = ms2_matcher(&user_spectrum, &datas.clone(), binsize, threshold);
           let duration = start.elapsed();
           println!("Time elapsed in ms2 matcher is: {:?}", duration);
       },
@@ -473,8 +473,6 @@ pub fn match_msms_to_ui(binsize: f64) -> (Vec<String>, Vec<String>, Vec<String>,
       },
       
   } 
-   
-
   sort_by_corresponding_f64(&mut cossim, &mut identifiers, &mut adducts, &mut cids, &mut names, &mut mzs, &mut matrices);
 
 
