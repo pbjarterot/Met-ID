@@ -9,7 +9,6 @@ let MatchListener: ((e: MouseEvent) => void) | null = null;
 
 async function read_input_mzml(result: string) {
   const parsed_mzml: string = await invoke("read_mzml_for_msms", {path: result});
-  console.log("parsed_csv: ", parsed_mzml)
   return parsed_mzml
 }
 
@@ -125,10 +124,8 @@ function hideMatchPopup() {
 async function run_msms_match() {
   const inputElement = document.getElementById("ms2-match-option-binsize-input") as HTMLInputElement;
   const inputElement2 = document.getElementById("ms2-match-option-threshold-input") as HTMLInputElement;
-  console.log(inputElement!.value);
 
   if (inputElement!.value === "") {
-    console.log("bin size is empty")
     return;
   }
 

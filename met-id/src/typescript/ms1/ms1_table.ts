@@ -66,7 +66,6 @@ export function createBottomRow(index: number, _names_for_img: string[], _smiles
 }
 
 function toggleRows(): void {
-  console.log("pressing togglerows")
   const table: HTMLTableElement | null = document.getElementById('ms1-datatable') as HTMLTableElement;
   
   if (!table) {
@@ -79,13 +78,11 @@ function toggleRows(): void {
   rows.forEach((row: HTMLTableRowElement) => {
       // Assuming the 3rd column is the one to check (index 2 since index starts at 0)
       const cell: HTMLTableCellElement = row.children[2] as HTMLTableCellElement;
-      
-      //console.log(cell.textContent, cell.textContent!.trim());
+
       if (cell.textContent) {
         
           if (cell.textContent === '') {
               row.style.display = 'none';
-              console.log("table-none")
           } else {
               row.style.display = 'table-row';
           }

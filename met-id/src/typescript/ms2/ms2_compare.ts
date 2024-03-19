@@ -10,7 +10,6 @@ let ExportElement: HTMLButtonElement | null = null;
 let ExportCsvElement: HTMLButtonElement | null = null;
 
 function showPopup() {
-    console.log("showing popup")
     const overlay = document.getElementById('ms2-overlay');
     const popup = document.getElementById('ms2-popup');
 
@@ -42,7 +41,6 @@ function showPopup() {
 
         // Iterate over the NodeList of spans and add their text content to the array
         spans.forEach(span => {
-            //console.log("the id is: ", span.id);
             if (span.textContent) {
                 if (span.textContent !== "Compare!") {
                     texts.push(span.textContent);
@@ -161,8 +159,6 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
 
 	xAxis.selectAll("text")
 		.style("font-size", "16px");
-
-        console.log(dat);
     // Handle regular and mirrored spectra separately
     for (let i = 0; i < dat.length; i++) {
         const data = dat[i];
@@ -359,8 +355,6 @@ function saveCanvasAsImage(canvas: HTMLCanvasElement, filename: string): void {
 }
 
 export function save_msms_as_image() {
-    console.log("saving");
-
     let a = document.getElementById("ms2-popup-compare-names");
     // Step 1: Capture HTML content as canvas
     html2canvas(a as HTMLElement, {backgroundColor: '#2F2F2F'}).then(htmlCanvas => {
@@ -378,8 +372,6 @@ export function save_msms_as_image() {
             // Adjust combined canvas size to fit both
             combinedCanvas.width = Math.max(htmlCanvas.width, svgCanvas.width);
             combinedCanvas.height = htmlCanvas.height + svgCanvas.height;
-
-            console.log(combinedCanvas)
 
             if (ctx) {
                 ctx.fillStyle = '#2F2F2F'; // Set the background color
@@ -414,7 +406,6 @@ export function compare_msms() {
 
     // Iterate over the NodeList of spans and add their text content to the array
     spans.forEach(span => {
-        //console.log("the id is: ", span.id);
         if (span.textContent) {
             if (span.textContent !== "Compare!") {
                 texts.push(span.textContent);

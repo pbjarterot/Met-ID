@@ -18,8 +18,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ms1-sidebar-add-matrix")!.addEventListener("click", async () => add_matrix());
     document.getElementById("ms1-sidebar-add-functional-group")!.addEventListener("click", async () => add_functional_group());
 
-    fill_dropdown(["HMDB (All)", "HMDB (Brain)", "HMDB (CSF)", "Lipidmaps"], "metabolome-dropdown");
-    //fill_dropdown(["Positive mode", "Negative mode", "FMP-10", "AMPP", "Norharmane"], "matrix-dropdown");
+    fill_dropdown(["HMDB (All)", "HMDB (CSF)", "HMDB (Urine)", "HMDB (Serum)", "Lipidmaps"], "metabolome-dropdown");
     fill_dropdown(Object.keys(await new_tgt_matrix()), "matrix-dropdown")
 
     fill_under_dropdown.metabolites("metabolome-dropdown", "metabolome-checkbox-container")

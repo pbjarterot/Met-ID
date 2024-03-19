@@ -101,7 +101,6 @@ export async function addToHTML(submit_id: string, add_term: string, inputs: str
 		[checkboxes, progressbar, table] = await addToHTML_FG(progressbar, table);
 	} else {
 		//return ""
-		console.log("something bad happened");
 	}
 	
 	let innerHTML = `
@@ -206,11 +205,9 @@ class removeFromDBListeners {
 			elementIds.forEach(id => {
 			events.forEach(eventType => {
 					const element = document.getElementById(id);
-					console.log("element is", element?.parentElement?.parentElement);
 					if (!element) return;
 
 					const listener = () => {
-							console.log(`Event ${eventType} on ${id}`);
 							if (mode === "metabolites") {
 								remove_row_from_user_metabolites(id);
 								this.removeListeners();
@@ -261,12 +258,7 @@ function get_name_in_table(childElement: HTMLElement) {
         if (tds.length >= 2) {
             // Getting the text content of the second <td>
             secondTDText = tds[1].textContent;
-            console.log('Text of the second TD:', secondTDText);
-        } else {
-            console.log('Less than two TD elements found');
         }
-    } else {
-        console.log('No parent TR element found');
     }
 }
 	return secondTDText;

@@ -3,7 +3,6 @@ import { invoke } from '@tauri-apps/api';
 
 async function read_input_csv(result: string, delimiter: string, transpose: boolean, deleted_rows: number[]) {
   const parsed_csv: string[][] = await invoke("read_mass_error_csv", {path: result, delimiter: delimiter, transpose: transpose, deletedrows: deleted_rows});
-  console.log("parsed_csv: ", parsed_csv)
   return parsed_csv
 }
 
@@ -94,7 +93,6 @@ export async function saveCsv(oMass: string[], aMass: string[]): Promise<void> {
     aMass.unshift("Adjusted Mass");
 
     const csvContent = zip(oMass, aMass).join('\n');
-    console.log(csvContent);
 
     // Open a save file dialog
     const result = await save({

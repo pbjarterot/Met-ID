@@ -10,9 +10,6 @@ export async function identify() {
 
     let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
     let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
-    console.log(adducts);    
-
-    
 
     let mass_error_input: string = (document.getElementById("ms1-error-input-text") as HTMLInputElement)!.value as string;
     let massWindow: string = (document.getElementById("mzWindow") as HTMLInputElement)!.value as string;
@@ -20,9 +17,7 @@ export async function identify() {
 
     let startTime = performance.now();
 
-    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, 
-                                                    adducts:adducts, massError: mass_error_input, masses: input_masses,
-                                                    mzwindow: massWindow});
+    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts, massError: mass_error_input, masses: input_masses, mzwindow: massWindow});
 
     let endTime = performance.now();
     let timeTaken = endTime - startTime;
@@ -30,8 +25,6 @@ export async function identify() {
     fill_ms1_results(ms1_results_data);
 
     count_identified_percent();
-
-    
 }
 
 function count_identified_percent() {
@@ -81,7 +74,6 @@ export async function get_adjusted_ms1() {
     let massErrorInput: string = (document.getElementById("ms1-error-input-text") as HTMLInputElement)!.value as string;
     let adjusted_ms1s: Record<string, string>[] = await invoke("calculate_adjusted_mass", {masses:inputMasses, massError: massErrorInput});
     const dataRows = adjustedProcessDataGroup(adjusted_ms1s);
-    console.log(dataRows);
     saveCsv(dataRows.oMass, dataRows.aMass);
 }
 

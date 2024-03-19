@@ -104,10 +104,7 @@ fn update_hashmaps(data: &mut Vec<Vec<HashMap<String, String>>>) {
     }
 }
 
-
-pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<String>, db_mnames: Vec<String>, 
-                    db_accessions: Vec<String>, db_smiles: Vec<String>, db_formulas: Vec<String>, db_pos_derivs: Vec<i32>, mass_error: String, 
-                    mass_window: String, msms_ids: &Vec<String>) -> Vec<Vec<HashMap<String, String>>>{
+pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<String>, db_mnames: Vec<String>, db_accessions: Vec<String>, db_smiles: Vec<String>, db_formulas: Vec<String>, db_pos_derivs: Vec<i32>, mass_error: String, mass_window: String, msms_ids: &Vec<String>) -> Vec<Vec<HashMap<String, String>>>{
     
     let mut res: Vec<Vec<HashMap<String, String>>> = Vec::new();
     let window: f64 = mass_window.parse::<f64>().unwrap();

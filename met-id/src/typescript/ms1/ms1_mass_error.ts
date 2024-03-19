@@ -132,7 +132,6 @@ function add_to_error_table(file_contents: string[][], plotData: PlotData) {
         tbody!.innerHTML = ""
 
         for (let i = 0; i < file_contents.length; i++) {
-            console.log(file_contents);
             let dat: Datum = {x: parse_error_number(file_contents[i][0]), y: parse_error_number(file_contents[i][1])}
             plotData.addPoint(dat.x, dat.y, false);
         }
@@ -148,7 +147,6 @@ const plotDiv = document.querySelector('.manual-mass-error-plot-div') as HTMLEle
 slideinButton?.addEventListener("click", () => {
   slideInDiv.classList.toggle("slide-in-bottom--active");
   if (slideInDiv.classList.contains("slide-in-bottom--active")) {
-    console.log("sliding in");
     mass_error_slidein();
   } else {
     const slideInContent = document.getElementById("slide-in-bottom-content");
@@ -393,7 +391,6 @@ class PlotData {
     } else {
       newDataPoint = { x: xValue, y: yValue };
     }
-    console.log(newDataPoint);
     this.data.push(newDataPoint);
   
     this.updateScale();
@@ -423,7 +420,6 @@ class PlotData {
         table.deleteRow(row.rowIndex);
         this.updateScale()
         this.fitEquation();
-        console.log("deleted a row")
       });
   
       deleteCell.appendChild(deleteButton);
@@ -436,7 +432,6 @@ class PlotData {
       this.data.splice(index, 1);
       this.updateScale();
       this.updateScatterplot();
-      console.log(this.data);
       this.fitEquation();
     }
   }

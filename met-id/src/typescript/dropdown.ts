@@ -15,13 +15,15 @@ export function fill_dropdown(items: string[], elementID: string) {
 
 
 const target_metabolome = {"HMDB (All)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
-                           "HMDB (Brain)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
                            "HMDB (CSF)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
+                           "HMDB (Serum)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
+                           "HMDB (Urine)": ["Endogenous Metabolites", "Exogenous Metabolites", "Unspecified Metabolites"],
                            "Lipidmaps": []}
 
 const metabolome_values = {"HMDB (All)": ["Endogenous", "Exogenous", "Unspecified"],
-                           "HMDB (Brain)": ["Endogenous", "Exogenous", "Unspecified"],
                            "HMDB (CSF)": ["Endogenous", "Exogenous", "Unspecified"],
+                           "HMDB (Serum)": ["Endogenous", "Exogenous", "Unspecified"],
+                           "HMDB (Urine)": ["Endogenous", "Exogenous", "Unspecified"],
                            "Lipidmaps": []}
 
 
@@ -81,7 +83,6 @@ export const fill_under_dropdown = {
     
                 let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
                 let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
-                console.log(adducts);
                 
                 let count: number = await invoke("sql_counter_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
                 let db_size = document.getElementById("db_size");
@@ -96,7 +97,6 @@ export const fill_under_dropdown = {
 
     matrices: async function(dropdown_id: string, elementID: string) {
         let new_target_matrix = await new_tgt_matrix();
-        console.log(new_target_matrix)
         const myElement = document.getElementById(elementID);
         myElement!.innerHTML = "";
         const option_selected = (document.getElementById(dropdown_id)! as HTMLSelectElement).value;
@@ -108,35 +108,29 @@ export const fill_under_dropdown = {
             myElement!.innerHTML += renderedTemplate2;
             
         }
-        console.log(new_target_matrix[option_selected])
 
         let met_selected: string = check_selected("metabolome-dropdown");
         let matrix_selected: string = check_selected("matrix-dropdown");
 
         let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
         let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
-        console.log(adducts);
         let count: number = await invoke("sql_counter_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
         let db_size = document.getElementById("db_size");
         
         if (db_size !== null) {
-            console.log("printin number")
             db_size.textContent = count.toString();
         }
         for (let i = 0; i < new_target_matrix[option_selected].length; i++) {
             document.getElementById(new_target_matrix[option_selected][i])!.addEventListener("change", async () => {
-                console.log("here")
                 let met_selected: string = check_selected("metabolome-dropdown");
                 let matrix_selected: string = check_selected("matrix-dropdown");
     
                 let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
                 let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
-                console.log(adducts);
                 let count: number = await invoke("sql_counter_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
                 let db_size = document.getElementById("db_size");
                 
                 if (db_size !== null) {
-                    console.log("printgin number")
                     db_size.textContent = count.toString();
                 }
             });
