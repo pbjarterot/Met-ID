@@ -110,16 +110,6 @@ pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<Str
     let window: f64 = mass_window.parse::<f64>().unwrap();
     let coefficients: Option<EquationCoefficients> = parse_equation(&mass_error);
 
-    /* 
-    for ((mass, name), mname) in db_masses.iter().zip(&db_names).zip(&db_mnames){
-        
-        if mass > &413.25 && mass < &413.3 {
-            println!("{:?}\t{:?}\t{:?}", mass, name, mname);
-        }
-        
-    }
-    */
-
     for mass in input_masses {
         let mut res_vec: Vec<HashMap<String, String>> = Vec::new();
         let adj_mass: f64;
@@ -169,7 +159,7 @@ pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<Str
         if res_vec.is_empty() {
             let mut res_map: HashMap<String, String> = HashMap::new();
             res_map.insert("oMass".to_string(), mass.to_string());
-            res_map.insert("aMass".to_string(), "".to_string());
+            res_map.insert("aMass".to_string(), adj_mass.to_string());
             res_map.insert("tMass".to_string(), "".to_string());
             res_map.insert("dMass".to_string(), "".to_string());
             res_map.insert("dPPM".to_string(), "".to_string());

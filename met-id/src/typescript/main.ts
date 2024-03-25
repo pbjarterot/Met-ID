@@ -16,7 +16,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	new_tgt_matrix()
 });
 
-
+/*
 document.addEventListener("keydown", async function(e) {
 	if (e.ctrlKey && e.key === 'v') {
 		const radioElements = document.querySelectorAll('input[type=radio]');
@@ -47,7 +47,7 @@ document.addEventListener("keydown", async function(e) {
 		
 	  }
 });
-
+*/
 
 
 

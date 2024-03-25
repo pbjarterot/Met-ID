@@ -37,7 +37,7 @@ function count_identified_percent() {
         if (row.className === "data") {
             numRows += 1;
             const cells = row.querySelectorAll('td, th');
-            if (cells.length > 0 && cells[2].textContent != "" ) {
+            if (cells.length > 0 && cells[3].textContent != "" ) {
                 numIdentified += 1
             }
         }
