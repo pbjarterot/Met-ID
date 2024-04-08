@@ -63,17 +63,20 @@ function ms1_table_content(rows:NodeListOf<HTMLTableRowElement>) {
       if (cells.length > 0 && cells[3].textContent != "" ) {
         const brCount = countBrTagsInCell(cells[3] as HTMLTableCellElement);
         for (let br_idx = 0; br_idx < brCount + 1; br_idx++) {
-			const rowData: string[] = [];
+			      const rowData: string[] = [];
             for (let i = 1; i < cells.length-2; i++) {
                 const cellContent = cells[i].innerHTML.split(/<br>/g)[br_idx];
+                console.log(cellContent);
                 rowData.push(`${String(cellContent)}`);
             }
-            csvContent += rowData + "\n";
+            console.log("rowdata: ", rowData);
+            csvContent += rowData.join(";") + "\n";
         }
     }
     }
     
   });
+  console.log(csvContent)
   return csvContent
 }
 

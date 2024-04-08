@@ -406,8 +406,8 @@ fn main() -> () {
     //conn.execute("DROP TABLE functional_group_smarts", []).unwrap();
     //make_functional_group_smarts_table(&conn).unwrap();
     //make_lipid_db(&conn).unwrap();
-    //conn.execute("DROP TABLE adducts", []).unwrap();
-    //make_adduct_db(&conn).unwrap();
+    conn.execute("DROP TABLE adducts", []).unwrap();
+    make_adduct_db(&conn).unwrap();
     //conn.execute("DROP TABLE matrices", []).unwrap();
     //make_matrices_db(&conn).unwrap();
     //let columns_to_keep = vec!["id", "phenols", "aldehydes", "carboxylicacids", "primaryamines"];
