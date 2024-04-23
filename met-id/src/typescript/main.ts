@@ -2,7 +2,6 @@ import { appWindow } from '@tauri-apps/api/window'
 import './ms2/ms2_main';
 import './ms1/ms1_main';
 import './database_tab/db_main.ts';
-import { get_ctrl_v_data } from './ms1/ms1_popup';
 import { invoke } from '@tauri-apps/api/tauri'
 import { new_tgt_matrix } from './dropdown';
 

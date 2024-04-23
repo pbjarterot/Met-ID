@@ -68,12 +68,13 @@ const destroyAndDetach = () => {
 	
 }
 
+/*
 async function check_smiles(smiles: string): Promise<boolean> {
     let smiles_ok: boolean = await invoke("check_smiles", {smiles:smiles});
 
     return true;
 }
-
+*/
 
 
 
