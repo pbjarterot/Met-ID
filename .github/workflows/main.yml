@@ -33,7 +33,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'  # Specify the Python version
+          python-version: '3.9'  # Specify the Python version
       
       - name: Install dependencies
         run: |
@@ -86,4 +86,3 @@ jobs:
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: false
- 
