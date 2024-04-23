@@ -1,6 +1,7 @@
 import { appWindow } from '@tauri-apps/api/window'
 import './ms2/ms2_main';
 import './ms1/ms1_main';
+import './database_tab/db_main.ts';
 import { get_ctrl_v_data } from './ms1/ms1_popup';
 import { invoke } from '@tauri-apps/api/tauri'
 import { new_tgt_matrix } from './dropdown';
@@ -11,7 +12,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('titlebar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
 	document.getElementById('titlebar-close')!.addEventListener('click', () => appWindow.close());
 
-	document.getElementById("tab-2")?.click();
+	document.getElementById("tab-3")?.click();
 	//document.getElementById("ms1-sidebar-add-metabolite")?.click();
 	new_tgt_matrix()
 });

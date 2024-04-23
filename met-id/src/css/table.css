@@ -208,6 +208,7 @@
     font-size: 12px;
     margin: 0px;
     padding: 0px;
+    height: 23px;
 }
   
 .datatable-container .datatable tbody tr .available::after {

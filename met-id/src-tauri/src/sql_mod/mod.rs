@@ -9,7 +9,9 @@ mod matrices;
 mod mtx_dropdown;
 mod user_tables;
 pub mod table;
+mod database_view;
 
+use self::database_view::{ get_db_data, db_ids_and_names};
 use self::sql_handler::sql_handler;
 use self::counter::sql_counter;
 use self::msms::{ get_msms, get_msms_spectra, get_name_from_identifier_msms, ms2_search_spectra, match_msms_to_ui, add_msms_to_db, show_user_msms_db, remove_row_from_msms_user_db };
@@ -185,6 +187,14 @@ pub fn remove_from_user_fgs_tauri(rowid: usize, toremove: &str) -> usize {
 #[tauri::command]
 pub fn matrix_dropdown_tauri() -> HashMap<String, Vec<String>> {
     matrix_dropdown()
+}
+#[tauri::command]
+pub fn db_data_tauri(index: usize) -> (String, String, String, String, HashMap<String, HashMap<String, f64>>) {
+    get_db_data(index)
+}
+#[tauri::command]
+pub fn db_ids_and_names_tauri(inputvalue: String) -> HashMap<String, usize> {
+    db_ids_and_names(inputvalue)
 }
 
 

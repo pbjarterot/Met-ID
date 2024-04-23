@@ -10,6 +10,7 @@
 @import url('ms1/ms1-mass-error-styles.css');
 @import url('ms1/ms1-popup.css');
 @import url('ms1/ms1-slidein.css');
+@import url('database_tab/database_styles.css');
 
 
 
@@ -38,7 +39,7 @@
 	justify-content: flex-end;
 	position: fixed;
 	top: 0;
-	left: 41%;
+	left: 48%;
 	right: 0;
 	color: white;
 	z-index: 99999;

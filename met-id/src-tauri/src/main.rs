@@ -102,6 +102,8 @@ fn main() {
                                                  sql_mod::update_user_metabolites_tauri,
                                                  sql_mod::update_user_matrices_tauri,
                                                  sql_mod::update_user_fgs_tauri,
+                                                 sql_mod::db_data_tauri,
+                                                 sql_mod::db_ids_and_names_tauri,
                                                  regression::mass_error_regression,
                                                  is_backend_ready
                                                  ])
