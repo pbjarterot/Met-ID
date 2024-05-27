@@ -14,7 +14,7 @@ Met-ID also includes tools to study MS2 spectra, as a critical part of metabolit
 
 
 ## How to Install
-At the moment, we have yet to fix the automatic code signing of the software which means that they will have to be opened in unsafe mode, files to install Met-ID are located on the right hand side under "Releases" or can be found by clicking [here](https://github.com/pbjarterot/Met-ID/releases).
+Files to install Met-ID are located on the right hand side under "Releases" or can be found by clicking [here](https://github.com/pbjarterot/Met-ID/releases).
 
 ### Windows
 To install Met-ID on Windows, download the .msi file found in releases and follow the instructions.
@@ -51,9 +51,6 @@ Coming soon...
 [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
 [![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)](https://en.wikipedia.org/wiki/HTML5)
 [![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)](https://en.wikipedia.org/wiki/CSS)
-
-## License
-<img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-nc.png" width="120" height="50">
 
 ## Contact
 [![Linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://linktr.ee/patrikbja)
