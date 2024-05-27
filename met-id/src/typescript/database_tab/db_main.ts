@@ -1,7 +1,5 @@
 import { invoke } from '@tauri-apps/api';
-import { CancellationToken } from '../ms2/ms2_main';
 
-let DbCancellationToken: CancellationToken = { isCancelled: false };
 
 window.addEventListener("DOMContentLoaded", async () => {
   renderDBHTML();
@@ -72,9 +70,7 @@ async function generate_results_cards(inputvalue: string) {
             console.error("Child element not found");
         }
     }
-
     attachClickListener();  // Attach the click listener for the first time
-
   };
 
   // Locate the image container in the newly updated innerHTML
