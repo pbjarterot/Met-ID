@@ -95,7 +95,7 @@ pub fn get_db_data(index:usize) -> (String, String, String, String, HashMap<Stri
 
 pub fn db_ids_and_names(inputvalue: String) -> HashMap<String, usize> {
   let conn = get_connection().unwrap();
-  let mut stmt: rusqlite::Statement = conn.prepare("SELECT name, id FROM metabolites WHERE name LIKE ?1 ORDER BY id LIMIT 1000").expect("Query cannot be run");
+  let mut stmt: rusqlite::Statement = conn.prepare("SELECT name, id FROM metabolites WHERE name LIKE ?1 LIMIT 1000").expect("Query cannot be run");
   let db_iter = stmt.query_map([format!("%{}%", inputvalue)], |row: &rusqlite::Row<'_>| {
       Ok(DBNamesIDs {
           name: row.get(0).unwrap_or("".to_string()),

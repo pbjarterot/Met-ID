@@ -36,39 +36,45 @@ async function generate_results_cards(inputvalue: string) {
   console.log("Here is namelist2: ", namelist2)
 
   for (const key in namelist2) {
-    if (DbCancellationToken.isCancelled) {
-      console.log("ive been cancelled")
-      return;
-    }
-    //console.log("metname:", key, "id:", namelist2[key]);
-    //const fragment = document.createDocumentFragment();
     const tempDiv = document.createElement('div');
     const L = await generate_db_small_results_card2(key, Number(namelist2[key]), false);
     tempDiv.innerHTML = `${L}`;
     tempDiv.classList.add("db-small-results-card")
     tempDiv.id = "db-small-results-card-" + namelist2[key];
     div!.appendChild(tempDiv);
-    tempDiv!.addEventListener("click", async () => {
-      //console.log("Ive been clicked");
-      if (tempDiv.classList.contains("db-open")) {
-        const L = await generate_db_small_results_card2(key, Number(namelist2[key]), false);
-        tempDiv.innerHTML = `${L}`;
-        tempDiv.classList.remove("db-open");
-      } else {
-        const L = await generate_db_small_results_card2(key, Number(namelist2[key]), true);
-        tempDiv.innerHTML = `${L}`;
-        tempDiv.classList.add("db-open");
-      }
-      let imdiv = document.getElementById("mol-im-container");
 
-      // Generate and append the image asynchronously
-      if (imdiv) {
-        let image_area = await renderImageAsync();
-        //console.log(image_area, imdiv);
-        imdiv.appendChild(image_area);
-      }
+    function attachClickListener() {
+        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[key]);
+        if (childElement) {
+            childElement.addEventListener("click", async () => {
+                console.log("I've been clicked");
+                if (tempDiv.classList.contains("db-open")) {
+                    const L = await generate_db_small_results_card2(key, Number(namelist2[key]), false);
+                    tempDiv.innerHTML = `${L}`;
+                    tempDiv.classList.remove("db-open");
+                    console.log("here!");
+                } else {
+                    const L = await generate_db_small_results_card2(key, Number(namelist2[key]), true);
+                    tempDiv.innerHTML = `${L}`;
+                    tempDiv.classList.add("db-open");
+                    console.log("here2");
+                }
+                attachClickListener(); // Reattach the click listener to the new element
 
-    })
+                let imdiv = document.getElementById("mol-im-container");
+                // Generate and append the image asynchronously
+                if (imdiv) {
+                    let image_area = await renderImageAsync();
+                    imdiv.appendChild(image_area);
+                }
+            });
+        } else {
+            console.error("Child element not found");
+        }
+    }
+
+    attachClickListener();  // Attach the click listener for the first time
+
   };
 
   // Locate the image container in the newly updated innerHTML
@@ -105,7 +111,7 @@ export function renderDBHTML() {
 export async function generate_db_small_results_card2(name: string, index: number, open_: boolean) {
   //console.log("small_res2")
 
-  let template = `<div class="db-small-results-card-top">
+  let template = `<div class="db-small-results-card-top" id="db-small-results-card-top-${index}">
                     	<div class="db-small-results-card-textbox">
                       	<div class="db-small-results-card-name">
                         	<label class="db-small-results-card-name">${name}</label>

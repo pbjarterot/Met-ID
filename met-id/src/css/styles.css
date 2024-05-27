@@ -38,11 +38,11 @@
 	display: flex;
 	justify-content: flex-end;
 	position: fixed;
-	top: 0;
-	left: 48%;
+	top: 1px;
 	right: 0;
 	color: white;
 	z-index: 99999;
+	width: calc(100vw - 905px);
 }
 
 .titlebar-button {

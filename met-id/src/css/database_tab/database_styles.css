@@ -33,6 +33,7 @@
   border-radius: 200px;
   font-size: 34px;
   text-align: center;
+  font-family: 'Segoe UI';
 }
 .db-well {
   background-color: #ffffee;
@@ -49,7 +50,7 @@
 .db-search-results-body {
   visibility: hidden;
   overflow-y:auto;
-  height: 87%;
+  height: calc(100vh - 140px);
 }
 
 
@@ -82,7 +83,6 @@ db-input-group-btn {
   margin-bottom: 5px;
   margin-left: 5px;
   border-radius: 10px;
-  padding-top: 10px;
   color: white;
 }
 
@@ -90,6 +90,7 @@ db-input-group-btn {
   display: flex; /* Uses flexbox layout to easily manage the widths */
   width: 100%;
   height: 35px;
+  cursor:pointer;
 }
 
 .db-small-results-card-textbox {
@@ -101,6 +102,10 @@ db-input-group-btn {
   text-align: center;
   font-size: 24px;
   align-items: center;
+}
+.db-small-results-card-name {
+  padding-top: 5px;
+  cursor:pointer;
 }
 
 .db-molecule-information {

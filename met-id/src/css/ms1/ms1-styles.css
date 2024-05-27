@@ -16,6 +16,9 @@
     margin: 0px 5px 8px 0px;
     text-align: center;
 }
+#ms1-sidebar-identify-button2 {
+    margin-bottom: 0px;
+}
 
 #ms1-sidebar-export-button {
     margin-top: 2vh;
@@ -31,13 +34,26 @@
 
 .ms1-sidebar-button-text,
 .ms1-sidebar-button-icon {
-  display: inline-flex;
-  align-items: center;
-  
-  color: #fff;
-  height: 100%; 
-  font-size: 1.2hmin;
+    display: inline-flex;
+    align-items: center;
+
+    color: #fff;
+    height: 100%; 
+    font-size: 1.2hmin;
 }
+
+.ms1-sidebar-identify-append {
+    align-items: center;
+    text-align: center;
+    width: 190px;
+    background: rgb(103, 103, 103);
+    margin-left: 10px;
+    border-radius: 0 0 10px 10px;
+    color: white;
+    font-size: 15px;
+}
+
+
 
 .ms1-sidebar-button-text {
     width: 80%;
@@ -50,7 +66,7 @@
     background: rgba(0, 0, 0, 0.10);
     padding: 0 12px;
 }
-  
+
 .ms1-sidebar-button:hover {
     background: #666666;
 }
@@ -73,9 +89,9 @@
 }
 
 .ms1-searchbar-row2 {
-      height: 25%;
-      width: 99%;
-      margin: 12px 0px;
+    height: 25%;
+    width: 99%;
+    margin: 12px 0px;
 }
 
 .ms1-searchbar-row3 {
