@@ -269,40 +269,69 @@ pub mod add_to_db_functions {
             let name_: String = row.get(0)?;
             matrices_fgs.insert(name_, fgs);
         }
-        matrices_fgs.insert("fmp".to_string(), vec!["phenols".to_string(), "primary amines".to_string()]);
-        matrices_fgs.insert("ampp".to_string(), vec!["aldehydes".to_string(), "carboxylic acids".to_string()]);
+        matrices_fgs.remove("Negative Mode");
+        matrices_fgs.remove("Positive Mode");
+        //matrices_fgs.insert("fmp".to_string(), vec!["phenols".to_string(), "primary amines".to_string()]);
+        //matrices_fgs.insert("ampp".to_string(), vec!["aldehydes".to_string(), "carboxylic acids".to_string()]);
     
         Ok(matrices_fgs)
     }
+
+    fn calculate_category_sums(foo: &HashMap<String, String>, bar: &HashMap<String, Vec<String>>) -> Vec<(String, String)> {
+        let mut result = Vec::new();
+    
+        for (category, names) in bar {
+            let mut sum = 0;
+            for name in names {
+                if let Some(value_str) = foo.get(name) {
+                    if let Ok(value) = value_str.parse::<i32>() {
+                        sum += value;
+                    }
+                }
+            }
+            result.push((category.clone(), sum.to_string()));
+        }
+    
+        result
+    }
     
     fn fill_user_derivatized_by(conn: &r2d2::PooledConnection<SqliteConnectionManager>, fgh: &HashMap<String, String>, matrices_fgs: &HashMap<String, Vec<String>>) {
-
+        println!("fgh: {:?}\nmatrices_fgs: {:?}", fgh, matrices_fgs);
+        println!("Something: {:?}, {:?}", fgh.get(&"Aldehydes".to_string()), fgh.get(&"Aldehydes".to_string()).unwrap().parse::<usize>());
         let mut matrices = get_table_column_names(conn, "derivatized_by").unwrap();
         matrices.remove(0);
 
-        let mut data: Vec::<(String, String)> = Vec::new();
+        //let mut data: Vec::<(String, String)> = Vec::new();
 
+        let data: Vec<(String, String)> = calculate_category_sums(fgh, matrices_fgs);
+        /* 
         for matrix in matrices {
-            let functional_groups = matrices_fgs.get(&matrix);
-            let result = match functional_groups {
-                Some(func_groups) => func_groups.iter().map(|fg| fgh.get(fg).unwrap().parse::<usize>().unwrap()).sum(),
+            let functional_groups: Option<&Vec<String>> = matrices_fgs.get(&matrix);
+            println!("matrix: {:?}, functional groups: {:?}", matrix, functional_groups);
+            let result: usize = match functional_groups {
+                Some(func_groups) => {
+                    println!("fg: {:?}", func_groups);
+                    println!("funcgroups: {:?}", func_groups.iter().map(|fg: &String| fgh.get(fg)));
+                    func_groups.iter().map(|fg: &String| fgh.get(fg).unwrap().parse::<usize>().unwrap()).sum()
+                },
                 None => 0,
             };
 
             data.push((matrix, result.to_string()));
         }
-
+        */
         // Generate the column names and placeholder strings dynamically
-        let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
+        let column_names: Vec<String> = data.iter().map(|(col, _)| format!("'{}'", col.to_string())).collect();
         let placeholders: Vec<&str> = repeat("?").take(data.len()).collect();
 
-        let sql = format!(
+        let sql: String = format!(
             "INSERT INTO user_derivatized_by ({}) VALUES ({})",
             column_names.join(", "),
             placeholders.join(", ")
         );
 
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
+        println!("{:?}", sql);
 
         conn.execute(&sql, values.as_slice()).unwrap();
 
@@ -476,6 +505,7 @@ pub mod add_to_db_functions {
         );
 
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
+        println!("other sql: {:?}", sql);
 
         conn.execute(&sql, values.as_slice()).unwrap();
     }
