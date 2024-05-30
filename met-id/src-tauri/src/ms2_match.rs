@@ -1,5 +1,3 @@
-
-
 use rayon::prelude::*;
 
 fn normalize_vector(input: &[i64]) -> Vec<f64> {
@@ -8,29 +6,31 @@ fn normalize_vector(input: &[i64]) -> Vec<f64> {
 }
 
 fn bin_spectrum(spectrum: &[(f64, f64)], bin_size: f64, threshold: f64) -> Vec<f64> {
-    let mut binned_spectrum: Vec<f64> = Vec::new();
+    //let mut binned_spectrum: Vec<f64> = Vec::new();
 
-    if threshold != 0.0 {
+    let binned_spectrum = if threshold != 0.0 {
         let max_mz: f64 = spectrum.iter().map(|(mz, _)| *mz).filter(|&mz| mz <= threshold).fold(f64::NAN, f64::max);
         let num_bins: usize = (max_mz / bin_size).ceil() as usize;
-        binned_spectrum = vec![0.0; num_bins];
+        let mut bin = vec![0.0; num_bins];
 
         for &(mz, intensity) in spectrum {
             if mz <= threshold {
                 let index = (mz / bin_size) as usize;
-                binned_spectrum[index] += intensity;
+                bin[index] += intensity;
             }
         }
+        bin
     } else {
         let max_mz: f64 = spectrum.iter().map(|(mz, _)| *mz).fold(f64::NAN, f64::max);
         let num_bins: usize = (max_mz / bin_size).ceil() as usize;
-        binned_spectrum = vec![0.0; num_bins];
+        let mut bin = vec![0.0; num_bins];
     
         for &(mz, intensity) in spectrum {
             let index = (mz / bin_size) as usize;
-            binned_spectrum[index] += intensity;
+            bin[index] += intensity;
         }
-    }
+        bin
+    };
     
     binned_spectrum
 }

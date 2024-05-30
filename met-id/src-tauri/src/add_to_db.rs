@@ -3,7 +3,7 @@ pub mod add_to_db_functions {
     use r2d2_sqlite::SqliteConnectionManager;
     use rusqlite::{params, Result, ToSql};
     use crate::sql_mod::table::{check_if_table_exists, check_if_table_exists_msms};
-    use crate::sidecar::sidecar_function;
+    use crate::sidecar::{sidecar_function, sidecar_function2};
     //use crate::metabolite::{ Metabolite, single_functional_group };
     use crate::database_setup::{get_connection, get_msms_connection};
     use std::collections::HashMap;
@@ -33,6 +33,7 @@ pub mod add_to_db_functions {
     fn metabolite_for_db_sidecar(smiles: &String, smarts_map: &mut HashMap<String, String>) -> (String, String, HashMap<String, String>) {
         let mut smarts_vec: Vec<_> = smarts_map.values().cloned().collect();
         smarts_vec.insert(0, smiles.to_owned());
+        println!("Starting to process...");
 
         let sidecar_output = sidecar_function("metabolite_for_db".to_string(), smarts_vec.to_owned());
 
@@ -480,20 +481,21 @@ pub mod add_to_db_functions {
         let mut functional_groups: Vec<String> = get_table_column_names(conn, "functional_groups").unwrap();
         functional_groups.remove(0);
 
+        
         let new_fgh: HashMap<String, String> = fgh
             .iter()
             .map(|(k, v)| (k.replace(" ", ""), v.clone()))
             .collect();
 
-
+        /* 
         let mut data: HashMap<String, &String> = HashMap::new();
         for fg in functional_groups {
             if let Some(value) = new_fgh.get(&fg) {
                 data.insert(fg.clone(), value);
             }
         }
-
-
+        */
+        let data: Vec<_> = fgh.iter().map(|(k, v)| (format!("'{}'", k), v)).collect();
 
         let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
         let placeholders: Vec<&str> = repeat("?").take(data.len()).collect();
@@ -506,9 +508,12 @@ pub mod add_to_db_functions {
 
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
         println!("other sql: {:?}", sql);
+        println!("fgh: {:?}", fgh);
 
         conn.execute(&sql, values.as_slice()).unwrap();
     }
+
+
 
     fn fill_user_db_accessions(conn: &r2d2::PooledConnection<SqliteConnectionManager>) {
         conn.execute(
