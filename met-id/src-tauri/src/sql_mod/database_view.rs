@@ -104,7 +104,7 @@ pub fn db_ids_and_names(inputvalue: String) -> HashMap<String, usize> {
   }).unwrap();
   let mut map = HashMap::new();
 
-  for (index, item) in db_iter.enumerate() {
+  for (_, item) in db_iter.enumerate() {
     let row: DBNamesIDs = item.unwrap();
     map.insert(row.name, row.id);
   }

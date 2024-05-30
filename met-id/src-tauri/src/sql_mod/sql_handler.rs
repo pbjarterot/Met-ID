@@ -44,10 +44,16 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
         }
     }
 
-    let query_str: String = build_query(args, min_peak - 1.0, max_peak + 1.0, count);
+    let query_str: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count, "".to_string());
+    let query_str2: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count, "user_".to_string());
     println!("{:?}", query_str);
 
-    let db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str);
+    let mut db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str);
+    let db_input2: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str2);
+    println!("{:?}", db_input);
+
+    db_input = merge_sorted_tuples(db_input, db_input2);
+
     let msms_ids: Vec<String> = get_msms_ids();
 
     
@@ -67,3 +73,134 @@ fn get_msms_ids() -> Vec<String> {
   let ids: Vec<String> = get_msms()[1].clone();
   ids
 }
+
+
+
+fn merge_sorted_tuples(
+    tuple1: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>),
+    tuple2: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>),
+) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) {
+    let mut result = (
+        Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()
+    );
+
+    let mut iter1 = (
+        tuple1.0.into_iter(),
+        tuple1.1.into_iter(),
+        tuple1.2.into_iter(),
+        tuple1.3.into_iter(),
+        tuple1.4.into_iter(),
+        tuple1.5.into_iter(),
+        tuple1.6.into_iter(),
+    );
+
+    let mut iter2 = (
+        tuple2.0.into_iter(),
+        tuple2.1.into_iter(),
+        tuple2.2.into_iter(),
+        tuple2.3.into_iter(),
+        tuple2.4.into_iter(),
+        tuple2.5.into_iter(),
+        tuple2.6.into_iter(),
+    );
+
+    let mut next1 = (
+        iter1.0.next(),
+        iter1.1.next(),
+        iter1.2.next(),
+        iter1.3.next(),
+        iter1.4.next(),
+        iter1.5.next(),
+        iter1.6.next(),
+    );
+    
+    let mut next2 = (
+        iter2.0.next(),
+        iter2.1.next(),
+        iter2.2.next(),
+        iter2.3.next(),
+        iter2.4.next(),
+        iter2.5.next(),
+        iter2.6.next(),
+    );
+
+    while let (Some(v1), Some(v2)) = (next1.0, next2.0) {
+        if v1 <= v2 {
+            result.0.push(v1);
+            result.1.push(next1.1.take().unwrap());
+            result.2.push(next1.2.take().unwrap());
+            result.3.push(next1.3.take().unwrap());
+            result.4.push(next1.4.take().unwrap());
+            result.5.push(next1.5.take().unwrap());
+            result.6.push(next1.6.take().unwrap());
+            next1 = (
+                iter1.0.next(),
+                iter1.1.next(),
+                iter1.2.next(),
+                iter1.3.next(),
+                iter1.4.next(),
+                iter1.5.next(),
+                iter1.6.next(),
+            );
+        } else {
+            result.0.push(v2);
+            result.1.push(next2.1.take().unwrap());
+            result.2.push(next2.2.take().unwrap());
+            result.3.push(next2.3.take().unwrap());
+            result.4.push(next2.4.take().unwrap());
+            result.5.push(next2.5.take().unwrap());
+            result.6.push(next2.6.take().unwrap());
+            next2 = (
+                iter2.0.next(),
+                iter2.1.next(),
+                iter2.2.next(),
+                iter2.3.next(),
+                iter2.4.next(),
+                iter2.5.next(),
+                iter2.6.next(),
+            );
+        }
+    }
+
+    while let Some(v1) = next1.0 {
+        result.0.push(v1);
+        result.1.push(next1.1.take().unwrap());
+        result.2.push(next1.2.take().unwrap());
+        result.3.push(next1.3.take().unwrap());
+        result.4.push(next1.4.take().unwrap());
+        result.5.push(next1.5.take().unwrap());
+        result.6.push(next1.6.take().unwrap());
+        next1 = (
+            iter1.0.next(),
+            iter1.1.next(),
+            iter1.2.next(),
+            iter1.3.next(),
+            iter1.4.next(),
+            iter1.5.next(),
+            iter1.6.next(),
+        );
+    }
+
+    while let Some(v2) = next2.0 {
+        result.0.push(v2);
+        result.1.push(next2.1.take().unwrap());
+        result.2.push(next2.2.take().unwrap());
+        result.3.push(next2.3.take().unwrap());
+        result.4.push(next2.4.take().unwrap());
+        result.5.push(next2.5.take().unwrap());
+        result.6.push(next2.6.take().unwrap());
+        next2 = (
+            iter2.0.next(),
+            iter2.1.next(),
+            iter2.2.next(),
+            iter2.3.next(),
+            iter2.4.next(),
+            iter2.5.next(),
+            iter2.6.next(),
+        );
+    }
+
+    result
+}
+
+

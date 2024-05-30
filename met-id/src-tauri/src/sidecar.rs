@@ -1,6 +1,15 @@
 use serde::Serialize;
 use std::fmt;
 use tauri::api::process::{Command, CommandEvent};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::sync::mpsc::{self, Sender, Receiver};
+use tauri::async_runtime::block_on;
+use serde_json::to_vec;
+use bincode::{serialize, deserialize};
+use std::io::{Write, Read};
+use std::process::Stdio;
+
 
 // Custom error type
 #[derive(Debug, Serialize)]
@@ -16,6 +25,7 @@ impl fmt::Display for CommandError {
 
 #[tauri::command]
 pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) -> Result<String, CommandError> {
+    println!("Starting processing1...");
     let (mut rx, _child) = Command::new_sidecar(sidecar_name)
         .expect("failed to create `my-sidecar` binary command")
         .args(sidecar_arguments)
@@ -41,6 +51,53 @@ pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) ->
         output.push_str(&line);
     }
 
-
     Ok(output)
+}
+
+#[tauri::command]
+pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<String>{
+    // Generate a large vector of strings
+    //let data: Vec<String> = (0..100_000).map(|i| format!("string_{}", i)).collect();
+    let data_bytes = to_vec(&sidecar_arguments).unwrap();  // Serialize the vector to JSON
+
+    // Create a length-prefixed message
+    let length = data_bytes.len() as u32;
+    let length_bytes = serialize(&length).unwrap();
+
+    println!("env: {:?}", std::env::current_dir());
+
+    // Spawn the child process
+    let mut child = std::process::Command::new("./pyinstaller/dist/metabolite-x86_64-pc-windows-msvc.exe")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    {
+        // Get a handle to the child's stdin
+        let stdin = child.stdin.as_mut().unwrap();
+        // Write the length and data to the child's stdin
+        stdin.write_all(&length_bytes)?;
+        stdin.write_all(&data_bytes)?;
+    }
+
+    {
+        // Get a handle to the child's stdout
+        let mut stdout = child.stdout.as_mut().unwrap();
+        let mut length_buffer = [0u8; 4];
+        stdout.read_exact(&mut length_buffer)?;
+        let output_length: u32 = deserialize(&length_buffer).unwrap();
+        
+        let mut buffer = vec![0u8; output_length as usize];
+        stdout.read_exact(&mut buffer)?;
+
+        // Deserialize the received JSON to a vector of integers
+        let received_data: Vec<i32> = serde_json::from_slice(&buffer).unwrap();
+        println!("Received data length: {}\nData: {:?}", received_data.len(), received_data);
+    }
+
+    // Wait for the child process to exit
+    child.wait()?;
+
+    Ok("".to_string())
+
 }
