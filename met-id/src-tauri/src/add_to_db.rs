@@ -14,7 +14,8 @@ pub mod add_to_db_functions {
 
     fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
         smiles.insert(0, smarts.to_owned());
-        let sidecar_output: std::prelude::v1::Result<String, crate::sidecar::CommandError> = sidecar_function("metabolite".to_string(), smiles.to_owned());
+        let sidecar_output= sidecar_function2("metabolite".to_string(), smiles.to_owned());
+        println!("sidecar_output: {:?}", sidecar_output);
         let result: Vec<usize> = match sidecar_output {
             Ok(s) => {
                 s.trim_end_matches('\r')
@@ -90,9 +91,8 @@ pub mod add_to_db_functions {
     */
     
     pub fn update_functional_groups(table_name: &str, table2_name: &str, name: &String, smarts: &String, progress_sender: &mpsc::Sender<f32>) {
-        const BATCH_SIZE: usize = 50;
+        const BATCH_SIZE: usize = 10000;
         
-    
         let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         let conn2: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         
@@ -161,19 +161,22 @@ pub mod add_to_db_functions {
     }
     
     fn update_matrix_table_with_functional_group(table_name: &str, name: &str, matrices: &HashMap<String, bool>) {
-        let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+        let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+        println!("table name: {:?}\nname: {:?}\nmatrices: {:?}", table_name, name, matrices);
         conn.execute(
             &format!("ALTER TABLE {} ADD COLUMN {} TEXT", table_name, name),
             [],
         ).unwrap();
 
 
+        let tx = conn.transaction().unwrap();
         for (key, value) in matrices {
-            conn.execute(
-                &format!("INSERT OR REPLACE INTO {} (matrix, {}) VALUES (?1, ?2)", table_name, name),
-                params![key, *value as i32],
+            tx.execute(
+                &format!("UPDATE {table_name} SET {name} = ?1 WHERE matrix = ?2"),
+                params![value, key],
             ).unwrap();
         }
+        tx.commit().unwrap();
     }
 
     pub fn add_fg_to_db(conn: r2d2::PooledConnection<SqliteConnectionManager>, name: String, smarts: String, matrices: HashMap<String, bool>, progress_sender: &mpsc::Sender<f32>) -> () {
