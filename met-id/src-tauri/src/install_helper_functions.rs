@@ -50,7 +50,8 @@ pub fn ensure_bin_in_appdata(app: &App, resource_name: &str) -> std::path::PathB
     // Check if the database exists in AppData, if not, copy from resources
     if !app_data_path.exists() {
     let resource_path: PathBuf = app.path_resolver().resource_dir().expect("Failed to resolve resource directory")
-        .join("bin")
+        .join("pyinstaller")
+        .join("dist")
         .join(resource_name);
 
     println!("{:?}\n{:?}", app_data_path, resource_path);

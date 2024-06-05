@@ -76,7 +76,7 @@
       "identifier": "com.farmbio.metid",
       "resources": [
         "DBs/*",
-        "pyinstaller/*"
+        "pyinstaller/dist/*"
       ],
       "targets": "all"
     },
