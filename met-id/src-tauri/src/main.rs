@@ -12,6 +12,7 @@ mod logging;
 mod install_helper_functions;
 mod sidecar;
 mod database_setup;
+mod binary_setup;
 mod splashscreen;
 
 #[cfg(test)]
@@ -59,8 +60,27 @@ fn main() {
 
             let db_path: PathBuf = install_helper_functions::ensure_database_in_appdata(&app, "db.db");
             let msms_db_path: PathBuf = install_helper_functions::ensure_database_in_appdata(&app, "msms_db.db");
+
+            
             MSMSPATH.set(msms_db_path.to_string_lossy().to_string()).expect("Failed to set MSMS DB PATH");
             //let _python_path: PathBuf = install_helper_functions::ensure_python_in_appdata(&app, "");
+
+            let binary_path = match std::env::consts::OS {
+                "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
+                "macos" => {
+                    match std::env::consts::ARCH {
+                        "x86_64" => "metabolite_for_db-x86_64-apple-darwin",
+                        "aarch64" => "metabolite_for_db-aarch64-apple-darwin",
+                        _ => "",
+                    }
+                },
+                "linux" => "metabolite_for_db-x86_64-unknown-linux-gnu",
+                _ => "",
+            };
+
+            let metabolite_bin_path: PathBuf = install_helper_functions::ensure_bin_in_appdata(&app, binary_path);
+
+            binary_setup::METABOLITE_BIN_PATH.set(metabolite_bin_path);
 
             let pool: Pool<SqliteConnectionManager> = install_helper_functions::create_pool_from_app_path(&app, db_path);
             let msms_pool: Pool<SqliteConnectionManager> = install_helper_functions::create_pool_from_app_path(&app, msms_db_path);

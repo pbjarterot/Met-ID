@@ -45,12 +45,14 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     }
 
     let query_str: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count, "".to_string());
+    println!("{:?}\n", query_str);
     let query_str2: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count, "user_".to_string());
-    println!("{:?}", query_str);
+    println!("{:?}", query_str2);
 
     let mut db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str);
     let db_input2: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str2);
     println!("{:?}", db_input);
+    println!("{:?}", db_input2);
 
     db_input = merge_sorted_tuples(db_input, db_input2);
 

@@ -18,12 +18,15 @@ pub mod add_to_db_functions {
         println!("sidecar_output: {:?}", sidecar_output);
         let result: Vec<usize> = match sidecar_output {
             Ok(s) => {
+                /* 
                 s.trim_end_matches('\r')
                     .trim_start_matches('[')
                     .trim_end_matches(']')
                     .split(", ")
                     .filter_map(|n| n.parse::<usize>().ok())
                     .collect()
+                */
+                s.iter().map(|n| *n as usize).collect()
             },
             Err(_) => Vec::new(),
         };
@@ -91,13 +94,15 @@ pub mod add_to_db_functions {
     */
     
     pub fn update_functional_groups(table_name: &str, table2_name: &str, name: &String, smarts: &String, progress_sender: &mpsc::Sender<f32>) {
+        check_if_table_exists("metabolites", "user_metabolites").unwrap();
+
         const BATCH_SIZE: usize = 10000;
         
         let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         let conn2: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
         
         conn.execute(
-            &format!("ALTER TABLE {} ADD COLUMN {} NUMBER", table_name, name),
+            &format!("ALTER TABLE {} ADD COLUMN {} INTEGER", table_name, name),
             [],
         ).unwrap();
         let mode: String = conn.query_row("PRAGMA journal_mode=WAL;", [], |row| {
@@ -605,12 +610,12 @@ pub mod add_to_db_functions {
                 _ => {}, // Other cases
             }
         }
-
+        println!("array_length: {:?}", array_length);
         // Iterate over the vectors and insert the data into the table
         for i in 0..array_length {
             conn.execute(
-                "INSERT INTO user_adducts (adduct, mname, numfunctionalgroups, formula, deltamass) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![adduct_arr[i], name, fg_arr[i], mx_formula_arr[i], deltamass_vec[i]],
+                "INSERT INTO user_adducts (adduct, mname, numfunctionalgroups, formula, deltamass, maxcoverage) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![adduct_arr[i], name, fg_arr[i], mx_formula_arr[i], deltamass_vec[i], array_length],
             ).unwrap();
         }
 
