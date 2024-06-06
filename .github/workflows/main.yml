@@ -64,6 +64,19 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
     
+
+      - name: Import Apple Certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
       - name: Sign MacOS Binaries
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
