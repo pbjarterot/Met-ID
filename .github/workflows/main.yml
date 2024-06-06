@@ -74,34 +74,10 @@ jobs:
           # Add your upload commands here
 
 
-
-
-
-
       - name: install frontend dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
 
-      - name: Print all subfolders in target/release
-        run: |
-          echo "Listing all subfolders in met-id/src-tauri/target/release:"
-          ls -R
-
-
-      - name: Create ZIP (MacOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          ditto -c -k --sequesterRsrc --keepParent met-id/src-tauri/target/release/bundle/macos/met-id.app Met-ID.zip
-
-      - name: Notarize App (MacOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          xcrun altool --notarize-app -f Met-ID.zip --primary-bundle-id "com.farmbio.met-id" -u "$APPLE_ID" -p "$APPLE_PASSWORD"
-
-      - name: Staple Notarization (MacOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          xcrun stapler staple met-id/src-tauri/target/release/bundle/macos/met-id.app
 
       - uses: tauri-apps/tauri-action@v0
         env:
