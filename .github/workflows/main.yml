@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-20.04, windows-latest]
+        platform: [macos-latest] #, ubuntu-20.04, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -63,14 +63,41 @@ jobs:
           ./make_linux_executables.sh
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
+    
+      - name: Sign MacOS Binaries
+        if: matrix.platform == 'macos-latest'
+        run: |
+          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "Developer ID Application: $APPLE_SIGNING_IDENTITY" --options runtime --timestamp {} \;
 
       - name: Upload Bin
         run: |
           # Add your upload commands here
 
+
+
+
+
+
       - name: install frontend dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
+
+
+      - name: Create ZIP (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent target/release/bundle/macos/met-id.app Met-ID.zip
+
+      - name: Notarize App (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          xcrun altool --notarize-app -f Met-ID.zip --primary-bundle-id "com.yourcompany.met-id" -u "$APPLE_ID" -p "$APPLE_PASSWORD"
+
+      - name: Staple Notarization (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          xcrun stapler staple target/release/bundle/macos/met-id.app
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
