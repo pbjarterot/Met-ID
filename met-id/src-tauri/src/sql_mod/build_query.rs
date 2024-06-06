@@ -1,5 +1,5 @@
 use crate::database_setup::get_connection;
-use super::Args;
+use super::{table::check_if_table_exists, Args};
 use std::collections::HashMap;
 use maplit::hashmap;
 
@@ -46,6 +46,7 @@ fn parse_fgs(fgs: &Vec<String>) -> String {
 }
 
 pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, prefix: String) -> String {
+    check_if_table_exists("adducts", "user_adducts").unwrap();  
     let tissue_map: HashMap<&str, &str> = hashmap!{
         "HMDB (CSF)" => "csf",
         "HMDB (Urine)" => "urine",
