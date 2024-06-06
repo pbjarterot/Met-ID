@@ -67,7 +67,7 @@ jobs:
       - name: Sign MacOS Binaries
         if: matrix.platform == 'macos-latest'
         run: |
-          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "Developer ID Application: $APPLE_SIGNING_IDENTITY" --options runtime --timestamp {} \;
+          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "Developer ID Application: ${{ secrets.APPLE_PASSWORD }}" --options runtime --timestamp {} \;
 
       - name: Upload Bin
         run: |
