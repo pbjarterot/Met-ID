@@ -82,7 +82,7 @@ jobs:
 
       - name: Sign MacOS Binaries
         env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
       
