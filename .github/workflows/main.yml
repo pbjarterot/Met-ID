@@ -65,7 +65,8 @@ jobs:
         shell: bash
     
 
-      - name: Import Apple Certificate
+      - name: Import Apple Certificate (MacOS)
+        if: matrix.platform == 'macos-latest'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -77,10 +78,8 @@ jobs:
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
-      - name: List available identities
-        run: security find-identity -v -p codesigning
-
       - name: Sign MacOS Binaries
+        if: matrix.platform == 'macos-latest'
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
