@@ -86,7 +86,7 @@ jobs:
       - name: Create ZIP (MacOS)
         if: matrix.platform == 'macos-latest'
         run: |
-          ditto -c -k --sequesterRsrc --keepParent target/release/bundle/macos/met-id.app Met-ID.zip
+          ditto -c -k --sequesterRsrc --keepParent met-id/src-tauri/target/release/bundle/macos/met-id.app Met-ID.zip
 
       - name: Notarize App (MacOS)
         if: matrix.platform == 'macos-latest'
@@ -96,7 +96,7 @@ jobs:
       - name: Staple Notarization (MacOS)
         if: matrix.platform == 'macos-latest'
         run: |
-          xcrun stapler staple target/release/bundle/macos/met-id.app
+          xcrun stapler staple met-id/src-tauri/target/release/bundle/macos/met-id.app
 
       - uses: tauri-apps/tauri-action@v0
         env:
