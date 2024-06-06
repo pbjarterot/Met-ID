@@ -85,7 +85,7 @@ jobs:
       - name: Print all subfolders in target/release
         run: |
           echo "Listing all subfolders in met-id/src-tauri/target/release:"
-          find met-id/target/release -type d -mindepth 1 -maxdepth 3
+          find met-id -type d -mindepth 1 -maxdepth 7
 
 
       - name: Create ZIP (MacOS)
@@ -96,7 +96,7 @@ jobs:
       - name: Notarize App (MacOS)
         if: matrix.platform == 'macos-latest'
         run: |
-          xcrun altool --notarize-app -f Met-ID.zip --primary-bundle-id "com.yourcompany.met-id" -u "$APPLE_ID" -p "$APPLE_PASSWORD"
+          xcrun altool --notarize-app -f Met-ID.zip --primary-bundle-id "com.farmbio.met-id" -u "$APPLE_ID" -p "$APPLE_PASSWORD"
 
       - name: Staple Notarization (MacOS)
         if: matrix.platform == 'macos-latest'
