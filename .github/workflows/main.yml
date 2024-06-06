@@ -85,7 +85,7 @@ jobs:
       - name: Print all subfolders in target/release
         run: |
           echo "Listing all subfolders in met-id/src-tauri/target/release:"
-          find met-id -type d -mindepth 1 -maxdepth 7
+          find  -type d -mindepth 1 -maxdepth 7
 
 
       - name: Create ZIP (MacOS)
