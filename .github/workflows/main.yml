@@ -77,6 +77,9 @@ jobs:
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
+      - name: List available identities
+        run: security find-identity -v -p codesigning
+
       - name: Sign MacOS Binaries
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
