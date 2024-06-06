@@ -82,6 +82,11 @@ jobs:
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
 
+      - name: Print all subfolders in target/release
+        run: |
+          echo "Listing all subfolders in target/release:"
+          find target/release -type d -mindepth 1 -maxdepth 3
+
 
       - name: Create ZIP (MacOS)
         if: matrix.platform == 'macos-latest'
