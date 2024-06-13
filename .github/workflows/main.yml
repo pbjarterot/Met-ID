@@ -106,7 +106,7 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: Met-ID-v0.0.3 # the action automatically replaces \_\_VERSION\_\_ with the app version
+          tagName: Met-ID-v0.1.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
           releaseName: 'Met-ID v0.1.0'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
