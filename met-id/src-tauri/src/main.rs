@@ -102,6 +102,7 @@ fn main() {
                                                  files::read_mass_error_csv,
                                                  files::save_csv,
                                                  files::read_mzml_for_msms,
+                                                 mass_match::calculate_adjusted_mass,
                                                  sql_mod::matrix_dropdown_tauri,
                                                  sql_mod::sql_handler_tauri,
                                                  sql_mod::sql_counter_tauri,
