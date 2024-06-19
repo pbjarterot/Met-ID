@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::time::Instant;
 use crate::mass_match::mass_matcher;
+use crate::sql_mod::table::check_if_table_exists;
 
 use super::build_query::build_query;
 use super::Args;
@@ -44,6 +45,12 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
         }
     }
 
+    check_if_table_exists("metabolites",       "user_metabolites").unwrap();
+    check_if_table_exists("derivatized_by",    "user_derivatized_by").unwrap();
+    check_if_table_exists("endogeneity",       "user_endogeneity").unwrap();
+    check_if_table_exists("in_tissue",         "user_in_tissue").unwrap();
+    check_if_table_exists("db_accessions",     "user_db_accessions").unwrap();
+    check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
     let query_str: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count);
     println!("{:?}\n", query_str);
 
