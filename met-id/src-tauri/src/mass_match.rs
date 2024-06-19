@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 fn bisect_left<T: PartialOrd>(arr: &[T], x: &T) -> usize {
     let mut lo: usize = 0;
     let mut hi: usize = arr.len();
@@ -103,6 +102,45 @@ fn update_hashmaps(data: &mut Vec<Vec<HashMap<String, String>>>) {
         }
     }
 }
+
+#[tauri::command]
+pub fn calculate_adjusted_mass(masses: Vec<String>, mass_error: String) -> Vec<HashMap<String, String>> {
+    let mut input_masses: Vec<f64> = Vec::<f64>::new();
+    let mut latent_variables: Vec<String> = Vec::<String>::new();
+    for i in masses {
+        match i.parse::<f64>() {
+            Ok(num) => input_masses.push(num),
+            Err(_e ) => {
+                println!("Treating {:?} as a latent variable", i);
+                latent_variables.push(i);
+            },
+        }
+    }
+
+    let mut res: Vec<HashMap<String, String>> = Vec::new();
+    let coefficients: Option<EquationCoefficients> = parse_equation(&mass_error);
+    for mass in input_masses {
+        let adj_mass: f64;
+        if let Some(ref coeff) = coefficients {
+            if let Some(result) = calculate_y(&coeff, mass) {
+                adj_mass = result;
+            } else {
+                println!("invalid_input");
+                adj_mass = mass;
+            }
+        } else {
+            println!("Invalid input");
+            adj_mass = mass;
+        }
+
+        let mut res_map: HashMap<String, String> = HashMap::new();
+        res_map.insert("oMass".to_string(), mass.to_string());
+        res_map.insert("aMass".to_string(), adj_mass.to_string());
+        res.push(res_map);
+    }
+    res
+}
+
 
 pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<String>, db_mnames: Vec<String>, db_accessions: Vec<String>, db_smiles: Vec<String>, db_formulas: Vec<String>, db_pos_derivs: Vec<i32>, mass_error: String, mass_window: String, msms_ids: &Vec<String>) -> Vec<Vec<HashMap<String, String>>>{
     
