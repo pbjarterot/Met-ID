@@ -135,7 +135,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, prefix: S
         format!("WHERE concat_adducts.numfunctionalgroups <= {} AND adjusted_mz < {} AND adjusted_mz > {} {} AND ({})", &build_condition_query3(&args.adducts, &prefix).unwrap(), &max_mz.to_string(), &min_mz.to_string(), db_string, met_type_string)
     } else {
         if args.metabolome.starts_with("HMDB") {
-            format!(r#"WHERE ({met_type}) AND CAST({prefix}metabolites.mz AS REAL) + CAST(concat_adducts.deltamass AS REAL) < {max} AND CAST({prefix}metabolites.mz AS REAL) + CAST(adducts.deltamass AS REAL) > {min} {tissue}"#, 
+            format!(r#"WHERE ({met_type}) AND CAST({prefix}metabolites.mz AS REAL) + CAST(concat_adducts.deltamass AS REAL) < {max} AND CAST({prefix}metabolites.mz AS REAL) + CAST(concat_adducts.deltamass AS REAL) > {min} {tissue}"#, 
             max=&max_mz.to_string(), min=&min_mz.to_string(), met_type=met_type_string, tissue=tissue_string, prefix=prefix)
         } else {
             format!(r#"WHERE CAST(lipids.mz AS REAL) + CAST(concat_adducts.deltamass AS REAL) < {max} AND CAST(lipids.mz AS REAL) + CAST(concat_adducts.deltamass AS REAL) > {min}"#, 
