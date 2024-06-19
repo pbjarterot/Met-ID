@@ -53,20 +53,23 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         "HMDB (Serum)" => "serum",
     };
 
-    let conventional_matrix: bool = args.matrix == "Positive Mode".to_string() || args.matrix == "Negative Mode".to_string();
-    let endo_table = format!("concat_endogeneity");
-
-    let met_type_string: String = build_query_with_table(&args.met_type,  &endo_table).unwrap();
+    
 
     let mut query: String = String::new();
 
     query += "WITH concat_adducts AS (SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts), ";
     query += "concat_db_accessions AS (SELECT * FROM db_accessions UNION ALL SELECT * FROM user_db_accessions), ";
     query += "concat_metabolites AS (SELECT * FROM metabolites UNION ALL SELECT * FROM user_metabolites), ";
+    query += "concat_derivatized_by AS (SELECT * FROM derivatized_by UNION ALL SELECT * FROM user_derivatized_by), ";
     query += "concat_endogeneity AS (SELECT * FROM endogeneity UNION ALL SELECT * FROM user_endogeneity), ";
     query += "concat_functional_groups AS (SELECT * FROM functional_groups UNION ALL SELECT * FROM user_functional_groups), ";
     query += "concat_in_tissue AS (SELECT * FROM in_tissue UNION ALL SELECT * FROM user_in_tissue) ";
     let fg_or_adduct: String = get_adducts(args.matrix.clone()).join(", ");
+
+    let conventional_matrix: bool = args.matrix == "Positive Mode".to_string() || args.matrix == "Negative Mode".to_string();
+    let endo_table: String = format!("concat_endogeneity");
+
+    let met_type_string: String = build_query_with_table(&args.met_type,  &endo_table).unwrap();
 
     if !count {
         if args.metabolome.starts_with("HMDB") {
@@ -76,7 +79,6 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                 query += &format!("concat_metabolites.name, concat_adducts.adduct, concat_db_accessions.hmdb, concat_metabolites.smiles, concat_metabolites.chemicalformula, ");
                 query += &coverage_string(&build_condition_query3(&args.adducts).unwrap(), &args.matrix);
                 query += " FROM";
-                println!("cov_string: {:?}", &coverage_string(&build_condition_query3(&args.adducts).unwrap(), &args.matrix));
             } else {
                 query += &format!(r#"SELECT (CAST(concat_metabolites.mz AS REAL) + CASE WHEN concat_adducts.adduct IN ({fg_or_adduct}) THEN CAST(concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=parse_fgs(&args.adducts));
                 let num_adducts = args.adducts.len();
@@ -265,7 +267,6 @@ pub fn coverage_string(fg_string: &str, matrix: &str) -> String {
     let mut cov_vec: Vec<i32> = Vec::new();
 
     for adduct in adducts_iter {
-        println!("adduct: {:?}", adduct);
         match adduct {
             Ok((fg, cov)) => {
             if !fg_vec.contains(&fg) {
@@ -314,9 +315,9 @@ pub fn build_count_query(met: String, matrix: String, typ: Vec<String>, adducts:
         None => "".to_string(),
     };
     
-    let mut query: String = "SELECT COUNT(*) FROM ".to_string();
+    let mut query: String = "WITH concat_endogeneity AS (SELECT * FROM endogeneity UNION ALL SELECT * FROM user_endogeneity), concat_functional_groups AS (SELECT * FROM functional_groups UNION ALL SELECT * FROM user_functional_groups) SELECT COUNT(*) FROM ".to_string();
     if met.starts_with("HMDB") {
-        query += "metabolites INNER JOIN endogeneity ON metabolites.id = endogeneity.id INNER JOIN functional_groups ON metabolites.id = functional_groups.id INNER JOIN in_tissue ON metabolites.id = in_tissue.id";
+        query += "metabolites INNER JOIN concat_endogeneity ON metabolites.id = concat_endogeneity.id INNER JOIN concat_functional_groups ON metabolites.id = concat_functional_groups.id INNER JOIN in_tissue ON metabolites.id = in_tissue.id";
     } else {
         query += "lipids";
         return query;
