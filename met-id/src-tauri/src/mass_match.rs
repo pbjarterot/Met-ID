@@ -67,41 +67,41 @@ fn msms_exist(msms_db: &Vec<String>, query: String) -> String {
     }
 }
 
-fn update_hashmaps(data: &mut Vec<Vec<HashMap<String, String>>>) {
-    let mut occurrences = HashMap::new(); // Map of (foo, bar) to its count
 
-    // Count occurrences of each (foo, bar) pair
+
+fn update_hashmaps(data: &mut Vec<Vec<HashMap<String, String>>>) {
+    let mut occurrences: HashMap<(String, String), i32> = HashMap::new(); // Map of (foo, bar) to its count
+    let mut foo_counts: HashMap<String, i32> = HashMap::new(); // Map of foo to its total count
+
+    // Count occurrences of each (foo, bar) pair and total foo counts
     for vec in data.iter() {
         for hashmap in vec.iter() {
             if let (Some(foo), Some(bar)) = (hashmap.get("names"), hashmap.get("matrix")) {
                 *occurrences.entry((foo.clone(), bar.clone())).or_insert(0) += 1;
+                *foo_counts.entry(foo.clone()).or_insert(0) += 1;
             }
         }
     }
 
-    // Calculate the "bar2" value for each hashmap
+    // Update the "coverage" value for each hashmap
     for vec in data.iter_mut() {
         for hashmap in vec.iter_mut() {
-            let mut count: i32 = 1;
-            if let Some(foo) = hashmap.get("names") {
-                // Count how many hashmaps have the same 'foo' but a different 'bar'
-                for ((other_foo, _), &occ) in &occurrences {
-                    if foo == other_foo {
-                        count += occ;
+            if let Some(foo) = hashmap.get("names").map(String::as_str) {
+                if let Some(total_foo_count) = foo_counts.get(foo) {
+                    let mut count = *total_foo_count;
+                    if let Some(bar) = hashmap.get("matrix").map(String::as_str) {
+                        if let Some(same_pair_count) = occurrences.get(&(foo.to_string(), bar.to_string())) {
+                            count -= same_pair_count-1;
+                        }
                     }
-                }
-
-                // Adjust count by subtracting occurrences of the same (foo, bar) if present
-                if let Some(bar) = hashmap.get("matrix") {
-                    count -= occurrences.get(&(foo.clone(), bar.clone())).unwrap_or(&0);
+                    hashmap.insert("coverage".to_string(), count.to_string());
                 }
             }
-
-            // Update "bar2" with the count
-            hashmap.insert("coverage".to_string(), count.to_string());
         }
     }
 }
+
+
 
 #[tauri::command]
 pub fn calculate_adjusted_mass(masses: Vec<String>, mass_error: String) -> Vec<HashMap<String, String>> {
@@ -215,6 +215,6 @@ pub fn mass_matcher(input_masses: Vec<f64>, db_masses: &[f64], db_names: Vec<Str
     };
 
     update_hashmaps(&mut res);
-    //println!("{:?}", res);
+
     res
 }
