@@ -6,7 +6,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const searchbar_container = document.getElementById("db-search");
   searchbar_container!.addEventListener("input", () => {
-    console.log("clicked the searchbar");
 
     searchbar_container!.classList.remove("reanimate", "animate");
 
@@ -23,39 +22,33 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 
 async function generate_results_cards(inputvalue: string) {
-  console.log(inputvalue);
-
   // Access the container div
   let div = document.getElementById("db-search-results-body");
   div!.innerHTML = "";
   if (!div) return; // Early exit if the div is not found
 
-  let namelist2: Record<string, number> = await invoke("db_ids_and_names_tauri", {inputvalue});
-  console.log("Here is namelist2: ", namelist2)
+  let namelist2: [string, number, number] = await invoke("db_ids_and_names_tauri", {inputvalue});
 
-  for (const key in namelist2) {
+  for (let i = 0; i < namelist2.length; i++) {
     const tempDiv = document.createElement('div');
-    const L = await generate_db_small_results_card2(key, Number(namelist2[key]), false);
+    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), false);
     tempDiv.innerHTML = `${L}`;
     tempDiv.classList.add("db-small-results-card")
-    tempDiv.id = "db-small-results-card-" + namelist2[key];
+    tempDiv.id = "db-small-results-card-" + namelist2[i][1];
     div!.appendChild(tempDiv);
 
     function attachClickListener() {
-        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[key]);
+        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[i][1]);
         if (childElement) {
             childElement.addEventListener("click", async () => {
-                console.log("I've been clicked");
                 if (tempDiv.classList.contains("db-open")) {
-                    const L = await generate_db_small_results_card2(key, Number(namelist2[key]), false);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), false);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.remove("db-open");
-                    console.log("here!");
                 } else {
-                    const L = await generate_db_small_results_card2(key, Number(namelist2[key]), true);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), true);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.add("db-open");
-                    console.log("here2");
                 }
                 attachClickListener(); // Reattach the click listener to the new element
 
@@ -75,19 +68,15 @@ async function generate_results_cards(inputvalue: string) {
 
   // Locate the image container in the newly updated innerHTML
   let imdiv = document.getElementById("mol-im-container");
-  //console.log(imdiv);
 
   // Generate and append the image asynchronously
   if (imdiv) {
-    console.log("trying to make image")
     let image_area = await renderImageAsync();
-    console.log(image_area, imdiv);
     imdiv.appendChild(image_area);
   }
 }
 
 export function renderDBHTML() {
-  console.log("Hello");
   let db_search_div = document.getElementById("db-searchbar-div");
 
   db_search_div!.innerHTML = `
@@ -105,7 +94,6 @@ export function renderDBHTML() {
 }
 
 export async function generate_db_small_results_card2(name: string, index: number, open_: boolean) {
-  //console.log("small_res2")
 
   let template = `<div class="db-small-results-card-top" id="db-small-results-card-top-${index}">
                     	<div class="db-small-results-card-textbox">
@@ -116,7 +104,6 @@ export async function generate_db_small_results_card2(name: string, index: numbe
                 	  </div>
                     <div class="db-molecule-information" id="db-molecule-information-${index}"></div>`
     if (open_) {
-      console.log("index:", index);
       let dataHtml = await add_data_to_small_results_card(index);
       template = template.replace(`<div class="db-molecule-information" id="db-molecule-information-${index}"></div>`, 
                                   `<div class="db-molecule-information" id="db-molecule-information-${index}">${dataHtml}</div>`);
@@ -125,9 +112,7 @@ export async function generate_db_small_results_card2(name: string, index: numbe
 }
 
 async function add_data_to_small_results_card(index: number){
-  //console.log(index)
   let [name, formula, smiles, identifier, adductmap]: [string, string, string, string, Record<string, Record<string, number>>] = await invoke("db_data_tauri", {index})
-  //console.log(adductmap);
   let temp  = ` <div class="db-molecule-information-top">
                   <div class="db-molecule-information">
                     <div class="db-molecule-name">${name}</div>
@@ -141,7 +126,6 @@ async function add_data_to_small_results_card(index: number){
     }
   }
   //adduct_div("AMPP", adductmap['AMPP'])}
-  console.log(smiles)
   temp +=  `</div>
             </div>
             <div class="mol-im-container" id="mol-im-container">
@@ -152,7 +136,6 @@ async function add_data_to_small_results_card(index: number){
 }
 
 function adduct_div(name: string, a: Record<string, number>) {
-  console.log(a)
   a = sortRecordByValues(a);
   let template = `<div class="db-adduct-div">	
                         <div class="db-adduct-div-name">

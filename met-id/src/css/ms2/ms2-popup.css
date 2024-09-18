@@ -398,13 +398,34 @@ margin: 1.5rem 0;
 
 .ms2-popup-export-button-div {
   position: fixed;
-  right: 40px;
+  right: 220px;
   top: 10px;
 }
+.ms2-popup-annotated-peaks-div {
+  position: fixed;
+  right: 0px;
+  top: 1px;
+  color: white;
+}
+.ms2-popup-annotated-peaks-div p {
+  color: white;
+  padding: 0px;
+  margin: 0px;
+}
+.ms2-popup-annotated-peaks-div input {
+  position: fixed;
+  right: 20px;
+  background-color: #434343;
+  border-radius: 10px;
+  height: 20px;
+  color: white;
+  border: 1px solid white;
+}
+
 #ms2-popup-export-button {
   border-radius: 10px;
   height: 40px;
-  width: 200px;
+  width: 120px;
   color:white;
   background-color: #434343;
   border: 1px solid white;
@@ -419,7 +440,7 @@ margin: 1.5rem 0;
 #ms2-popup-export-csv-button {
   border-radius: 10px;
   height: 40px;
-  width: 200px;
+  width: 120px;
   color:white;
   background-color: #434343;
   border: 1px solid white;

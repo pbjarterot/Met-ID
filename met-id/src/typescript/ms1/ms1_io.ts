@@ -54,6 +54,19 @@ function countBrTagsInCell(cell: HTMLTableCellElement): number {
   return brTags.length;
 }
 
+function escapeCsvValue(value: string | number): string {
+  // Convert the value to a string and trim any leading or trailing spaces
+  let stringValue = value.toString().trim();
+
+  // If the value contains a comma, quote, or a slash, we need to wrap it in double quotes
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('/')) {
+      // Escape any existing double quotes in the value
+      stringValue = stringValue.replace(/"/g, '""');
+      return `"${stringValue}"`;
+  }
+  return stringValue;
+}
+
 function ms1_table_content(rows:NodeListOf<HTMLTableRowElement>) {
   let csvContent = '';
   rows.forEach((row) => {
@@ -64,10 +77,17 @@ function ms1_table_content(rows:NodeListOf<HTMLTableRowElement>) {
         const brCount = countBrTagsInCell(cells[3] as HTMLTableCellElement);
         for (let br_idx = 0; br_idx < brCount + 1; br_idx++) {
 			      const rowData: string[] = [];
-            for (let i = 1; i < cells.length-2; i++) {
+            for (let i = 1; i < cells.length; i++) {
+              if (i != cells.length-2) {
                 const cellContent = cells[i].innerHTML.split(/<br>/g)[br_idx];
                 console.log(cellContent);
-                rowData.push(`${String(cellContent)}`);
+                if (i == cells.length-1) {
+                  rowData.push(`${String(escapeCsvValue(cellContent.replace("/", "out of")))}`);
+                } else {
+                  rowData.push(`${String(escapeCsvValue(cellContent))}`);
+                }
+              }
+                
             }
             console.log("rowdata: ", rowData);
             csvContent += rowData.join(";") + "\n";

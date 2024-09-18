@@ -39,8 +39,11 @@
             <div class="ms2-popup-export-button-div">
               <button class="ms2-popup-export-button" id="ms2-popup-export-button">Export as Image</button>
               <button class="ms2-popup-export-button" id="ms2-popup-export-csv-button">Export as CSV</button>
+              <div class="ms2-popup-annotated-peaks-div">
+                <p>Number of annotated peaks:</p>
+                <input type="text" id="ms2-popup-top-peaks-input" placeholder="10">
+              </div>
             </div>
-            
             <div class="ms2-popup-plot" id="ms2-popup-plot"></div>
           </div>
           <div id="ms2-add-to-db-overlay">
@@ -453,14 +456,13 @@
                     <p id="db_size">0</p>
                   </div>
                 </div>
-                <!--
+                
                 <div class="ms1-searchbar-row2">
                   <div class="ms1-slidecontainer">
-                    <p>Progress <span id="demo"></span></p>
-                    <p>100%</p>
+                    <p id="identification-results-string"></p>
                   </div>
                 </div>
-                -->
+                
                 </div>
               </div>
               <div class="ms1-results" id="ms1-results">

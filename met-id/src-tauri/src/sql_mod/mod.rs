@@ -193,7 +193,7 @@ pub fn db_data_tauri(index: usize) -> (String, String, String, String, HashMap<S
     get_db_data(index)
 }
 #[tauri::command]
-pub fn db_ids_and_names_tauri(inputvalue: String) -> HashMap<String, usize> {
+pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, usize, i64)> {
     db_ids_and_names(inputvalue)
 }
 

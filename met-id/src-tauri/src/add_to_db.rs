@@ -1,31 +1,27 @@
 
 pub mod add_to_db_functions {
     use r2d2_sqlite::SqliteConnectionManager;
+    //use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
     use rusqlite::{params, Result, ToSql};
     use crate::sql_mod::table::{check_if_table_exists, check_if_table_exists_msms};
     use crate::sidecar::{sidecar_function, sidecar_function2};
-    //use crate::metabolite::{ Metabolite, single_functional_group };
     use crate::database_setup::{get_connection, get_msms_connection};
     use std::collections::HashMap;
     use std::iter::repeat;
     use std::sync::mpsc;
     use crate::files::read_mzml_for_msms_to_add_to_db;
     use regex::Regex;
-
+    /* 
+    use rdkit::ROMol;
+    use rdkit::RWMol;
+    use rdkit::substruct_match;
+    use rdkit::SubstructMatchParameters;
+    */
     fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
         smiles.insert(0, smarts.to_owned());
         let sidecar_output= sidecar_function2("metabolite".to_string(), smiles.to_owned());
-        println!("sidecar_output: {:?}", sidecar_output);
         let result: Vec<usize> = match sidecar_output {
             Ok(s) => {
-                /* 
-                s.trim_end_matches('\r')
-                    .trim_start_matches('[')
-                    .trim_end_matches(']')
-                    .split(", ")
-                    .filter_map(|n| n.parse::<usize>().ok())
-                    .collect()
-                */
                 s.iter().map(|n| *n as usize).collect()
             },
             Err(_) => Vec::new(),
@@ -34,10 +30,25 @@ pub mod add_to_db_functions {
         result
     }
 
+    /* 
+    fn single_functional_group2(smiles: &Vec<String>, smarts: &String) -> Vec<usize> {
+        // Compile the SMARTS pattern into a query molecule
+        let query: ROMol = RWMol::from_smarts(smarts).unwrap().to_ro_mol();
+        let params: SubstructMatchParameters = SubstructMatchParameters::new();
+    
+        // Use parallel iterator with `filter_map` to collect the indices of matches
+        smiles.iter().enumerate().filter_map(|(index, metabolite)| {
+            // Convert SMILES string to molecule
+            let mol: ROMol = ROMol::from_smiles(metabolite).unwrap();
+            // Check if there is a substructure match
+            Some(substruct_match(&mol, &query, &params).len())
+        }).collect()
+    }
+    */
+
     fn metabolite_for_db_sidecar(smiles: &String, smarts_map: &mut HashMap<String, String>) -> (String, String, HashMap<String, String>) {
         let mut smarts_vec: Vec<_> = smarts_map.values().cloned().collect();
         smarts_vec.insert(0, smiles.to_owned());
-        println!("Starting to process...");
 
         let sidecar_output = sidecar_function("metabolite_for_db".to_string(), smarts_vec.to_owned());
 
@@ -48,11 +59,9 @@ pub mod add_to_db_functions {
         let mut smiles_vec: Vec<_> = Vec::new();
         smiles_vec.insert(0, smiles.clone());
         let sidecar_output: std::prelude::v1::Result<String, crate::sidecar::CommandError> = sidecar_function("matrix_for_db".to_string(), smiles_vec);
-
         
         let re: Regex = Regex::new(r"[\r\n]").unwrap();
         let sc_o: String = re.replace_all(&sidecar_output.unwrap_or("".to_string()), "").to_string();
-        println!("sidecar_output: {:?}", sc_o);
 
         sc_o
     }
@@ -85,13 +94,6 @@ pub mod add_to_db_functions {
     
         Ok((molecule.to_string(), float_number.to_string(), smarts_map.to_owned()))
     }
-
-    /* 
-    fn update_fg(smarts: &String) {
-        const BATCH_SIZE: usize = 50;
-        let match_counts: Vec<usize> = single_functional_group(smarts);
-    }
-    */
     
     pub fn update_functional_groups(table_name: &str, table2_name: &str, name: &String, smarts: &String, progress_sender: &mpsc::Sender<f32>) {
         check_if_table_exists("metabolites", "user_metabolites").unwrap();
@@ -167,7 +169,6 @@ pub mod add_to_db_functions {
     
     fn update_matrix_table_with_functional_group(table_name: &str, name: &str, matrices: &HashMap<String, bool>) {
         let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
-        println!("table name: {:?}\nname: {:?}\nmatrices: {:?}", table_name, name, matrices);
         conn.execute(
             &format!("ALTER TABLE {} ADD COLUMN {} TEXT", table_name, name),
             [],
@@ -305,30 +306,11 @@ pub mod add_to_db_functions {
     }
     
     fn fill_user_derivatized_by(conn: &r2d2::PooledConnection<SqliteConnectionManager>, fgh: &HashMap<String, String>, matrices_fgs: &HashMap<String, Vec<String>>) {
-        println!("fgh: {:?}\nmatrices_fgs: {:?}", fgh, matrices_fgs);
-        println!("Something: {:?}, {:?}", fgh.get(&"Aldehydes".to_string()), fgh.get(&"Aldehydes".to_string()).unwrap().parse::<usize>());
         let mut matrices = get_table_column_names(conn, "derivatized_by").unwrap();
         matrices.remove(0);
 
-        //let mut data: Vec::<(String, String)> = Vec::new();
-
         let data: Vec<(String, String)> = calculate_category_sums(fgh, matrices_fgs);
-        /* 
-        for matrix in matrices {
-            let functional_groups: Option<&Vec<String>> = matrices_fgs.get(&matrix);
-            println!("matrix: {:?}, functional groups: {:?}", matrix, functional_groups);
-            let result: usize = match functional_groups {
-                Some(func_groups) => {
-                    println!("fg: {:?}", func_groups);
-                    println!("funcgroups: {:?}", func_groups.iter().map(|fg: &String| fgh.get(fg)));
-                    func_groups.iter().map(|fg: &String| fgh.get(fg).unwrap().parse::<usize>().unwrap()).sum()
-                },
-                None => 0,
-            };
 
-            data.push((matrix, result.to_string()));
-        }
-        */
         // Generate the column names and placeholder strings dynamically
         let column_names: Vec<String> = data.iter().map(|(col, _)| format!("'{}'", col.to_string())).collect();
         let placeholders: Vec<&str> = repeat("?").take(data.len()).collect();
@@ -340,7 +322,6 @@ pub mod add_to_db_functions {
         );
 
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
-        println!("{:?}", sql);
 
         conn.execute(&sql, values.as_slice()).unwrap();
 
@@ -374,8 +355,8 @@ pub mod add_to_db_functions {
         // Change data to Vec of tuples with String and Box<dyn ToSql>
         let data: Vec<(String, Box<dyn ToSql>)> = vec![
             ("name".to_string(), Box::new("User Input".to_string())),
-            ("identifier".to_string(), Box::new("USER2".to_string())),
-            ("adduct".to_string(), Box::new("1".to_string())),
+            ("identifier".to_string(), Box::new("User Input".to_string())),
+            ("adduct".to_string(), Box::new("1A".to_string())),
             ("cid".to_string(), Box::new("0eV".to_string())),
             ("window".to_string(), Box::new("1Da".to_string())),
             ("tof".to_string(), Box::new("0.0".to_string())),
@@ -393,7 +374,7 @@ pub mod add_to_db_functions {
             "UPDATE MSMS SET {} WHERE identifier = ?",
             data.iter().map(|(col, _)| format!("{} = ?", col)).collect::<Vec<_>>().join(", ")
         );
-        let binding = "USER2".to_string();
+        let binding = "User Input".to_string();
         let update_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).chain(std::iter::once(&binding as &dyn ToSql)).collect();
         let updated_rows = conn.execute(&update_sql, &*update_values).unwrap();
     
@@ -489,13 +470,13 @@ pub mod add_to_db_functions {
         let mut functional_groups: Vec<String> = get_table_column_names(conn, "functional_groups").unwrap();
         functional_groups.remove(0);
 
-        
+        /* 
         let new_fgh: HashMap<String, String> = fgh
             .iter()
             .map(|(k, v)| (k.replace(" ", ""), v.clone()))
             .collect();
 
-        /* 
+        
         let mut data: HashMap<String, &String> = HashMap::new();
         for fg in functional_groups {
             if let Some(value) = new_fgh.get(&fg) {
@@ -515,8 +496,6 @@ pub mod add_to_db_functions {
         );
 
         let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
-        println!("other sql: {:?}", sql);
-        println!("fgh: {:?}", fgh);
 
         conn.execute(&sql, values.as_slice()).unwrap();
     }
@@ -589,8 +568,6 @@ pub mod add_to_db_functions {
         let mut fg_arr: [&str; 20] = [""; 20];
         let mut deltamass_vec: Vec<String> = Vec::new();
 
-        println!("here, {:?}", adducts.len()/3);
-
         for (key, value) in adducts.iter() {
             let (prefix, number) = if let Some(result) = split_key(key) {
                 result
@@ -610,7 +587,6 @@ pub mod add_to_db_functions {
                 _ => {}, // Other cases
             }
         }
-        println!("array_length: {:?}", array_length);
         // Iterate over the vectors and insert the data into the table
         for i in 0..array_length {
             conn.execute(

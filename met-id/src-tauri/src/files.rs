@@ -123,6 +123,7 @@ fn parse_data_points(lines: &[&str]) -> Result<(Vec<f64>, Option<Vec<f64>>), io:
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
+#[allow(dead_code)]
 struct MSMSSpectra {
     name: String,
     matrix: String,

@@ -1,10 +1,6 @@
 use serde::Serialize;
 use std::fmt;
 use tauri::api::process::{Command, CommandEvent};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::sync::mpsc::{self, Sender, Receiver};
-use tauri::async_runtime::block_on;
 use serde_json::to_vec;
 use bincode::{serialize, deserialize};
 use std::io::{Write, Read};
@@ -55,9 +51,9 @@ pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) ->
 }
 
 #[tauri::command]
-pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<Vec<i32>>{
+pub fn sidecar_function2(_sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<Vec<i32>>{
     // Generate a large vector of strings
-    let binary_path = match std::env::consts::OS {
+    let _binary_path = match std::env::consts::OS {
         "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
         "macos" => {
             match std::env::consts::ARCH {
@@ -94,7 +90,7 @@ pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -
 
 
     // Get a handle to the child's stdout
-    let mut stdout = child.stdout.as_mut().unwrap();
+    let stdout = child.stdout.as_mut().unwrap();
     let mut length_buffer = [0u8; 4];
     stdout.read_exact(&mut length_buffer)?;
     let output_length: u32 = deserialize(&length_buffer).unwrap();
