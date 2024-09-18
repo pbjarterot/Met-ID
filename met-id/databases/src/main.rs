@@ -82,8 +82,8 @@ fn create_tables(conn: &Connection) -> () {
     ).unwrap();
 
     conn.execute("CREATE TABLE derivatized_by (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fmp INTEGER NOT NULL, 
-            ampp INTEGER NOT NULL)",
+            FMP-10 INTEGER NOT NULL, 
+            AMPP INTEGER NOT NULL)",
     []
     ).unwrap();
 
@@ -173,7 +173,7 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
         ));
 
         sql.push_str(&format!(
-            "INSERT INTO derivatized_by (fmp, ampp) VALUES ({}, {});\n",
+            "INSERT INTO derivatized_by (FMP-10, AMPP) VALUES ({}, {});\n",
             fmp10, ampp
         ));
 

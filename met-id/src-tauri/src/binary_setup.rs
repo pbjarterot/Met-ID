@@ -1,3 +1,4 @@
+/*
 use log::info;
 use once_cell::sync::OnceCell;
 use std::path::PathBuf;
@@ -9,3 +10,4 @@ pub fn get_metabolite_bin_path() -> Result<PathBuf, std::io::Error> {
   info!("{:?}", path);
   Ok(path.to_owned())
 }
+*/

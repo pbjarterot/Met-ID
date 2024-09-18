@@ -7,6 +7,8 @@ let imageData = {"names": [[]] as string[][], "smiles": [[]] as string[][], "hmd
 
 
 export async function identify() {
+    let id_res_string = document.getElementById("identification-results-string") as HTMLParagraphElement;
+    id_res_string.textContent = "";
     let met_selected: string = check_selected("metabolome-dropdown");
     let matrix_selected: string = check_selected("matrix-dropdown");
 
@@ -46,6 +48,8 @@ function count_identified_percent() {
         }
         
     });
+    let id_res_string = document.getElementById("identification-results-string") as HTMLParagraphElement;
+    id_res_string.textContent = `Out of the ${String(numRows)} m/z features,\n ${numIdentified} (${Math.round((numIdentified/numRows)*1000)/10}%) have been identfied`;
     console.log(numRows, numIdentified, numIdentified/numRows)
 }
 

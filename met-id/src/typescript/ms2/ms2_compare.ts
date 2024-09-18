@@ -5,9 +5,12 @@ import html2canvas from 'html2canvas';
 
 let ExportListener: ((e: MouseEvent) => void) | null = null;
 let ExportCsvListener: ((e: MouseEvent) => void) | null = null;
+let TopPeaksListener: (() => void) | null = null;
+
 
 let ExportElement: HTMLButtonElement | null = null;
 let ExportCsvElement: HTMLButtonElement | null = null;
+let topPeaksElement: HTMLInputElement | null = null;
 
 function showPopup() {
     const overlay = document.getElementById('ms2-overlay');
@@ -24,7 +27,6 @@ function showPopup() {
 
     ExportElement = document.getElementById("ms2-popup-export-button") as HTMLButtonElement;
     ExportCsvElement = document.getElementById("ms2-popup-export-csv-button") as HTMLButtonElement;
-
 
     ExportListener = () => {
         save_msms_as_image()
@@ -45,7 +47,7 @@ function showPopup() {
                 if (span.textContent !== "Compare!") {
                     texts.push(span.textContent);
                     
-                    let words = span.id.split("-"); // Splits the string into an array of words
+                    let words = span.id.split("&"); // Splits the string into an array of words
                     ids.push(words[0]);
                     adducts.push(words[1]); // Selects the last word
                     cids.push(words[2]); // Selects the last word
@@ -59,6 +61,7 @@ function showPopup() {
     }
     ExportElement?.addEventListener("click", ExportListener)
     ExportCsvElement?.addEventListener("click", ExportCsvListener)
+    
 
 }
 
@@ -81,9 +84,13 @@ function hidePopup() {
 		ExportCsvElement!.removeEventListener("click", ExportCsvListener);
 		ExportCsvListener = null;
     }
+    if (TopPeaksListener) {
+        topPeaksElement!.removeEventListener("input", TopPeaksListener);
+        TopPeaksListener = null;
+    }
 }
 
-function downloadCsv(csvContent, fileName) {
+function downloadCsv(csvContent: BlobPart, fileName: string) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -98,7 +105,10 @@ function downloadCsv(csvContent, fileName) {
 async function drawMirrored(identifiers:string[], adducts:string[], cids:string[], texts:string[], exportCsv = false) {
     let ms2popupdiv = document.getElementById("ms2-popup-compare-names")!;
     let HTMLInputs = "";
+    (document.getElementById("ms2-popup-top-peaks-input") as HTMLInputElement).value = "10";
 
+    topPeaksElement = document.getElementById("ms2-popup-top-peaks-input") as HTMLInputElement;
+    
     
 
     const fetchData = async (identifiers: string[], adducts: string[], cids:string[]): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
@@ -106,6 +116,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         const values: SpectrumPoint[][] = [];
         for (let i = 0; i < identifiers.length; i++) {
             const result = await invoke<string>('get_msms_spectra_tauri', { identifier:identifiers[i], adduct:adducts[i], cid:cids[i] });
+            console.log(identifiers[i], adducts[i], cids[i]);
             const resultMap = JSON.parse(result) as SpectrumMap;
             for (const key in resultMap) {
                 keys.push(key);
@@ -117,13 +128,15 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
     };
 
     const svgContainer = d3.select("#ms2-popup-plot" as unknown as string);
-    const margin = { top: 20, right: 30, bottom: 50, left: 70 };
+    const margin = { top: 20, right: 30, bottom: 50, left: 90 };
     
     const width = (svgContainer.node() as HTMLElement).getBoundingClientRect().width - margin.left - margin.right;
     const height = (svgContainer.node() as HTMLElement).getBoundingClientRect().height - margin.top - margin.bottom;
 
     const colors = ["red", "yellow", "blue", "purple", "orange", "green"];
     const {keys: _labels, values: dat} = await fetchData(identifiers, adducts, cids);
+
+    //console.log(fetchData)
     
     const svg = svgContainer.append("svg")
         .attr("id", "ms2-popup-plot-svg")
@@ -141,7 +154,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         .range([0, height/2, height]);
 
     const xScale = d3.scaleLinear()
-        .domain([d3.min(dat, data => d3.min(data, d => d.x))!, d3.max(dat, data => d3.max(data, d => d.x))!])
+        .domain([0, d3.max(dat, data => d3.max(data, d => d.x))!])
         .range([0, width]);
     
 
@@ -159,6 +172,13 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
 
 	xAxis.selectAll("text")
 		.style("font-size", "16px");
+
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", 0)
+        .attr("y", 0)  // Adjust position with margin
+        .text("X Axis Label");
+
     // Handle regular and mirrored spectra separately
     for (let i = 0; i < dat.length; i++) {
         const data = dat[i];
@@ -168,9 +188,10 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         const topPeaks: SpectrumPoint[] = [];
         sortedPeaks.forEach(peak => {
         // Check if the current peak is within 0.5 units on the x-axis of any already selected peak
-        const isTooClose = topPeaks.some(selectedPeak => Math.abs(selectedPeak.x - peak.x) <= 0.5);
+        const isTooClose = topPeaks.some(selectedPeak => Math.abs(selectedPeak.x - peak.x) <= 1);
         // If it's not too close, and we haven't already selected 10 peaks, add it to the topPeaks
-        if (!isTooClose && topPeaks.length < 10) {
+        let NumTopPeaks = (document.getElementById("ms2-popup-top-peaks-input") as HTMLInputElement).value as unknown as number;
+        if (!isTooClose && topPeaks.length < NumTopPeaks) {
             topPeaks.push(peak);
         }
         });
@@ -197,7 +218,6 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
 
     
     ms2popupdiv!.innerHTML = HTMLInputs;
-	//const _lines: string[] = dat.map((_, i) => `.stick-${i}`);
     
     function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
         const transform = event.transform;
@@ -218,8 +238,6 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         yAxis.selectAll("text")
             .style("font-size", "16px");
         
-        
-        
         for (let i = 0; i < dat.length; i++) {
             const mirroredMultiplier = i === 0 ? 1 : -1;
             const data = dat[i] as SpectrumPoint[];
@@ -234,7 +252,8 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
             }, []);
 
             // Limit to top 10 after filtering
-            const top10Peaks: SpectrumPoint[] = filteredForProximity.slice(0, 10);
+            let NumTopPeaks = (document.getElementById("ms2-popup-top-peaks-input") as HTMLInputElement).value as unknown as number;
+            const topPeaks: SpectrumPoint[] = filteredForProximity.slice(0, NumTopPeaks);
     
             const filteredData = data.filter(d => d.x >= xNewScale.domain()[0] && d.x <= xNewScale.domain()[1]);
             const yMaxInView = d3.max(filteredData, d => Math.abs(d.y)*1.2)!;
@@ -251,7 +270,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
                 .attr('x2', d => xNewScale((d as SpectrumPoint).x))
                 .attr('y2', d => yNewScale((d as SpectrumPoint).y * mirroredMultiplier));
 
-            top10Peaks.forEach(peak => {
+            topPeaks.forEach(peak => {
                 svg.append('text')
                     .attr('x', xNewScale(peak.x) + margin.left)
                     .attr('y', yNewScale(peak.y*mirroredMultiplier) - (12*mirroredMultiplier) + margin.top) // Adjust position above the circle
@@ -270,7 +289,28 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
 
         xAxis.selectAll("text")
             .style("font-size", "16px");
-    
+
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .style('font-size', '16px')
+            .style("fill", "white")
+            .attr("stroke-width", 1)
+            .style("font-weight", "bold")
+            .attr("x", width/2)
+            .attr("y", height + margin.bottom + 10)  // Adjust position with margin
+            .text("m/z");
+
+        // Y axis label
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")  // Rotate text
+            .style("fill", "white")
+            .style('font-size', '16px')
+            .style("font-weight", "bold")
+            .attr("stroke-width", 1)
+            .attr("x", -height/2)  // Adjust for rotated position
+            .attr("y", margin.left - 70)  // Adjust position with margin
+            .text("Intensity");
     }
         
 
@@ -281,7 +321,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
         .on('zoom', zoomed);
 
     svg.call(zoom);
-
+    
 	zoomed({ transform: d3.zoomIdentity } as d3.D3ZoomEvent<SVGSVGElement, unknown>);
 
     function spectrumPointsToCsv() {
@@ -310,7 +350,7 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
             row = row.slice(0, -1); // Remove the trailing comma
             csvContent += `${row}\n`;
         }
-    
+        
         // Assuming downloadCsv is defined elsewhere to handle the CSV download
         downloadCsv(csvContent, 'spectrumPoints.csv');
         zoomed({ transform: d3.zoomIdentity } as d3.D3ZoomEvent<SVGSVGElement, unknown>);
@@ -320,9 +360,13 @@ async function drawMirrored(identifiers:string[], adducts:string[], cids:string[
     if (exportCsv) {
         spectrumPointsToCsv()
     }
+    TopPeaksListener = () => {
+        zoomed({ transform: d3.zoomIdentity } as d3.D3ZoomEvent<SVGSVGElement, unknown>);
+    }
+    topPeaksElement?.addEventListener("input", TopPeaksListener)
 }
 
-function convertSvgToCanvas(svgElement, callback) {
+function convertSvgToCanvas(svgElement: Node, callback: { (svgCanvas: any): void; (arg0: HTMLCanvasElement): void; }) {
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -356,10 +400,23 @@ function saveCanvasAsImage(canvas: HTMLCanvasElement, filename: string): void {
 
 export function save_msms_as_image() {
     let a = document.getElementById("ms2-popup-compare-names");
+
+    // Increase the text size in the HTML element
+    if (a) {
+        a.style.fontSize = '30px'; // Adjust the size as needed
+    }
+
     // Step 1: Capture HTML content as canvas
     html2canvas(a as HTMLElement, {backgroundColor: '#2F2F2F'}).then(htmlCanvas => {
         // Assuming you have an SVG element for your D3 plot
         const svgElement = document.querySelector('svg') as SVGSVGElement;
+
+        // Optionally increase the text size in the SVG element
+        if (svgElement) {
+            svgElement.querySelectorAll('text').forEach(textElement => {
+                (textElement as SVGTextElement).style.fontSize = '22px'; // Adjust the size as needed
+            });
+        }
 
         // Step 2: Convert SVG to canvas
         convertSvgToCanvas(svgElement, (svgCanvas) => {
@@ -377,7 +434,7 @@ export function save_msms_as_image() {
                 ctx.fillStyle = '#2F2F2F'; // Set the background color
                 ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height); // Fill the background
                 // Draw HTML canvas content first
-                ctx.drawImage(htmlCanvas, 50, 0);
+                ctx.drawImage(htmlCanvas, 100, 0);
 
                 // Then draw SVG canvas below it
                 ctx.drawImage(svgCanvas, 0, htmlCanvas.height);
@@ -388,8 +445,6 @@ export function save_msms_as_image() {
         });
     });
 }
-
-
 
 
 
@@ -410,7 +465,7 @@ export function compare_msms() {
             if (span.textContent !== "Compare!") {
                 texts.push(span.textContent);
                 
-                let words = span.id.split("-"); // Splits the string into an array of words
+                let words = span.id.split("&"); // Splits the string into an array of words
                 ids.push(words[0]);
                 adducts.push(words[1]); // Selects the last word
                 cids.push(words[2]); // Selects the last word
@@ -419,8 +474,5 @@ export function compare_msms() {
         }
         
     });
-
     drawMirrored(ids, adducts, cids, texts);
-
 }
-

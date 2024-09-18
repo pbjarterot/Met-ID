@@ -11,8 +11,8 @@ use super::query::sql_query;
 
 
 pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<String>, _mass_error: String, masses: Vec<String>, mzwindow: String) -> Vec<Vec<HashMap<String, String>>> {
-  let count: bool = false;
-
+    let count: bool = false;
+    let start2 = Instant::now();
     let args: Args = Args {
         metabolome: met,
         matrix: mat,
@@ -52,8 +52,7 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     check_if_table_exists("db_accessions",     "user_db_accessions").unwrap();
     check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
     let query_str: String = build_query(&args, min_peak - 1.0, max_peak + 1.0, count);
-    println!("{:?}\n", query_str);
-
+    println!("{:?}", query_str);
     let db_input: (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) = sql_query(&query_str);
 
     let msms_ids: Vec<String> = get_msms_ids();
@@ -61,12 +60,14 @@ pub fn sql_handler(met: String, mat: String, typ: Vec<String>, adducts: Vec<Stri
     let db_input_array: Box<[f64]> = db_input.0.into_boxed_slice();
     let db_input_array_ref: &[f64] = &*db_input_array;
 
-
     let start = Instant::now();                                      
     let output: Vec<Vec<HashMap<String, String>>> = mass_matcher(input_masses, db_input_array_ref, db_input.1, db_input.2, db_input.3, db_input.4, db_input.5, db_input.6, _mass_error, mzwindow, &msms_ids);    
     let duration = start.elapsed();
     println!("Time elapsed in ms1 matcher is: {:?}", duration);
     
+
+    let duration2 = start2.elapsed();
+    println!("Full time is: {:?}", duration2);
     output
 }
 

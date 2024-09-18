@@ -27,19 +27,8 @@ const metabolome_values = {"HMDB (All)": ["Endogenous", "Exogenous", "Unspecifie
                            "Lipidmaps": []}
 
 
-/*
-const target_matrix = {"Positive mode": ["[M+H]+", "[M+K]+", "[M+Na]+"],
-                       "Negative mode": ["[M-H]-", "[M+K-2H]-", "[M+Na-2H]-", "[M+Cl]-"], 
-                       "FMP-10": ["Phenolic Hydroxyls", "Primary Amines"],
-                       "AMPP": ["Aldehydes", "Carboxylic Acids"],
-                       "Norharmane": ["[M+H]+", "[M+K]+", "[M+Na]+", "[M+Norharmane+H]+"],
-                       }
-*/
-
-
 export async function new_tgt_matrix() {
     let new_trg_mtx: Record<string, string[]> = await invoke("matrix_dropdown_tauri", {});
-    //console.log("new_trg_mtrx", new_trg_mtx)
     return new_trg_mtx
 }
 

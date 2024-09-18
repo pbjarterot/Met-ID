@@ -19,6 +19,7 @@ mod splashscreen;
 mod testing;
 
 use std::path::PathBuf;
+use database_setup::get_connection;
 use log::{error, info};
 use logging::LOGGER;
 use once_cell::sync::OnceCell;
@@ -64,7 +65,7 @@ fn main() {
             
             MSMSPATH.set(msms_db_path.to_string_lossy().to_string()).expect("Failed to set MSMS DB PATH");
             //let _python_path: PathBuf = install_helper_functions::ensure_python_in_appdata(&app, "");
-
+            /* 
             let binary_path = match std::env::consts::OS {
                 "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
                 "macos" => {
@@ -77,10 +78,10 @@ fn main() {
                 "linux" => "metabolite_for_db-x86_64-unknown-linux-gnu",
                 _ => "",
             };
+            */
+            //let metabolite_bin_path: PathBuf = install_helper_functions::ensure_bin_in_appdata(&app, binary_path);
 
-            let metabolite_bin_path: PathBuf = install_helper_functions::ensure_bin_in_appdata(&app, binary_path);
-
-            binary_setup::METABOLITE_BIN_PATH.set(metabolite_bin_path);
+            //binary_setup::METABOLITE_BIN_PATH.set(metabolite_bin_path);
 
             let pool: Pool<SqliteConnectionManager> = install_helper_functions::create_pool_from_app_path(&app, db_path);
             let msms_pool: Pool<SqliteConnectionManager> = install_helper_functions::create_pool_from_app_path(&app, msms_db_path);
@@ -88,6 +89,83 @@ fn main() {
             database_setup::POOL.set(pool).expect("Failed to initialize POOL");
             database_setup::MSMS_POOL.set(msms_pool).expect("Failed to initialize MSMS_POOL");
             info!("setting the database pools \n{:?}\n{:?}", database_setup::POOL, database_setup::MSMS_POOL);
+
+
+            let mut conn = get_connection().unwrap();
+
+            let tx = conn.transaction().unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_adducts AS
+                SELECT * FROM adducts
+                UNION ALL
+                SELECT * FROM user_adducts", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_db_accessions AS
+                SELECT * FROM db_accessions
+                UNION ALL
+                SELECT * FROM user_db_accessions", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_metabolites AS
+                SELECT * FROM metabolites
+                UNION ALL
+                SELECT * FROM user_metabolites", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_derivatized_by AS
+                SELECT * FROM derivatized_by
+                UNION ALL
+                SELECT * FROM user_derivatized_by", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_endogeneity AS
+                SELECT * FROM endogeneity
+                UNION ALL
+                SELECT * FROM user_endogeneity", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_functional_groups AS
+                SELECT * FROM functional_groups
+                UNION ALL
+                SELECT * FROM user_functional_groups", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_in_tissue AS
+                SELECT * FROM in_tissue
+                UNION ALL
+                SELECT * FROM user_in_tissue", 
+                [],
+            ).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_db_accessions_id ON temp_concat_db_accessions(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_metabolites_id ON temp_concat_metabolites(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_derivatized_by_id ON temp_concat_derivatized_by(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_id ON temp_concat_endogeneity(id)", []).unwrap();
+            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_criteria ON temp_concat_endogeneity(endogenous, exogenous, unspecified)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_id ON temp_concat_functional_groups(id)", []).unwrap();
+            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_criteria ON temp_concat_functional_groups('Phenolic Hydroxyls', 'Primary Amines')", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_in_tissue_id ON temp_concat_in_tissue(id)", []).unwrap();
+
+            tx.commit().unwrap();
         
             // we perform the initialization code on a new task so the app doesn't freeze
             Ok(())

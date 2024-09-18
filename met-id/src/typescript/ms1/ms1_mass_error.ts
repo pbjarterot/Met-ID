@@ -109,13 +109,6 @@ function mass_error_slidein() {
     exportErrorPointsButton?.addEventListener("click", () => {
       convertTableToCSV("ms1-mass-error-table");
     })
-
-    //plotData.updateScatterplot();
-    // Update scatterplot on div mouseover
-    //const div = d3.select("#slide-in-bottom");
-    //div.on('mousein', () => setTimeout(plotData.updateSize, 300));
-    //div.on('mouseout', () => setTimeout(plotData.updateSize, 300));
-    
   }
 function parse_error_number(num: string) {
   const parsedNumber: number = parseFloat(num);
@@ -251,7 +244,6 @@ class PlotData {
   }
 
   public updateSize(height: number): void {
-    
     const width = document.getElementById("manual-mass-error-plot-div")!.clientWidth;
   
     // Set the width and height of the SVG element
@@ -327,6 +319,7 @@ class PlotData {
     // Call updateScatterplot to update the plot
     this.updateScatterplot();
     this.updateScale();
+    this.fitEquation();
   }
 
   public updateScatterplot(): void {

@@ -145,6 +145,7 @@ export async function draw(index: number, identifier: string, adduct: string, ci
 					// You can use the current index "i" to determine which item to compare.
 					
 					let name = await invoke<string>("get_name_from_identifier_msms_tauri", {identifier:identifier})
+					console.log(name)
 
 					// Grab the div using its ID
 					let myDiv: HTMLElement | null = document.getElementById("ms2-to-compare-compounds");
@@ -152,32 +153,64 @@ export async function draw(index: number, identifier: string, adduct: string, ci
 					if(myDiv) {
 						let elementDiv: HTMLDivElement = document.createElement("div");
 						elementDiv.className = "ms2-to-compare-button";
-						elementDiv.id = `ms2-to-compare-button-${name}-${adduct}-${labels[i]}`
-
 						let textSpan: HTMLSpanElement = document.createElement("span");
-						textSpan.textContent = `${name} ${adduct} ${labels[i]}`;
-						textSpan.className = "ms2-to-compare-textspan";
-						textSpan.id = `${identifier}-${adduct}-${labels[i]}`;
-						let iconSpan: HTMLSpanElement = document.createElement("span");
-						iconSpan.className = "ms2-to-compare-iconspan";
-						iconSpan.id = `ms2-to-compare-iconspan-${name}-${adduct}-${labels[i]}`;
-
-						let icon: HTMLElement = document.createElement("ion-icon");
-						icon.setAttribute("name", "close-outline");
-						iconSpan.appendChild(icon);
-
-						elementDiv.appendChild(textSpan);
-						elementDiv.appendChild(iconSpan);
-
-						myDiv.append(elementDiv);
 
 
-						document.getElementById(`ms2-to-compare-iconspan-${name}-${adduct}-${labels[i]}`)!.addEventListener('click', function() {
-							let targetDiv = document.getElementById(`ms2-to-compare-button-${name}-${adduct}-${labels[i]}`);
-							if (targetDiv) {
-								targetDiv.parentNode!.removeChild(targetDiv);
-							}
-						});
+						if (name == "User Input") {
+							elementDiv.id = `ms2-to-compare-button-${name}`
+							textSpan.textContent = `${name}`;
+							textSpan.className = "ms2-to-compare-textspan";
+							textSpan.id = `${identifier}&${adduct}&${labels[i]}`;
+
+							let iconSpan: HTMLSpanElement = document.createElement("span");
+							iconSpan.className = "ms2-to-compare-iconspan";
+							iconSpan.id = `ms2-to-compare-iconspan-${name}`;
+
+							let icon: HTMLElement = document.createElement("ion-icon");
+							icon.setAttribute("name", "close-outline");
+							iconSpan.appendChild(icon);
+
+							elementDiv.appendChild(textSpan);
+							elementDiv.appendChild(iconSpan);
+
+							myDiv.append(elementDiv);
+
+
+							document.getElementById(`ms2-to-compare-iconspan-${name}`)!.addEventListener('click', function() {
+								let targetDiv = document.getElementById(`ms2-to-compare-button-${name}`);
+								if (targetDiv) {
+									targetDiv.parentNode!.removeChild(targetDiv);
+								}
+							});
+						} else {
+							elementDiv.id = `ms2-to-compare-button-${name}&${adduct}&${labels[i]}`
+							textSpan.textContent = `${name} ${adduct} ${labels[i]}`;
+							textSpan.className = "ms2-to-compare-textspan";
+							textSpan.id = `${identifier}&${adduct}&${labels[i]}`;
+
+							let iconSpan: HTMLSpanElement = document.createElement("span");
+							iconSpan.className = "ms2-to-compare-iconspan";
+							iconSpan.id = `ms2-to-compare-iconspan-${name}&${adduct}&${labels[i]}`;
+
+							let icon: HTMLElement = document.createElement("ion-icon");
+							icon.setAttribute("name", "close-outline");
+							iconSpan.appendChild(icon);
+
+							elementDiv.appendChild(textSpan);
+							elementDiv.appendChild(iconSpan);
+
+							myDiv.append(elementDiv);
+
+
+							document.getElementById(`ms2-to-compare-iconspan-${name}&${adduct}&${labels[i]}`)!.addEventListener('click', function() {
+								let targetDiv = document.getElementById(`ms2-to-compare-button-${name}&${adduct}&${labels[i]}`);
+								if (targetDiv) {
+									targetDiv.parentNode!.removeChild(targetDiv);
+								}
+							});
+						}
+						
+						
 
 					}
 

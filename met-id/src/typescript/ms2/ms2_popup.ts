@@ -10,10 +10,7 @@ let cancellistener: ((e: MouseEvent) => void) | null = null;
 
 
 class removeFromDBListeners {
-
     public removeListenerFunctions: Array<() => void> = [];
-
-
     public addListeners(elementIds: string[]) {
         const events = ['click']; // Example events
         //const elementIds = ['element1', 'element2', 'element3']; // Example element IDs
