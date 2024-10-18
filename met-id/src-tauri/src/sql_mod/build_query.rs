@@ -2,6 +2,8 @@ use crate::database_setup::get_connection;
 use super::{table::check_if_table_exists, Args};
 use std::collections::HashMap;
 use maplit::hashmap;
+use rusqlite::Result;
+
 
 struct Adduct {
     adduct: String
@@ -45,6 +47,93 @@ fn parse_fgs(fgs: &Vec<String>) -> String {
     res_string
 }
 
+fn table_exists(tx: &rusqlite::Transaction<'_>) -> Result<usize> {
+    tx.execute("SELECT COUNT(*) FROM temp_concat_adducts", [])
+}
+
+pub fn check_temp_tables() {
+    let mut conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
+
+    let tx: rusqlite::Transaction<'_> = conn.transaction().unwrap();
+    match table_exists(&tx) {
+        Ok(_) => (),
+        Err(rusqlite::Error::ExecuteReturnedResults) => (),
+        Err(_) => {
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_adducts AS
+                SELECT * FROM adducts
+                UNION ALL
+                SELECT * FROM user_adducts", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_db_accessions AS
+                SELECT * FROM db_accessions
+                UNION ALL
+                SELECT * FROM user_db_accessions", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_metabolites AS
+                SELECT * FROM metabolites
+                UNION ALL
+                SELECT * FROM user_metabolites", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_derivatized_by AS
+                SELECT * FROM derivatized_by
+                UNION ALL
+                SELECT * FROM user_derivatized_by", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_endogeneity AS
+                SELECT * FROM endogeneity
+                UNION ALL
+                SELECT * FROM user_endogeneity", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_functional_groups AS
+                SELECT * FROM functional_groups
+                UNION ALL
+                SELECT * FROM user_functional_groups", 
+                [],
+            ).unwrap();
+            
+            tx.execute(
+                "CREATE TEMP TABLE temp_concat_in_tissue AS
+                SELECT * FROM in_tissue
+                UNION ALL
+                SELECT * FROM user_in_tissue", 
+                [],
+            ).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_db_accessions_id ON temp_concat_db_accessions(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_metabolites_id ON temp_concat_metabolites(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_derivatized_by_id ON temp_concat_derivatized_by(id)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_id ON temp_concat_endogeneity(id)", []).unwrap();
+            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_criteria ON temp_concat_endogeneity(endogenous, exogenous, unspecified)", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_id ON temp_concat_functional_groups(id)", []).unwrap();
+            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_criteria ON temp_concat_functional_groups('Phenolic Hydroxyls', 'Primary Amines')", []).unwrap();
+            
+            tx.execute("CREATE INDEX idx_temp_concat_in_tissue_id ON temp_concat_in_tissue(id)", []).unwrap();
+
+            tx.commit().unwrap();
+        }
+    }
+}
+
 pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String {
     check_if_table_exists("adducts", "user_adducts").unwrap();  
     let tissue_map: HashMap<&str, &str> = hashmap!{
@@ -53,18 +142,9 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         "HMDB (Serum)" => "serum",
     };
 
-    
+    check_temp_tables();
 
     let mut query: String = String::new();
-    /* 
-    query += "WITH temp_concat_adducts AS (SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts), ";
-    query += "temp_concat_db_accessions AS (SELECT * FROM db_accessions UNION ALL SELECT * FROM user_db_accessions), ";
-    query += "temp_concat_metabolites AS (SELECT * FROM metabolites UNION ALL SELECT * FROM user_metabolites), ";
-    query += "temp_concat_derivatized_by AS (SELECT * FROM derivatized_by UNION ALL SELECT * FROM user_derivatized_by), ";
-    query += "temp_concat_endogeneity AS (SELECT * FROM endogeneity UNION ALL SELECT * FROM user_endogeneity), ";
-    query += "temp_concat_functional_groups AS (SELECT * FROM functional_groups UNION ALL SELECT * FROM user_functional_groups), ";
-    query += "temp_concat_in_tissue AS (SELECT * FROM in_tissue UNION ALL SELECT * FROM user_in_tissue) ";
-    */
     let fg_or_adduct: String = get_adducts(args.matrix.clone()).join(", ");
 
     let conventional_matrix: bool = args.matrix == "Positive Mode".to_string() || args.matrix == "Negative Mode".to_string();
@@ -274,7 +354,7 @@ pub fn coverage_string(fg_string: &str, matrix: &str) -> String {
                 cov_vec.push(cov);
             }
             },
-            Err(e) => println!("Error: {}", e)
+            Err(e) => println!("Error with the code: {}", e)
         }
     }
     let max_index: usize = match fg_vec.iter()

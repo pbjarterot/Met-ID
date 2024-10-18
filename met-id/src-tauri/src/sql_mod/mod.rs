@@ -1,5 +1,5 @@
 mod sql_handler;
-mod build_query;
+pub mod build_query;
 mod query;
 mod counter;
 mod msms;

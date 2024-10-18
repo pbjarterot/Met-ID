@@ -19,7 +19,6 @@ mod splashscreen;
 mod testing;
 
 use std::path::PathBuf;
-use database_setup::get_connection;
 use log::{error, info};
 use logging::LOGGER;
 use once_cell::sync::OnceCell;
@@ -27,6 +26,7 @@ use std::panic;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use std::env;
+use sql_mod::build_query::check_temp_tables;
 
 
 
@@ -91,81 +91,7 @@ fn main() {
             info!("setting the database pools \n{:?}\n{:?}", database_setup::POOL, database_setup::MSMS_POOL);
 
 
-            let mut conn = get_connection().unwrap();
-
-            let tx = conn.transaction().unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_adducts AS
-                SELECT * FROM adducts
-                UNION ALL
-                SELECT * FROM user_adducts", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_db_accessions AS
-                SELECT * FROM db_accessions
-                UNION ALL
-                SELECT * FROM user_db_accessions", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_metabolites AS
-                SELECT * FROM metabolites
-                UNION ALL
-                SELECT * FROM user_metabolites", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_derivatized_by AS
-                SELECT * FROM derivatized_by
-                UNION ALL
-                SELECT * FROM user_derivatized_by", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_endogeneity AS
-                SELECT * FROM endogeneity
-                UNION ALL
-                SELECT * FROM user_endogeneity", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_functional_groups AS
-                SELECT * FROM functional_groups
-                UNION ALL
-                SELECT * FROM user_functional_groups", 
-                [],
-            ).unwrap();
-            
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_in_tissue AS
-                SELECT * FROM in_tissue
-                UNION ALL
-                SELECT * FROM user_in_tissue", 
-                [],
-            ).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_db_accessions_id ON temp_concat_db_accessions(id)", []).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_metabolites_id ON temp_concat_metabolites(id)", []).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_derivatized_by_id ON temp_concat_derivatized_by(id)", []).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_id ON temp_concat_endogeneity(id)", []).unwrap();
-            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_criteria ON temp_concat_endogeneity(endogenous, exogenous, unspecified)", []).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_id ON temp_concat_functional_groups(id)", []).unwrap();
-            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_criteria ON temp_concat_functional_groups('Phenolic Hydroxyls', 'Primary Amines')", []).unwrap();
-            
-            tx.execute("CREATE INDEX idx_temp_concat_in_tissue_id ON temp_concat_in_tissue(id)", []).unwrap();
-
-            tx.commit().unwrap();
+            check_temp_tables();
         
             // we perform the initialization code on a new task so the app doesn't freeze
             Ok(())
