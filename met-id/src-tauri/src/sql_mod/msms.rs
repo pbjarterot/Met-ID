@@ -3,7 +3,7 @@
     use std::time::Instant;
 
     use r2d2_sqlite::SqliteConnectionManager;
-    use crate::add_to_db::add_to_db_functions::add_to_usermsms;
+    use crate::add_to_db::msms::add_to_usermsms;
     use crate::database_setup::{get_msms_connection, get_connection};
     use super::table::check_if_table_exists_msms;
     use crate::ms2_match::ms2_matcher;

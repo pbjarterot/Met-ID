@@ -6,7 +6,6 @@ mod mass_match;
 mod ms2_match;
 mod regression;
 pub mod sql_mod;
-mod add_to_db;
 mod multiprocessing;
 mod logging;
 mod install_helper_functions;
@@ -14,7 +13,7 @@ mod sidecar;
 mod database_setup;
 mod binary_setup;
 mod splashscreen;
-
+mod add_to_db;
 #[cfg(test)]
 mod testing;
 

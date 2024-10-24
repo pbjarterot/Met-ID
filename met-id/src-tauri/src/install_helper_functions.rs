@@ -65,6 +65,7 @@ pub fn ensure_bin_in_appdata(app: &App, resource_name: &str) -> std::path::PathB
 
 pub fn create_pool_from_app_path(_app: &App, resource_path: PathBuf) -> Pool<SqliteConnectionManager> {
     info!("looking in: {:?}", resource_path);
+    println!("looking in: {:?}", resource_path);
     let manager = SqliteConnectionManager::file(resource_path);
     Pool::new(manager).expect("Failed to create pool.")
 }
