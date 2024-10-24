@@ -472,7 +472,7 @@ pub fn read_mzml_for_msms(path: String) -> String {
         blob.write_all(&intensity_buf).unwrap();
     }
 
-    crate::add_to_db::add_to_db_functions::fill_user_msms(blob);
+    crate::add_to_db::msms::fill_user_msms(blob);
 
     String::from("Done")
 }
