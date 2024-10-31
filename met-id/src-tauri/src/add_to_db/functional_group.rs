@@ -119,6 +119,7 @@ pub fn add_fg_to_db(conn: r2d2::PooledConnection<SqliteConnectionManager>, name:
 
 }
 
+/* 
 fn get_hashmap_from_table(conn: &r2d2::PooledConnection<SqliteConnectionManager>) -> HashMap<String, String> {
     let mut hashmap: HashMap<String, String> = HashMap::new();
 
@@ -140,6 +141,7 @@ fn get_hashmap_from_table(conn: &r2d2::PooledConnection<SqliteConnectionManager>
     }
     hashmap
 }
+*/
 
 fn update_matrix_table_with_functional_group(table_name: &str, name: &str, matrices: &HashMap<String, bool>) {
     let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();

@@ -155,17 +155,17 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
     if !count {
         if args.metabolome.starts_with("HMDB") {
             if !conventional_matrix {
-                query += &format!(r#"SELECT DISTINCT (CAST(temp_concat_metabolites.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN CAST(temp_concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
+                query += &format!(r#"SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN temp_concat_adducts.deltamass ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
                 query += &format!("temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, ");
                 query += &coverage_string(&build_condition_query3(&args.adducts).unwrap(), &args.matrix);
                 query += " FROM";
             } else {
-                query += &format!(r#"SELECT (CAST(temp_concat_metabolites.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN CAST(temp_concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=parse_fgs(&args.adducts));
+                query += &format!(r#"SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN temp_concat_adducts.deltamass ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=parse_fgs(&args.adducts));
                 let num_adducts = args.adducts.len();
                 query += &format!("temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, {num_adducts} FROM", num_adducts=num_adducts);
             }
         } else {
-            query += &format!(r#"SELECT (CAST(lipids.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN CAST(temp_concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
+            query += &format!(r#"SELECT DISTINCT(lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) THEN temp_concat_adducts.deltamass ELSE 0 END) AS adjusted_mz, "#, fg_or_adduct=fg_or_adduct);
             query += &format!("lipids.name, temp_concat_adducts.adduct, lipids.smiles, lipids.smiles, lipids.formula FROM");
         }
         
@@ -222,10 +222,10 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         format!("WHERE temp_concat_adducts.numfunctionalgroups <= {} AND adjusted_mz < {} AND adjusted_mz > {} {} AND ({})", &build_condition_query3(&args.adducts).unwrap(), &max_mz.to_string(), &min_mz.to_string(), db_string, met_type_string)
     } else {
         if args.metabolome.starts_with("HMDB") {
-            format!(r#"WHERE ({met_type}) AND CAST(temp_concat_metabolites.mz AS REAL) + CAST(temp_concat_adducts.deltamass AS REAL) < {max} AND CAST(temp_concat_metabolites.mz AS REAL) + CAST(temp_concat_adducts.deltamass AS REAL) > {min} {tissue}"#, 
+            format!(r#"WHERE ({met_type}) AND temp_concat_metabolites.mz + temp_concat_adducts.deltamass < {max} AND temp_concat_metabolites.mz + temp_concat_adducts.deltamass > {min} {tissue}"#, 
             max=&max_mz.to_string(), min=&min_mz.to_string(), met_type=met_type_string, tissue=tissue_string)
         } else {
-            format!(r#"WHERE CAST(lipids.mz AS REAL) + CAST(temp_concat_adducts.deltamass AS REAL) < {max} AND CAST(lipids.mz AS REAL) + CAST(temp_concat_adducts.deltamass AS REAL) > {min}"#, 
+            format!(r#"WHERE lipids.mz + temp_concat_adducts.deltamass < {max} AND lipids.mz + temp_concat_adducts.deltamass > {min}"#, 
             max=&max_mz.to_string(), min=&min_mz.to_string())
         }
 
@@ -235,7 +235,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         if args.metabolome.starts_with("HMDB") {
             query += &format!(" ORDER BY adjusted_mz");
         } else {
-            query += &format!(" ORDER BY CAST(lipids.mz AS REAL) + CAST(temp_concat_adducts.deltamass AS REAL)");
+            query += &format!(" ORDER BY lipids.mz + temp_concat_adducts.deltamass");
         }
     }
     query

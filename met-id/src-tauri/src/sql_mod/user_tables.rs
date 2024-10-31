@@ -107,14 +107,25 @@ pub fn update_user_matrices() -> Vec<Vec<String>> {
 
 
 pub fn remove_row_from_user_matrices(rowid: usize) -> usize {
-  remove_row_from_table(rowid, "user_matrices");
+	let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+	let mut matrix_name = String::from("");
+	let mut stmt = conn.prepare(&format!("SELECT matrix FROM user_matrices WHERE id = {}", rowid)).expect("Query cannot be run");
+	let db_iter = stmt.query_map([], |row| {
+		Ok(row.get(0).unwrap_or("".to_string()))
+	}).unwrap();
+	for (_index, item) in db_iter.enumerate() {
+		matrix_name = item.unwrap()
+	};
+	let sql: String  = format!("DELETE FROM user_adducts WHERE mname = '{}'", matrix_name);
+	match conn.execute(&sql[..], params![]) {
+		Ok(_) => println!("Columns from {:?} have been deleted", matrix_name),
+		Err(e) => println!("Column could not be deleted: {}", e)
+	};
 
-  //these will not have the same id as the matrix and thus must be named
-  //remove_row_from_table(rowid, "user_adducts");
-  return 1
+	remove_row_from_table(rowid, "user_matrices");
+
+	return 1
 }
-
-
 
 struct MS1UserFgsRow {
   id: usize,
@@ -185,7 +196,7 @@ pub fn remove_user_fgs(rowid: usize, column_to_remove: &str) -> usize {
 
 fn remove_row_from_table(rowid: usize, table_name: &str) -> usize {
   let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
-  let sql:String  = format!("DELETE FROM {} WHERE id = {}", table_name, rowid);
+  let sql: String  = format!("DELETE FROM {} WHERE id = {}", table_name, rowid);
   conn.execute(&sql[..], params![]).unwrap();
   return 1
 }

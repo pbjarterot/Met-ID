@@ -8,7 +8,6 @@ pub mod derivatized_by;
 pub mod endogeneity;
 
 use crate::add_to_db::metabolite::add_metabolite_to_db;
-use crate::add_to_db::matrix::add_matrix_to_db;
 use crate::add_to_db::functional_group::add_fg_to_db;
 
 use r2d2_sqlite::SqliteConnectionManager;
@@ -42,12 +41,11 @@ fn get_hashmap_from_table(conn: &r2d2::PooledConnection<SqliteConnectionManager>
 
 
 
-pub fn add_to_db_rust(name: String, smiles_smarts_mz: String, met_type: String, endo_exo_or_other: HashMap<String, bool>, in_tissue: HashMap<String, bool>, adducts: HashMap<String, String>, progress_sender: &mpsc::Sender<f32>) -> bool {
+pub fn add_to_db_rust(name: String, smiles_smarts_mz: String, met_type: String, endo_exo_or_other: HashMap<String, bool>, in_tissue: HashMap<String, bool>, _adducts: Vec<String>, progress_sender: &mpsc::Sender<f32>) -> bool {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
     match &met_type[..] {
     "metabolite" => add_metabolite_to_db(conn, name, smiles_smarts_mz, in_tissue, endo_exo_or_other),
-    "matrix" => add_matrix_to_db(conn, name, smiles_smarts_mz, endo_exo_or_other, adducts),
     "fg" => add_fg_to_db(conn, name, smiles_smarts_mz, endo_exo_or_other, progress_sender),
     _ => ()
     }

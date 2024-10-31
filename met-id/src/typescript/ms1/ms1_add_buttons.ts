@@ -3,6 +3,7 @@ import { CancellationToken } from '../ms2/ms2_main';
 import { addToHTML_Metabolite, createAndAttachMetabolites, destroyAndDetachMetabolite, remove_row_from_user_metabolites, update_user_metabolites } from './add_buttons/metabolites';
 import { addToHTML_Matrix, createAndAttachMatrices, destroyAndDetachMatrix, remove_row_from_user_matrices, update_user_matrices } from './add_buttons/matrices';
 import { addToHTML_FG, createAndAttachFg, destroyAndDetachFg, remove_row_from_user_fgs, update_user_fgs } from './add_buttons/functional_groups';
+import { fill_dropdown, new_tgt_matrix } from '../dropdown';
 
 export let cancellationToken: CancellationToken = { isCancelled: false };
 
@@ -13,15 +14,15 @@ export const slideInDiv = document.getElementById('add-to-db-slidein');
 export async function add_to_db_rust(name: string, smilesSmartsMz: string, metType: string, endoExoOrOther, inTissue, adducts) {
 
 	let added_to_db = await invoke("my_command", {
-															args: { 
-																name: name, 
-																smilesSmartsMz: smilesSmartsMz, 
-																metType:metType, 
-																endoExoOrOther: endoExoOrOther, 
-																inTissue: inTissue,
-																adducts: adducts
-															}
-														});
+		args: { 
+			name: name, 
+			smilesSmartsMz: smilesSmartsMz, 
+			metType:metType, 
+			endoExoOrOther: endoExoOrOther, 
+			inTissue: inTissue,
+			adducts: adducts
+		}
+	});
 	return added_to_db;
 }
 
@@ -36,7 +37,7 @@ export function change_slidein() {
 
 export function add_warning_message(type: string) {
 	const parsingErrorDiv = document.getElementById("parsing-error") as HTMLDivElement;
-	parsingErrorDiv!.textContent = type + " could not be parsed"; 
+	parsingErrorDiv!.textContent = type; 
 	parsingErrorDiv!.style.color = "red";
 }
 
@@ -187,18 +188,17 @@ export function generateCheckboxes(labels: string[], title: string): string {
 
 
 class removeFromDBListeners {
-
 	public removeListenerFunctions: Array<() => void> = [];
-
 	public addListeners(elementIds: string[], mode: string) {
 			const events = ['click']; // Example events
-
+			console.log("elemids", elementIds)
 			elementIds.forEach(id => {
 			events.forEach(eventType => {
 					const element = document.getElementById(id);
 					if (!element) return;
 
-					const listener = () => {
+					const listener = async () => {
+							console.log(id)
 							if (mode === "metabolites") {
 								remove_row_from_user_metabolites(id);
 								this.removeListeners();
@@ -207,6 +207,7 @@ class removeFromDBListeners {
 								remove_row_from_user_matrices(id);
 								this.removeListeners();
 								update_user_matrices();
+								fill_dropdown(Object.keys(await new_tgt_matrix()), "matrix-dropdown")
 							} else if (mode === "fgs") {
 								let name = get_name_in_table(element);
 								if (name) {

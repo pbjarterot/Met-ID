@@ -2,7 +2,7 @@
 	position: relative;
 	display: flex;
 	min-height: 650px;
-	border-radius: 18px 18px 20px 20px;
+	border-radius: 10px 10px 10px 10px;
 	overflow: hidden;
   height: 100%;
   margin-top: 2px;
@@ -60,7 +60,7 @@
 		top: 25px; 
 	
 	padding: 0px 10px;
-	border-radius: 0 0 18px 18px;
+	border-radius: 0 0 10px 1px;
 	background: #4b4b4b;
 	
 	transition: 

@@ -33,8 +33,6 @@ export async function new_tgt_matrix() {
 }
 
 
-
-
 export const fill_under_dropdown = {
     
     template : 
@@ -89,7 +87,7 @@ export const fill_under_dropdown = {
         const myElement = document.getElementById(elementID);
         myElement!.innerHTML = "";
         const option_selected = (document.getElementById(dropdown_id)! as HTMLSelectElement).value;
-    
+
         for (let i = 0; i < new_target_matrix[option_selected].length; i++) {
             const renderedTemplate = this.template.replace("{{value}}", new_target_matrix[option_selected][i]);
             const renderedTemplate3 = renderedTemplate.replaceAll("{{id}}", `'${new_target_matrix[option_selected][i]}'`);

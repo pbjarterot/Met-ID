@@ -10,7 +10,7 @@ fn get_mtx() -> Result<Vec<String>> {
   })?;
   
   // Collect names into a vector, handling errors as they occur
-  let names = name_iter.collect();
+  let names: std::result::Result<Vec<String>, rusqlite::Error> = name_iter.collect();
   names
 }
 

@@ -1,7 +1,7 @@
 use std::thread;
 use std::sync::mpsc;
 use std::collections::HashMap;
-use crate::add_to_db::add_to_db_functions::add_to_db_rust;
+use crate::add_to_db::add_to_db_rust;
 use tauri::Window;
 
 #[derive(serde::Deserialize)]
@@ -12,13 +12,12 @@ pub struct MyCommandArgs {
     metType: String, 
     endoExoOrOther: HashMap<String, bool>, 
     inTissue: HashMap<String, bool>, 
-    adducts: HashMap<String, String>
+    adducts: Vec<String>
 }
 
 #[tauri::command]
 pub fn my_command(window: Window, args: MyCommandArgs) {
     let (tx, rx) = mpsc::channel();
-    println!("my_command");
     thread::spawn(move || {
         add_to_db_rust(args.name, args.smilesSmartsMz, args.metType, args.endoExoOrOther, args.inTissue, args.adducts, &tx);
         // Signal completion using -1.0 as the sentinel value

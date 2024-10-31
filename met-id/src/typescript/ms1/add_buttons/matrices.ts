@@ -1,5 +1,16 @@
 import { invoke } from "@tauri-apps/api";
-import { addToHTML, add_to_db_rust, add_warning_message, cancellationToken, change_slidein, createAndAttach, generateCheckboxes, removeFromDBInstance, remove_warning_message, slideInDiv } from "../ms1_add_buttons";
+import { 
+	addToHTML, 
+	add_warning_message, 
+	cancellationToken, 
+	change_slidein, 
+	createAndAttach, 
+	generateCheckboxes, 
+	removeFromDBInstance, 
+	remove_warning_message, 
+	slideInDiv } 
+	from "../ms1_add_buttons";
+import { fill_dropdown, fill_under_dropdown, new_tgt_matrix } from "../../dropdown";
 
 
 let MatrixListener: ((e: MouseEvent) => void) | null = null;
@@ -31,138 +42,129 @@ export function destroyAndDetachMatrix() {
 
 
 export function createAndAttachMatrices() {
-  console.log("Hello world");
-		MatrixListener = async () => {
-			let name = document.getElementById("add-name-to-db") as HTMLInputElement;
-			let smiles_mz = document.getElementById("add-smiles-mz-to-db") as HTMLInputElement;
-			let smilesResult = true;//await check_smiles(smiles_mz!.value);
-			console.log(smilesResult);
+	MatrixListener = async () => {
+		let name = document.getElementById("add-name-to-db") as HTMLInputElement;
 
-			const matrixCheckboxObject = {}
+		const matrixCheckboxObject = {}
 
-			const divElement = document.getElementById('add-to-database-checkboxes');
-			if (divElement) {
-				const checkboxes = divElement.querySelectorAll('input[type=checkbox]');
-				checkboxes.forEach((checkbox) => {
-					const inputCheckbox = checkbox as HTMLInputElement;
-					matrixCheckboxObject[inputCheckbox.id.replace("add-", "")] = inputCheckbox.checked
-				});
-			}
-
-			const inputs = document.querySelectorAll('.add-to-database-adducts input');
-			const values: string[] = [];
-
-			inputs.forEach((input) => {
-				values.push((<HTMLInputElement>input).value);
+		const divElement = document.getElementById('add-to-database-checkboxes');
+		if (divElement) {
+			const checkboxes = divElement.querySelectorAll('input[type=checkbox]');
+			checkboxes.forEach((checkbox) => {
+				const inputCheckbox = checkbox as HTMLInputElement;
+				matrixCheckboxObject[inputCheckbox.id.replace("add-", "")] = inputCheckbox.checked
 			});
-
-
-			const matrixAdductsObject = {}
-
-			for (let i = 0; i < inputs.length; i++) {
-				let i_obj = inputs[i].id
-				matrixAdductsObject[i_obj] = values[i];
-			}
-
-
-			if (smilesResult && !isNumeric(smiles_mz!.value)) {
-				remove_warning_message();
-				add_to_db_rust(name!.value, smiles_mz!.value, "matrix", matrixCheckboxObject, {}, matrixAdductsObject)
-				console.log(name!.value, smiles_mz!.value, "matrix", matrixCheckboxObject, {}, matrixAdductsObject)
-			} else if (isNumeric(smiles_mz!.value)) {
-				remove_warning_message();
-				add_to_db_rust(name!.value, smiles_mz!.value, "matrix", matrixCheckboxObject, {}, matrixAdductsObject)
-			} else {
-				add_warning_message("Value is not a number and SMILES")
-			}
-
-
-		};
-		SubmitMatrixElement!.addEventListener("click", MatrixListener);
-		MatrixRefreshListener = async () => {
-			update_user_matrices()
 		}
-		MatrixRefreshElement?.addEventListener("click", MatrixRefreshListener);
+
+		const inputs = document.querySelectorAll('.add-to-database-adducts input');
+		const values: string[] = [];
+
+		inputs.forEach((input) => {
+			values.push((<HTMLInputElement>input).value);
+		});
+
+
+		const matrixAdductsObject: string[] = []
+
+		for (let i = 0; i < inputs.length; i++) {
+			console.log(inputs[i])
+			//let i_obj = inputs[i].id
+			matrixAdductsObject[i] = values[i];
+		}
+
+		remove_warning_message();
+		await invoke("add_matrix_to_db_rust", {name: name!.value, checkboxes: matrixCheckboxObject, adducts: matrixAdductsObject}); 
+		//here we need to update the dropdown of matrices
+		fill_dropdown(Object.keys(await new_tgt_matrix()), "matrix-dropdown")
+
+
+
+	};
+	SubmitMatrixElement!.addEventListener("click", MatrixListener);
+	MatrixRefreshListener = async () => {
+		update_user_matrices()
+	}
+	MatrixRefreshElement?.addEventListener("click", MatrixRefreshListener);
 
 }
 
 
 
 export async function add_matrix() {
-  change_slidein();
-  slideInDiv!.innerHTML = "";
-slideInDiv!.innerHTML = await addToHTML("add-matrix-to-db", "Matrix",[["Name", "add-name-to-db"], ["SMILES or m/z", "add-smiles-mz-to-db"]]);
-const button = document.querySelector('.btn-grid');
-const container = document.getElementById('add-to-database-adducts');
+	change_slidein();
+	slideInDiv!.innerHTML = "";
+	slideInDiv!.innerHTML = await addToHTML("add-matrix-to-db", "Matrix",[["Name", "add-name-to-db"]]);
+	const button = document.querySelector('.btn-grid');
+	const container = document.getElementById('add-to-database-adducts');
 
-let divCounter = 0;
+	let divCounter = 0;
 
-button?.addEventListener('click', () => {
-  divCounter++;
-  // Create new div
-  const newDiv = document.createElement('div');
-  newDiv.className = 'grid grid-4';
+	button?.addEventListener('click', () => {
+	divCounter++;
+	// Create new div
+	const newDiv = document.createElement('div');
+	newDiv.className = 'grid grid-4';
 
-  // Add input fields to the div
-  const input1 = document.createElement('input');
-  input1.type = 'text';
-  input1.placeholder = 'Adduct Name';
-  input1.required = true
-  input1.id = `add-adduct-name-${divCounter}`
-  newDiv.appendChild(input1);
+	// Add input fields to the div
+	const input1 = document.createElement('input');
+	input1.type = 'text';
+	input1.placeholder = 'Adduct Name';
+	input1.required = true
+	input1.id = `add-adduct-name-${divCounter}`
+	newDiv.appendChild(input1);
 
-  const input2 = document.createElement('input');
-  input2.type = 'text';
-  input2.placeholder = 'Formula';
-  input2.required = true;
-  input2.id = `add-matrix-formula-${divCounter}`
-  newDiv.appendChild(input2);
+	const input2 = document.createElement('input');
+	input2.type = 'text';
+	input2.placeholder = 'Δm/z';
+	input2.required = true;
+	input2.id = `add-adduct-delta-mz-${divCounter}`
+	newDiv.appendChild(input2);
 
-  const input3 = document.createElement('input');
-  input3.type = 'text';
-  input3.placeholder = 'No of derivs';
-  input3.required = true;
-  input3.id = `add-fg-${divCounter}`
-  newDiv.appendChild(input3);
+	const input3 = document.createElement('input');
+	input3.type = 'text';
+	input3.placeholder = 'No of derivs';
+	input3.required = true;
+	input3.id = `add-fg-${divCounter}`
+	newDiv.appendChild(input3);
 
-  // Add the reset button
-  const resetButton = document.createElement('button');
-  resetButton.type = 'reset';
-  const spanBack = document.createElement('span');
-  spanBack.className = 'back';
-  const img = document.createElement('img');
-  img.src = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/eraser-icon.svg';
-  spanBack.appendChild(img);
-  resetButton.appendChild(spanBack);
-  newDiv.appendChild(resetButton);
+	// Add the reset button
+	const resetButton = document.createElement('button');
+	resetButton.type = 'reset';
+	const spanBack = document.createElement('span');
+	spanBack.className = 'back';
+	const img = document.createElement('img');
+	img.src = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/eraser-icon.svg';
+	spanBack.appendChild(img);
+	resetButton.appendChild(spanBack);
+	newDiv.appendChild(resetButton);
 
-  resetButton.addEventListener('click', function() {
-    newDiv.remove();
-  });
+	resetButton.addEventListener('click', function() {
+		newDiv.remove();
+	});
 
 
 
-  // Append new div to container
-  container?.appendChild(newDiv);
-});
+	// Append new div to container
+	container?.appendChild(newDiv);
+	});
 
-document.getElementById('getValues')?.addEventListener('click', function() {
-  const inputs = document.querySelectorAll('#container .grid input');
-  const values: string[] = [];
+	document.getElementById('getValues')?.addEventListener('click', function() {
+	const inputs = document.querySelectorAll('#container .grid input');
+	const values: string[] = [];
 
-  inputs.forEach((input) => {
-    values.push((<HTMLInputElement>input).value);
-  });
+	inputs.forEach((input) => {
+		values.push((<HTMLInputElement>input).value);
+	});
 
-  console.log(values);  // Outputs the values to the console. Adjust this to process the values as needed.
-});
+	console.log(values);  // Outputs the values to the console. Adjust this to process the values as needed.
+	});
 
-if (slideInDiv?.classList.contains('slide-in--active')) {
-    SubmitMatrixElement = document.getElementById("add-matrix-to-db") as HTMLButtonElement;
-    MatrixRefreshElement = document.getElementById("ms1-slidein-table-h1-refresh-matrix") as HTMLSpanElement;
-    createAndAttach("matrix");
-    update_user_matrices();
-}
+	if (slideInDiv?.classList.contains('slide-in--active')) {
+		SubmitMatrixElement = document.getElementById("add-matrix-to-db") as HTMLButtonElement;
+		MatrixRefreshElement = document.getElementById("ms1-slidein-table-h1-refresh-matrix") as HTMLSpanElement;
+		createAndAttach("matrix");
+		update_user_matrices();
+	}
 }
 
 
@@ -175,7 +177,7 @@ export async function addToHTML_Matrix(adducts:string, table:string) {
 		<li class="add-to-database-adducts" id="add-to-database-adducts">
 			<div class="grid grid-4">
 				<input type="text" placeholder="Adduct Name" id="add-adduct-name-0" required>
-				<input type="text" placeholder="Formula" id="add-matrix-formula-0" required>
+				<input type="text" placeholder="Δm/z" id="add-adduct-delta-mz-0" required>
 				<input type="text" placeholder="No of derivs" id="add-fg-0" required>
 				<button type="reset" enabled>
 					<span class="back">
@@ -233,6 +235,8 @@ interface USER_MATRICES {
 export async function update_user_matrices() {
 	let matrices: USER_MATRICES = await invoke("update_user_matrices_tauri");
 
+	fill_under_dropdown.matrices("matrix-dropdown", "matrix-checkbox-container")
+	console.log("Matrices:", matrices);
 	await renderSmallItemsFor_UserMatrices(matrices[0], matrices[1], matrices[2])
 }
 
@@ -245,8 +249,13 @@ export async function remove_row_from_user_matrices(row_id: string) {
 	return done;
 }
 
+export async function remove_row_from_user_adducts(matrix_name: string) {
+	console.log(matrix_name)
+	const done: number = await invoke("remove_row_from_user_adducts_tauri", {matrixName:matrix_name});
+	return done;
+}
+
 async function renderSmallItemsFor_UserMatrices(ids: string[], names: string[], derivatizes: string[]) {
-	console.log(ids, names, derivatizes);
 	const res_div = document.getElementById("ms1-slidein-tbody") as HTMLTableElement;
 	res_div.innerHTML = "";
 	let i = 0;
@@ -268,15 +277,15 @@ async function renderSmallItemsFor_UserMatrices(ids: string[], names: string[], 
 			}
 			if (ids.length > 0) {
 				template.innerHTML = `<tr>
-																<td>${ids[i]}</td>
-																<td>${names[i]}</td>
-																<td>${derivatizes[i]}</td>
-																<td>
-																		<span class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
-																				<ion-icon name="trash-outline"></ion-icon>
-																		</span>
-																</td>
-															</tr>`;
+										<td>${ids[i]}</td>
+										<td>${names[i]}</td>
+										<td>${derivatizes[i]}</td>
+										<td>
+												<span class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
+														<ion-icon name="trash-outline"></ion-icon>
+												</span>
+										</td>
+									</tr>`;
 				const templateContent = template.content;
 				res_div.appendChild(templateContent);
                 rowIds.push(`ms1-slidein-table-trashbutton-${ids[i]}`)
