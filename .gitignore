@@ -16,3 +16,4 @@ Cargo.lock
 *.xml
 *.sdf
 
+*.db
