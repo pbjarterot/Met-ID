@@ -29,7 +29,6 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
           npm install @types/jquery --save-dev
           npm ci
-          nvm use 22
         working-directory: met-id
 
 
