@@ -1,5 +1,5 @@
-import { open } from '@tauri-apps/api/dialog';
-import { invoke } from '@tauri-apps/api/tauri';
+import { open } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 import { MSMSDatabase, updateMSMSResults } from './ms2_main';
 
 let result: string | string[] | null = "";

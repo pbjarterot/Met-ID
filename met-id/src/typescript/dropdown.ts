@@ -1,5 +1,5 @@
 import { check_checkboxes, check_selected} from "./ms1/ms1_main";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 
 export function fill_dropdown(items: string[], elementID: string) {

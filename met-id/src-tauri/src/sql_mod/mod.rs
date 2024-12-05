@@ -23,7 +23,7 @@ use self::mtx_dropdown::matrix_dropdown;
 
 use std::collections::HashMap;
 use serde::{ Serialize, Deserialize };
-use rusqlite::{Connection, Result, Row};
+use rusqlite::{Result, Row};
 
 
 
@@ -45,7 +45,7 @@ pub struct MS1DbRow {
     formula: String,
     possible_derivs: i32,
 }
-
+#[allow(dead_code)]
 impl MS1DbRow {
     // Function to create from row
     fn from_row(row: &Row) -> Result<Self> {

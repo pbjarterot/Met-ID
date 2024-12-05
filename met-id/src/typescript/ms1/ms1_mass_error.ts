@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { convertTableToCSV, importFromCSV } from './ms1_io';
 
 function mass_error_slidein() {

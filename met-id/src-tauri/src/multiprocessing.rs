@@ -2,7 +2,7 @@ use std::thread;
 use std::sync::mpsc;
 use std::collections::HashMap;
 use crate::add_to_db::add_to_db_rust;
-use tauri::Window;
+use tauri::{Emitter, Window};
 
 #[derive(serde::Deserialize)]
 #[allow(non_snake_case)]

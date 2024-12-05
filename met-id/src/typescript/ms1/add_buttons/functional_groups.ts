@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { addToHTML, add_to_db_rust, add_warning_message, cancellationToken, change_slidein, createAndAttach, generateCheckboxes, removeFromDBInstance, remove_warning_message, slideInDiv } from "../ms1_add_buttons";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 
 
 let FunctionalGroupListener: ((e: MouseEvent) => void) | null = null;
@@ -101,7 +101,7 @@ export function createAndAttachFg() {
 
     if (smartsResult) {
       remove_warning_message();
-      add_to_db_rust(name!.value, smarts!.value, "fg", fgCheckboxObject, {}, {})
+      add_to_db_rust(name!.value, smarts!.value, "fg", fgCheckboxObject, {}, [])
     } else {
       add_warning_message("SMARTS")
     }

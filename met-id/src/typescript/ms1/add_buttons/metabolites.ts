@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { change_slidein, slideInDiv, generateCheckboxes, addToHTML, createAndAttach, 
          remove_warning_message, add_to_db_rust, add_warning_message, removeFromDBInstance, cancellationToken } from "../ms1_add_buttons";
 
@@ -161,7 +161,7 @@ export function createAndAttachMetabolites() {
   
     if (smilesResult) {
       remove_warning_message();
-      add_to_db_rust(name!.value, smiles!.value, "metabolite", MetTypeCheckboxObject, TissueCheckboxObject, {})
+      add_to_db_rust(name!.value, smiles!.value, "metabolite", MetTypeCheckboxObject, TissueCheckboxObject, [])
     } else {
       add_warning_message("SMILES");
     }

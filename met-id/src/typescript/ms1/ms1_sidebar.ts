@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { check_checkboxes, check_selected } from './ms1_main';
 import { createBottomRow } from './ms1_table';
 import { saveCsv } from './ms1_io';

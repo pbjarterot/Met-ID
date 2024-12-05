@@ -1,7 +1,7 @@
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { 
 	addToHTML, 
-	add_warning_message, 
+	//add_warning_message, 
 	cancellationToken, 
 	change_slidein, 
 	createAndAttach, 
@@ -19,11 +19,11 @@ let MatrixRefreshListener: ((e: MouseEvent) => void) | null = null;
 let SubmitMatrixElement: HTMLButtonElement | null = null;
 let MatrixRefreshElement: HTMLSpanElement | null = null;
 
-
+/*
 function isNumeric(str: string): boolean {
 	return !isNaN(Number(str));
 }
-
+*/
 
 
 

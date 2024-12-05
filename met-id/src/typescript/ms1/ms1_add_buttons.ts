@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { CancellationToken } from '../ms2/ms2_main';
 import { addToHTML_Metabolite, createAndAttachMetabolites, destroyAndDetachMetabolite, remove_row_from_user_metabolites, update_user_metabolites } from './add_buttons/metabolites';
 import { addToHTML_Matrix, createAndAttachMatrices, destroyAndDetachMatrix, remove_row_from_user_matrices, update_user_matrices } from './add_buttons/matrices';
@@ -11,7 +11,7 @@ export const slideInDiv = document.getElementById('add-to-db-slidein');
 
 
 
-export async function add_to_db_rust(name: string, smilesSmartsMz: string, metType: string, endoExoOrOther, inTissue, adducts) {
+export async function add_to_db_rust(name: string, smilesSmartsMz: string, metType: string, endoExoOrOther:object, inTissue:object, adducts:string[]) {
 
 	let added_to_db = await invoke("my_command", {
 		args: { 

@@ -1,5 +1,5 @@
-import { save, open } from '@tauri-apps/api/dialog';
-import { invoke } from '@tauri-apps/api';
+import { save, open } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 
 async function read_input_csv(result: string, delimiter: string, transpose: boolean, deleted_rows: number[]) {
   const parsed_csv: string[][] = await invoke("read_mass_error_csv", {path: result, delimiter: delimiter, transpose: transpose, deletedrows: deleted_rows});
