@@ -1,24 +1,23 @@
-use std::fs::File;
-use serde::Deserialize;
-use std::io;
-use std::path::Path;
-use std::fs;
-use std::str::FromStr;
+use base64::{engine::general_purpose, Engine as _};
+use byteorder::{ByteOrder, LittleEndian};
 use csv::ReaderBuilder;
-use std::error::Error;
+use flate2::read::ZlibDecoder;
 use imzml::mzml::{mzml::MzML, MzMLReader};
+use imzml::{BinaryDataType, Compression};
+use serde::Deserialize;
+use std::error::Error;
+use std::fs;
+use std::fs::File;
+use std::io;
+use std::io::Write;
 use std::io::{Read, Seek, SeekFrom};
 use std::mem::size_of;
-use imzml::{Compression, BinaryDataType};
-use flate2::read::ZlibDecoder; 
-use base64::{Engine as _, engine::general_purpose};
-use byteorder::{ByteOrder, LittleEndian};
-use std::io::Write;
-
+use std::path::Path;
+use std::str::FromStr;
 
 #[derive(Debug)]
 enum Delim {
-    Comma, 
+    Comma,
     Tab,
     Semicolon,
 }
@@ -49,11 +48,7 @@ impl MS1File {
         let file_content = fs::read_to_string(file_path)?;
         let lines: Vec<&str> = file_content.lines().collect();
 
-        let filename = file_path
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
+        let filename = file_path.file_name().unwrap().to_string_lossy().to_string();
 
         let delimiter_str = find_delimiter_line(&lines)?;
         let delimiter = parse_delimiter(&delimiter_str)?;
@@ -70,9 +65,11 @@ impl MS1File {
 }
 
 fn find_delimiter_line<'a>(lines: &'a [&'a str]) -> Result<&'a str, io::Error> {
-    lines.iter()
+    lines
+        .iter()
         .find(|&&line| !line.starts_with('#'))
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "No delimiter line found")).copied()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "No delimiter line found"))
+        .copied()
 }
 
 fn parse_delimiter(delimiter_str: &str) -> Result<Delim, io::Error> {
@@ -107,7 +104,8 @@ fn parse_data_points(lines: &[&str]) -> Result<(Vec<f64>, Option<Vec<f64>>), io:
             (mz_value, ion_mobility_value)
         })
         .filter_map(|(mz_value, ion_mobility_value)| {
-            mz_value.and_then(|mz: f64| ion_mobility_value.map(|ion_mobility: f64| (mz, ion_mobility)))
+            mz_value
+                .and_then(|mz: f64| ion_mobility_value.map(|ion_mobility: f64| (mz, ion_mobility)))
         })
         .unzip();
 
@@ -128,12 +126,12 @@ struct MSMSSpectra {
     matrix: String,
     SMILES: String,
     cid: String,
-    fragment: String
+    fragment: String,
 }
 
 #[tauri::command]
-pub fn parse_ms1_csv(path: String) -> Vec<f64>{
-    let mut mzs : Vec<f64> = Vec::new();
+pub fn parse_ms1_csv(path: String) -> Vec<f64> {
+    let mut mzs: Vec<f64> = Vec::new();
 
     match MS1File::parse_from_file(&Path::new(&path)) {
         Ok(ms1_file) => {
@@ -150,7 +148,12 @@ pub fn parse_ms1_csv(path: String) -> Vec<f64>{
 }
 
 #[tauri::command]
-pub fn read_ms1_ctrlv(content: String, delimiter: String, transpose: bool, _deletedrows: Vec<usize>) -> Vec<Vec<String>> {
+pub fn read_ms1_ctrlv(
+    content: String,
+    delimiter: String,
+    transpose: bool,
+    _deletedrows: Vec<usize>,
+) -> Vec<Vec<String>> {
     let lines: Vec<&str> = content.split("\n").collect();
     let mut res_rows: Vec<Vec<String>> = Vec::new();
 
@@ -166,8 +169,10 @@ pub fn read_ms1_ctrlv(content: String, delimiter: String, transpose: bool, _dele
     res_rows
 }
 
-
-fn process_csv_data(reader: &mut csv::Reader<File> , delimiter: String) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
+fn process_csv_data(
+    reader: &mut csv::Reader<File>,
+    delimiter: String,
+) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
     let mut res_rows = Vec::new();
 
     for result in reader.records() {
@@ -175,7 +180,10 @@ fn process_csv_data(reader: &mut csv::Reader<File> , delimiter: String) -> Resul
             Ok(line) => {
                 let rec: csv::StringRecord = line;
                 if let Some(record_str) = rec.get(0) {
-                    let res: Vec<String> = record_str.split(&delimiter.to_string()).map(|s| s.to_string()).collect();
+                    let res: Vec<String> = record_str
+                        .split(&delimiter.to_string())
+                        .map(|s| s.to_string())
+                        .collect();
                     res_rows.push(res);
                 } else {
                     eprintln!("Warning: Empty record found.");
@@ -190,9 +198,13 @@ fn process_csv_data(reader: &mut csv::Reader<File> , delimiter: String) -> Resul
     Ok(res_rows)
 }
 
-
 #[tauri::command]
-pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedrows: Vec<usize>) -> Vec<Vec<String>> {
+pub fn read_ms1_csv(
+    path: String,
+    delimiter: String,
+    transpose: bool,
+    _deletedrows: Vec<usize>,
+) -> Vec<Vec<String>> {
     // Open the file
     let file: File = File::open(path).unwrap();
 
@@ -204,7 +216,7 @@ pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedro
         Ok(a) => a,
         Err(e) => {
             eprintln!("Error: {}", e);
-            return Vec::new() // or handle the error in some other way
+            return Vec::new(); // or handle the error in some other way
         }
     };
 
@@ -216,13 +228,11 @@ pub fn read_ms1_csv(path: String, delimiter: String, transpose: bool, _deletedro
     res_rows
 }
 
-
-
 // Function to transpose a matrix
 fn transpose_vec<T>(matrix: Vec<Vec<T>>) -> Vec<Vec<String>>
-    where
-        T: ToString,
-    {
+where
+    T: ToString,
+{
     // Find the length of the longest inner vector
     let max_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
 
@@ -244,17 +254,13 @@ fn transpose_vec<T>(matrix: Vec<Vec<T>>) -> Vec<Vec<String>>
     transposed
 }
 
-
-
 #[tauri::command]
 pub fn save_csv(path: String, csvcontent: String) {
-    match fs::write(path, csvcontent){
+    match fs::write(path, csvcontent) {
         Ok(_) => println!("Success!"),
-        Err(e) => println!("Failed to save csv: {:?}", e)
+        Err(e) => println!("Failed to save csv: {:?}", e),
     };
 }
-
-
 
 #[tauri::command]
 pub fn read_mass_error_csv(path: String) -> Vec<Vec<String>> {
@@ -266,19 +272,19 @@ pub fn read_mass_error_csv(path: String) -> Vec<Vec<String>> {
     let mut res_rows: Vec<Vec<String>> = Vec::new();
 
     for (index, line) in reader.records().enumerate() {
-
         if index != 0 {
             let rec: csv::StringRecord = line.unwrap();
 
-            let res: Vec<String> = vec![rec.get(0).unwrap().to_string(), rec.get(1).unwrap().to_string()];
+            let res: Vec<String> = vec![
+                rec.get(0).unwrap().to_string(),
+                rec.get(1).unwrap().to_string(),
+            ];
             res_rows.push(res);
         }
-        
     }
 
     res_rows
 }
-
 
 fn read_characters(file_path: &str, start: u64, end: u64) -> io::Result<String> {
     let mut file = File::open(file_path)?;
@@ -299,9 +305,13 @@ fn read_characters(file_path: &str, start: u64, end: u64) -> io::Result<String> 
     Ok(content)
 }
 
-
-fn parse_file(file_path: &str, offset: u64, length:u64, compression: Compression) -> io::Result<Vec<u8>> {
-    let input_string: String = read_characters(file_path, offset, offset+length).unwrap();
+fn parse_file(
+    file_path: &str,
+    offset: u64,
+    length: u64,
+    compression: Compression,
+) -> io::Result<Vec<u8>> {
+    let input_string: String = read_characters(file_path, offset, offset + length).unwrap();
     let bytes: Vec<u8> = general_purpose::STANDARD.decode(input_string).unwrap();
 
     let buffer = match compression {
@@ -310,21 +320,15 @@ fn parse_file(file_path: &str, offset: u64, length:u64, compression: Compression
             let mut decompressed_buffer = Vec::new();
             decoder.read_to_end(&mut decompressed_buffer)?;
             decompressed_buffer
-        },
-        Compression::None => {
-            bytes.to_vec()
-        },
-        Compression::Undefined => {
-            bytes.to_vec()
-        },
+        }
+        Compression::None => bytes.to_vec(),
+        Compression::Undefined => bytes.to_vec(),
     };
 
     Ok(buffer)
 }
 
-
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum TypedData {
     F64Data(Vec<f64>),
     F32Data(Vec<f32>),
@@ -337,35 +341,36 @@ fn convert_to_type(buffer: Vec<u8>, data_type: BinaryDataType) -> Result<TypedDa
             if buffer.len() % size_of::<f64>() != 0 {
                 return Err("Buffer length is not aligned with f64 size");
             }
-            let f64_buffer: Vec<f64> = buffer.chunks_exact(size_of::<f64>())
+            let f64_buffer: Vec<f64> = buffer
+                .chunks_exact(size_of::<f64>())
                 .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
                 .collect();
             Ok(TypedData::F64Data(f64_buffer))
-        },
+        }
         BinaryDataType::Float32 => {
             if buffer.len() % size_of::<f32>() != 0 {
                 return Err("Buffer length is not aligned with u32 size");
             }
-            let f32_buffer: Vec<f32> = buffer.chunks_exact(size_of::<f32>())
+            let f32_buffer: Vec<f32> = buffer
+                .chunks_exact(size_of::<f32>())
                 .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
                 .collect();
             Ok(TypedData::F32Data(f32_buffer))
-        },
+        }
         BinaryDataType::Undefined => {
             if buffer.len() % size_of::<u32>() != 0 {
                 return Err("Buffer length is not aligned with u32 size");
             }
-            let u32_buffer: Vec<u32> = buffer.chunks_exact(size_of::<u32>())
+            let u32_buffer: Vec<u32> = buffer
+                .chunks_exact(size_of::<u32>())
                 .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
                 .collect();
             Ok(TypedData::U32Data(u32_buffer))
-        },
+        }
     }
 }
 
-
-
-fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) ->TypedData {
+fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) -> TypedData {
     let offset: u64 = data.offset().unwrap();
     let encoded_length: u64 = data.encoded_length().unwrap();
     let compression: imzml::Compression = data.compression();
@@ -377,10 +382,9 @@ fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) ->TypedData {
     typed_data
 }
 
-
 fn top_ten_thousand<T: PartialOrd + Copy>(vec: Vec<T>) -> Vec<usize> {
     let mut indexed_vec: Vec<(usize, T)> = vec.into_iter().enumerate().collect();
-    
+
     // Sort by value in descending order
     indexed_vec.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -395,31 +399,34 @@ fn top_ten_thousand<T: PartialOrd + Copy>(vec: Vec<T>) -> Vec<usize> {
     indices
 }
 
-
-
-fn extract_top_10(data: &TypedData, top_ten_thou_indices: &Vec<usize>) -> Vec<f64>{
+fn extract_top_10(data: &TypedData, top_ten_thou_indices: &Vec<usize>) -> Vec<f64> {
     match data {
         TypedData::F64Data(vec) => {
-            let vec2: Vec<f64> = top_ten_thou_indices.iter().map(|&index| vec[index]).collect();
+            let vec2: Vec<f64> = top_ten_thou_indices
+                .iter()
+                .map(|&index| vec[index])
+                .collect();
             vec2
         }
         TypedData::F32Data(vec) => {
-            let vec2: Vec<f32> = top_ten_thou_indices.iter().map(|&index| vec[index]).collect();
+            let vec2: Vec<f32> = top_ten_thou_indices
+                .iter()
+                .map(|&index| vec[index])
+                .collect();
             vec2.into_iter().map(|x| x as f64).collect()
-
         }
         TypedData::U32Data(vec) => {
-            let vec2: Vec<u32> = top_ten_thou_indices.iter().map(|&index| vec[index]).collect();
+            let vec2: Vec<u32> = top_ten_thou_indices
+                .iter()
+                .map(|&index| vec[index])
+                .collect();
             vec2.into_iter().map(|x| x as f64).collect()
-            
         }
     }
 }
 
-
 #[tauri::command]
 pub fn read_mzml_for_msms(path: String) -> String {
-
     let (mz_data, intensity_data) = read_mzml_for_msms2(path);
 
     // Ensure both mz_data and intensity_data have the same length
@@ -447,7 +454,6 @@ pub fn read_mzml_for_msms(path: String) -> String {
 }
 
 pub fn read_mzml_for_msms_to_add_to_db(path: String) -> Vec<u8> {
-
     let (mz_data, intensity_data) = read_mzml_for_msms2(path);
 
     // Ensure both mz_data and intensity_data have the same length
@@ -472,9 +478,7 @@ pub fn read_mzml_for_msms_to_add_to_db(path: String) -> Vec<u8> {
     blob
 }
 
-
-
-pub fn read_mzml_for_msms2(path: String) -> (Vec<f64>, Vec<f64>){
+pub fn read_mzml_for_msms2(path: String) -> (Vec<f64>, Vec<f64>) {
     let pth: String = path.clone();
     let parser: MzMLReader<io::BufReader<File>> = MzMLReader::from_path(path).unwrap();
 
@@ -491,15 +495,9 @@ pub fn read_mzml_for_msms2(path: String) -> (Vec<f64>, Vec<f64>){
     let also_intensity_data = intensity_data.clone();
 
     let top_ten_thou_indices: Vec<usize> = match also_intensity_data {
-        TypedData::F64Data(vec) => {
-            top_ten_thousand(vec)
-        }
-        TypedData::F32Data(vec) => {
-            top_ten_thousand(vec)
-        }
-        TypedData::U32Data(vec) => {
-            top_ten_thousand(vec)
-        }
+        TypedData::F64Data(vec) => top_ten_thousand(vec),
+        TypedData::F32Data(vec) => top_ten_thousand(vec),
+        TypedData::U32Data(vec) => top_ten_thousand(vec),
     };
 
     let top_ten_thou_intensity: Vec<f64> = extract_top_10(&intensity_data, &top_ten_thou_indices);

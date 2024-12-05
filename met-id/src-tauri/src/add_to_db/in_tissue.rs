@@ -1,10 +1,12 @@
-use rusqlite::ToSql;
 use r2d2_sqlite::SqliteConnectionManager;
-use std::iter::repeat;
+use rusqlite::ToSql;
 use std::collections::HashMap;
+use std::iter::repeat;
 
-
-pub fn fill_user_in_tissue(conn: &r2d2::PooledConnection<SqliteConnectionManager>, in_tissue: &HashMap<String, bool>) {
+pub fn fill_user_in_tissue(
+    conn: &r2d2::PooledConnection<SqliteConnectionManager>,
+    in_tissue: &HashMap<String, bool>,
+) {
     let column_names: Vec<String> = in_tissue.iter().map(|(col, _)| col.to_string()).collect();
     let placeholders: Vec<&str> = repeat("?").take(in_tissue.len()).collect();
 
@@ -14,7 +16,10 @@ pub fn fill_user_in_tissue(conn: &r2d2::PooledConnection<SqliteConnectionManager
         placeholders.join(", ")
     );
 
-    let values: Vec<&dyn ToSql> = in_tissue.iter().map(|(_, value)| value as &dyn ToSql).collect();
+    let values: Vec<&dyn ToSql> = in_tissue
+        .iter()
+        .map(|(_, value)| value as &dyn ToSql)
+        .collect();
 
     conn.execute(&sql, values.as_slice()).unwrap();
 }

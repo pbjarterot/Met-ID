@@ -1,7 +1,17 @@
-use crate::database_setup::get_connection;
 use super::MS1DbRow;
+use crate::database_setup::get_connection;
 
-pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) {
+pub fn sql_query(
+    query: &String,
+) -> (
+    Vec<f64>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<i32>,
+) {
     // Connect to db
     let conn = get_connection().unwrap();
     // Query
@@ -9,8 +19,16 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
         Ok(stmt) => stmt,
         Err(e) => {
             println!("Error2: {}", e);
-            return (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
-        },
+            return (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
+        }
     };
 
     let db_iter = match stmt.query_map([], |row| {
@@ -27,10 +45,17 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
         Ok(iter) => iter,
         Err(e) => {
             println!("Error3: {}", e);
-            return (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
-        },
+            return (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
+        }
     };
-
 
     let mut mzs = Vec::new();
     let mut names = Vec::new();
@@ -39,7 +64,6 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
     let mut smiless = Vec::new();
     let mut formulas = Vec::new();
     let mut possible_derivs = Vec::new();
-
 
     // Parse results for passing back to the parent function
     for item in db_iter {
@@ -57,5 +81,13 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
         }
     }
 
-    (mzs, names, mnames, accessions, smiless, formulas, possible_derivs)
-    }
+    (
+        mzs,
+        names,
+        mnames,
+        accessions,
+        smiless,
+        formulas,
+        possible_derivs,
+    )
+}
