@@ -35,12 +35,6 @@
           "cmd": "",
           "name": "pyinstaller/dist/metabolite_for_db",
           "sidecar": true
-        },
-        {
-          "args": false,
-          "cmd": "",
-          "name": "pyinstaller/dist/matrix_for_db",
-          "sidecar": true
         }
       ]
     },
