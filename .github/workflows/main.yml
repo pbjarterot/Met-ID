@@ -30,6 +30,7 @@ jobs:
           npm install @types/jquery --save-dev
           npm ci
           nvm use 22
+        working-directory: met-id
 
 
       - name: Set up Python
