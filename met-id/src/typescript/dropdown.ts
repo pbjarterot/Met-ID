@@ -1,5 +1,5 @@
 import { check_checkboxes, check_selected} from "./ms1/ms1_main";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 
 export function fill_dropdown(items: string[], elementID: string) {
@@ -31,8 +31,6 @@ export async function new_tgt_matrix() {
     let new_trg_mtx: Record<string, string[]> = await invoke("matrix_dropdown_tauri", {});
     return new_trg_mtx
 }
-
-
 
 
 export const fill_under_dropdown = {
@@ -89,7 +87,7 @@ export const fill_under_dropdown = {
         const myElement = document.getElementById(elementID);
         myElement!.innerHTML = "";
         const option_selected = (document.getElementById(dropdown_id)! as HTMLSelectElement).value;
-    
+
         for (let i = 0; i < new_target_matrix[option_selected].length; i++) {
             const renderedTemplate = this.template.replace("{{value}}", new_target_matrix[option_selected][i]);
             const renderedTemplate3 = renderedTemplate.replaceAll("{{id}}", `'${new_target_matrix[option_selected][i]}'`);

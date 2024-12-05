@@ -1,5 +1,5 @@
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { CancellationToken, MSMSDatabase, updateMSMSResults } from './ms2_main';
 
 let cancellationToken: CancellationToken = { isCancelled: false };

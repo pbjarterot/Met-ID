@@ -1,9 +1,10 @@
-import { appWindow } from '@tauri-apps/api/window'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import './ms2/ms2_main';
 import './ms1/ms1_main';
 import './database_tab/db_main.ts';
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { new_tgt_matrix } from './dropdown';
+const appWindow = getCurrentWebviewWindow()
 
 window.addEventListener("DOMContentLoaded", () => {
 	invoke('close_splashscreen')

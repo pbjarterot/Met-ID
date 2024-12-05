@@ -1,10 +1,14 @@
 use serde::Serialize;
+use tauri_plugin_shell::process::CommandEvent;
 use std::fmt;
-use tauri::api::process::{Command, CommandEvent};
+//use tauri::api::process::{Command, CommandEvent};
 use serde_json::to_vec;
 use bincode::{serialize, deserialize};
 use std::io::{Write, Read};
 use std::process::Stdio;
+use tauri_plugin_shell::ShellExt;
+
+use crate::get_app_handle;
 
 
 // Custom error type
@@ -22,7 +26,7 @@ impl fmt::Display for CommandError {
 #[tauri::command]
 pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) -> Result<String, CommandError> {
     println!("Starting processing1...");
-    let (mut rx, _child) = Command::new_sidecar(sidecar_name)
+    let (mut rx, _child) = get_app_handle().unwrap().shell().sidecar(sidecar_name)
         .expect("failed to create `my-sidecar` binary command")
         .args(sidecar_arguments)
         .spawn()
@@ -44,7 +48,7 @@ pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) ->
     let mut output: String = String::new();
     while let Ok(line) = rx_data.recv() {
         println!("{:?}", &line);
-        output.push_str(&line);
+        output.push_str(std::str::from_utf8(&line).unwrap());
     }
 
     Ok(output)
@@ -52,6 +56,7 @@ pub fn sidecar_function(sidecar_name: String, sidecar_arguments: Vec<String>) ->
 
 #[tauri::command]
 pub fn sidecar_function2(_sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<Vec<i32>>{
+    println!("here");
     // Generate a large vector of strings
     let _binary_path = match std::env::consts::OS {
         "windows" => "metabolite-x86_64-pc-windows-msvc.exe",

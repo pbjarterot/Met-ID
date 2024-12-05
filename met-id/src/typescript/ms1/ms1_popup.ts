@@ -1,6 +1,6 @@
 import { fill_dropdown } from '../dropdown';
-import { invoke } from '@tauri-apps/api';
-import { open } from '@tauri-apps/api/dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import { createTableRowHTML } from './ms1_table';
 
 let deleted_ms1_rows: number[] = [];

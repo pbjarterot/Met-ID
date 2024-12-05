@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 
 
 export async function count_metabolites(met_selected: string, matrix_selected: string, met_type: string[], adducts: string[]) {

@@ -1,5 +1,5 @@
 mod sql_handler;
-mod build_query;
+pub mod build_query;
 mod query;
 mod counter;
 mod msms;
@@ -23,6 +23,7 @@ use self::mtx_dropdown::matrix_dropdown;
 
 use std::collections::HashMap;
 use serde::{ Serialize, Deserialize };
+use rusqlite::{Result, Row};
 
 
 
@@ -34,7 +35,7 @@ pub struct Args {
     adducts: Vec<String>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MS1DbRow {
     mz: f64,
     name: String,
@@ -42,7 +43,22 @@ pub struct MS1DbRow {
     accession: String,
     smiles: String,
     formula: String,
-    possible_derivs: i32
+    possible_derivs: i32,
+}
+#[allow(dead_code)]
+impl MS1DbRow {
+    // Function to create from row
+    fn from_row(row: &Row) -> Result<Self> {
+        Ok(MS1DbRow {
+            mz: row.get(0)?,
+            name: row.get(1)?,
+            mname: row.get(2)?,
+            accession: row.get(3)?,
+            smiles: row.get(4)?,
+            formula: row.get(5)?,
+            possible_derivs: row.get(6)?,
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -162,7 +178,6 @@ pub fn remove_row_from_user_metabolites_tauri(rowid: usize) -> usize {
     remove_row_from_user_metabolites(rowid)
 }
 
-
 #[tauri::command]
 pub fn update_user_matrices_tauri() -> Vec<Vec<String>> {
     update_user_matrices()
@@ -172,7 +187,6 @@ pub fn update_user_matrices_tauri() -> Vec<Vec<String>> {
 pub fn remove_row_from_user_matrices_tauri(rowid: usize) -> usize {
     remove_row_from_user_matrices(rowid)
 }
-
 
 #[tauri::command]
 pub fn update_user_fgs_tauri() -> Vec<Vec<String>> {

@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { get_csv } from './ms1_popup';
 import { identify, get_adjusted_ms1 } from './ms1_sidebar';
 import { fill_dropdown, fill_under_dropdown, new_tgt_matrix } from "../dropdown";

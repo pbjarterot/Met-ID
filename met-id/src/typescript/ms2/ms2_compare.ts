@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { SpectrumPoint, SpectrumMap } from './ms2_draw_spectra';
 import html2canvas from 'html2canvas';
 

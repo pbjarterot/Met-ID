@@ -14,7 +14,6 @@ use flate2::read::ZlibDecoder;
 use base64::{Engine as _, engine::general_purpose};
 use byteorder::{ByteOrder, LittleEndian};
 use std::io::Write;
-//use crate::sidecar::sidecar_function;
 
 
 #[derive(Debug)]
@@ -132,32 +131,6 @@ struct MSMSSpectra {
     fragment: String
 }
 
-/* 
-#[tauri::command]
-pub fn load_msms() -> Vec<Vec<std::string::String>> {
-    //needed: name, adduct, matrix, parent mass, smiles, spectra
-
-    let mut file: File = File::open("../databases/sample2.json").expect("Failed to open file");
-
-    // Read the contents of the file into a string
-    let mut contents: String = String::new();
-    file.read_to_string(&mut contents).expect("Failed to read file");
-
-    // Deserialize the JSON data into your struct
-    let data: Vec<MSMSSpectra> = serde_json::from_str(&contents).expect("Failed to parse JSON");
-
-    let names: Vec<String> = data.iter().map(|x: &MSMSSpectra| x.name.clone()).collect();
-    let _matrices: Vec<String> = data.iter().map(|x: &MSMSSpectra| x.matrix.clone()).collect();
-    let smiles: Vec<String> = data.iter().map(|x: &MSMSSpectra| x.SMILES.clone()).collect();
-    let cid: Vec<String> = data.iter().map(|x: &MSMSSpectra| x.cid.clone()).collect();
-    let fragment: Vec<String> = data.iter().map(|x: &MSMSSpectra| x.fragment.clone()).collect();
-
-    let return_data: Vec<Vec<String>> = vec![names, smiles, cid, fragment];
-    // Use the data as needed
-    return_data
-}
-*/
-
 #[tauri::command]
 pub fn parse_ms1_csv(path: String) -> Vec<f64>{
     let mut mzs : Vec<f64> = Vec::new();
@@ -250,26 +223,26 @@ fn transpose_vec<T>(matrix: Vec<Vec<T>>) -> Vec<Vec<String>>
     where
         T: ToString,
     {
-        // Find the length of the longest inner vector
-        let max_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
+    // Find the length of the longest inner vector
+    let max_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
 
-        // Create a new vector to store the transposed elements as strings
-        let mut transposed: Vec<Vec<String>> = vec![Vec::new(); max_len];
+    // Create a new vector to store the transposed elements as strings
+    let mut transposed: Vec<Vec<String>> = vec![Vec::new(); max_len];
 
-        // Iterate through the rows of the original matrix
-        for (row_index, row) in matrix.iter().enumerate() {
-            // Iterate through the elements of each row and populate the corresponding columns in the transposed matrix
-            for (col_index, elem) in row.iter().enumerate() {
-                let value_str = elem.to_string();
-                if transposed[col_index].len() <= row_index {
-                    transposed[col_index].resize(row_index + 1, String::new());
-                }
-                transposed[col_index][row_index] = value_str;
+    // Iterate through the rows of the original matrix
+    for (row_index, row) in matrix.iter().enumerate() {
+        // Iterate through the elements of each row and populate the corresponding columns in the transposed matrix
+        for (col_index, elem) in row.iter().enumerate() {
+            let value_str = elem.to_string();
+            if transposed[col_index].len() <= row_index {
+                transposed[col_index].resize(row_index + 1, String::new());
             }
+            transposed[col_index][row_index] = value_str;
         }
-
-        transposed
     }
+
+    transposed
+}
 
 
 
@@ -401,12 +374,8 @@ fn get_mzml_spectra(data: &imzml::BinaryDataArray, pth: &str) ->TypedData {
     let buffer: Result<Vec<u8>, io::Error> = parse_file(pth, offset, encoded_length, compression);
     let typed_data: TypedData = convert_to_type(buffer.unwrap(), type_).unwrap();
 
-    //extract_and_print_first_10(&typed_data);
-    //extract_and_print_details(&typed_data)
     typed_data
 }
-
-
 
 
 fn top_ten_thousand<T: PartialOrd + Copy>(vec: Vec<T>) -> Vec<usize> {
@@ -472,7 +441,7 @@ pub fn read_mzml_for_msms(path: String) -> String {
         blob.write_all(&intensity_buf).unwrap();
     }
 
-    crate::add_to_db::add_to_db_functions::fill_user_msms(blob);
+    crate::add_to_db::msms::fill_user_msms(blob);
 
     String::from("Done")
 }

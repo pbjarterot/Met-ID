@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 //import { zoom as d3Zoom, zoomIdentity as d3ZoomIdentity } from 'd3-zoom';
 
 export interface SpectrumPoint {

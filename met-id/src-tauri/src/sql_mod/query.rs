@@ -1,8 +1,5 @@
 use crate::database_setup::get_connection;
 use super::MS1DbRow;
-use std::time::Instant;
-
-
 
 pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<i32>) {
     // Connect to db
@@ -11,14 +8,10 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
     let mut stmt = match conn.prepare(query) {
         Ok(stmt) => stmt,
         Err(e) => {
-            println!("Error: {}", e);
+            println!("Error2: {}", e);
             return (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
         },
     };
-
-
-    // Assuming `stmt` is already prepared
-    let start = Instant::now();
 
     let db_iter = match stmt.query_map([], |row| {
         Ok(MS1DbRow {
@@ -33,7 +26,7 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
     }) {
         Ok(iter) => iter,
         Err(e) => {
-            println!("Error: {}", e);
+            println!("Error3: {}", e);
             return (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
         },
     };
@@ -63,9 +56,6 @@ pub fn sql_query(query: &String) -> (Vec<f64>, Vec<String>, Vec<String>, Vec<Str
             Err(e) => println!("Error processing row: {}", e),
         }
     }
-
-    let duration5 = start.elapsed();
-    println!("Third check: {:?}\t Number of rows processed: {:?}", duration5, mzs.len());
 
     (mzs, names, mnames, accessions, smiless, formulas, possible_derivs)
     }

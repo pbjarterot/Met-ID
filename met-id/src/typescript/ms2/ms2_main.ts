@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/tauri";
-import { open } from '@tauri-apps/api/dialog';
+import { invoke } from "@tauri-apps/api/core";
+import { open } from '@tauri-apps/plugin-dialog';
 import { generate_ms2_small_results_card, small_results_card_expanding } from "./ms2_small_results_card";
 import { compare_msms } from "./ms2_compare";
 import { get_msms_from_mzml, match_msms } from "./ms2_io";
