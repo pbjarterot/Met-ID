@@ -1,7 +1,10 @@
-use rusqlite::ToSql;
 use r2d2_sqlite::SqliteConnectionManager;
+use rusqlite::ToSql;
 
-use crate::{database_setup::get_msms_connection, files::read_mzml_for_msms_to_add_to_db, sql_mod::table::check_if_table_exists_msms};
+use crate::{
+    database_setup::get_msms_connection, files::read_mzml_for_msms_to_add_to_db,
+    sql_mod::table::check_if_table_exists_msms,
+};
 
 pub fn fill_user_msms(bin_data: Vec<u8>) {
     // Convert &[u8] to Vec<u8>
@@ -19,7 +22,8 @@ pub fn fill_user_msms(bin_data: Vec<u8>) {
         ("spectra".to_string(), Box::new(bin_data_vec)),
     ];
 
-    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("connecting to MSMS db").unwrap();
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> =
+        get_msms_connection("connecting to MSMS db").unwrap();
 
     // Start a transaction
     conn.execute("BEGIN", []).unwrap();
@@ -27,10 +31,17 @@ pub fn fill_user_msms(bin_data: Vec<u8>) {
     // Prepare an update statement
     let update_sql = format!(
         "UPDATE MSMS SET {} WHERE identifier = ?",
-        data.iter().map(|(col, _)| format!("{} = ?", col)).collect::<Vec<_>>().join(", ")
+        data.iter()
+            .map(|(col, _)| format!("{} = ?", col))
+            .collect::<Vec<_>>()
+            .join(", ")
     );
     let binding = "User Input".to_string();
-    let update_values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| &**value).chain(std::iter::once(&binding as &dyn ToSql)).collect();
+    let update_values: Vec<&dyn ToSql> = data
+        .iter()
+        .map(|(_, value)| &**value)
+        .chain(std::iter::once(&binding as &dyn ToSql))
+        .collect();
     let updated_rows = conn.execute(&update_sql, &*update_values).unwrap();
 
     if updated_rows == 0 {
@@ -53,7 +64,17 @@ pub fn fill_user_msms(bin_data: Vec<u8>) {
     conn.execute("COMMIT", []).unwrap();
 }
 
-pub fn add_to_usermsms(name: String, adduct: String, mz: String, cid: String, tof: String, mzwindow: String, identifier: String, path: String, matrix: String) {
+pub fn add_to_usermsms(
+    name: String,
+    adduct: String,
+    mz: String,
+    cid: String,
+    tof: String,
+    mzwindow: String,
+    identifier: String,
+    path: String,
+    matrix: String,
+) {
     check_if_table_exists_msms("MSMS", "user_MSMS").unwrap();
     // Convert &[u8] to Vec<u8>
     //let bin_data_vec = bin_data.to_vec();
@@ -69,11 +90,11 @@ pub fn add_to_usermsms(name: String, adduct: String, mz: String, cid: String, to
         ("tof".to_string(), Box::new(tof)),
         ("mz".to_string(), Box::new(mz)),
         ("spectra".to_string(), Box::new(bin_data_vec)),
-        ("matrix".to_string(), Box::new(matrix))
-
+        ("matrix".to_string(), Box::new(matrix)),
     ];
 
-    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_msms_connection("connecting to MSMS db").unwrap();
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> =
+        get_msms_connection("connecting to MSMS db").unwrap();
 
     // If no rows were updated, do an insert
     let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
@@ -88,5 +109,4 @@ pub fn add_to_usermsms(name: String, adduct: String, mz: String, cid: String, to
     // Map the data to a vector of references to the trait object
     let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
     conn.execute(&sql, values.as_slice()).unwrap();
-    
 }

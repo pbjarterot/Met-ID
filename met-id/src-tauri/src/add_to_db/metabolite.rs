@@ -1,18 +1,25 @@
+use crate::add_to_db::{
+    db_accessions::fill_user_db_accessions, derivatized_by::fill_user_derivatized_by,
+};
 use crate::sidecar::sidecar_function;
+use crate::sql_mod::table::check_if_table_exists;
+use r2d2_sqlite::SqliteConnectionManager;
+use regex::Regex;
+use rusqlite::{Result, ToSql};
 use std::collections::HashMap;
 use std::iter::repeat;
-use regex::Regex;
-use r2d2_sqlite::SqliteConnectionManager;
-use crate::sql_mod::table::check_if_table_exists;
-use rusqlite::{Result, ToSql};
-use crate::add_to_db::{
-    db_accessions::fill_user_db_accessions, 
-    derivatized_by::fill_user_derivatized_by};
 
-use super::{endogeneity::fill_user_endogeneity, functional_group::{fill_user_functional_groups, get_matrices_fgs}, get_hashmap_from_table, in_tissue::fill_user_in_tissue};
+use super::{
+    endogeneity::fill_user_endogeneity,
+    functional_group::{fill_user_functional_groups, get_matrices_fgs},
+    get_hashmap_from_table,
+    in_tissue::fill_user_in_tissue,
+};
 
-
-fn metabolite_for_db_sidecar(smiles: &String, smarts_map: &mut HashMap<String, String>) -> (String, String, HashMap<String, String>) {
+fn metabolite_for_db_sidecar(
+    smiles: &String,
+    smarts_map: &mut HashMap<String, String>,
+) -> (String, String, HashMap<String, String>) {
     let mut smarts_vec: Vec<_> = smarts_map.values().cloned().collect();
     smarts_vec.insert(0, smiles.to_owned());
 
@@ -21,7 +28,10 @@ fn metabolite_for_db_sidecar(smiles: &String, smarts_map: &mut HashMap<String, S
     parse_input(&sidecar_output.unwrap()[..], smarts_map).unwrap()
 }
 
-fn parse_input(input: &str, smarts_map: &mut HashMap<String, String>) -> Result<(String, String, HashMap<String, String>), &'static str> {
+fn parse_input(
+    input: &str,
+    smarts_map: &mut HashMap<String, String>,
+) -> Result<(String, String, HashMap<String, String>), &'static str> {
     //let input = "C3H8 44.062600255999996 [0, 0, 0, 0]\r";
 
     // Extract molecule formula
@@ -47,15 +57,25 @@ fn parse_input(input: &str, smarts_map: &mut HashMap<String, String>) -> Result<
         smarts_map.insert(key.clone(), value.clone().to_string());
     }
 
-    Ok((molecule.to_string(), float_number.to_string(), smarts_map.to_owned()))
+    Ok((
+        molecule.to_string(),
+        float_number.to_string(),
+        smarts_map.to_owned(),
+    ))
 }
 
-pub fn fill_user_metabolites(conn: &r2d2::PooledConnection<SqliteConnectionManager>, name: &String, smiles: &String, formula: &String, mz: &String) {
+pub fn fill_user_metabolites(
+    conn: &r2d2::PooledConnection<SqliteConnectionManager>,
+    name: &String,
+    smiles: &String,
+    formula: &String,
+    mz: &String,
+) {
     let data = vec![
-        ("name".to_string(), name), 
+        ("name".to_string(), name),
         ("smiles".to_string(), smiles),
         ("chemicalformula".to_string(), formula),
-        ("mz".to_string(), mz)
+        ("mz".to_string(), mz),
     ];
 
     let column_names: Vec<String> = data.iter().map(|(col, _)| col.to_string()).collect();
@@ -71,12 +91,18 @@ pub fn fill_user_metabolites(conn: &r2d2::PooledConnection<SqliteConnectionManag
     conn.execute(&sql, values.as_slice()).unwrap();
 }
 
-pub fn add_metabolite_to_db(conn: r2d2::PooledConnection<SqliteConnectionManager>, name: String, smiles: String, in_tissue: HashMap<String, bool>, endo_exo: HashMap<String, bool>) -> () {        
-    check_if_table_exists("metabolites",       "user_metabolites").unwrap();
-    check_if_table_exists("derivatized_by",    "user_derivatized_by").unwrap();
-    check_if_table_exists("endogeneity",       "user_endogeneity").unwrap();
-    check_if_table_exists("in_tissue",         "user_in_tissue").unwrap();
-    check_if_table_exists("db_accessions",     "user_db_accessions").unwrap();
+pub fn add_metabolite_to_db(
+    conn: r2d2::PooledConnection<SqliteConnectionManager>,
+    name: String,
+    smiles: String,
+    in_tissue: HashMap<String, bool>,
+    endo_exo: HashMap<String, bool>,
+) -> () {
+    check_if_table_exists("metabolites", "user_metabolites").unwrap();
+    check_if_table_exists("derivatized_by", "user_derivatized_by").unwrap();
+    check_if_table_exists("endogeneity", "user_endogeneity").unwrap();
+    check_if_table_exists("in_tissue", "user_in_tissue").unwrap();
+    check_if_table_exists("db_accessions", "user_db_accessions").unwrap();
     check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
 
     let mut functional_smarts: HashMap<String, String> = get_hashmap_from_table(&conn);

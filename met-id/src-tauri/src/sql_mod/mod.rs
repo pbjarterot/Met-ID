@@ -1,38 +1,42 @@
-mod sql_handler;
 pub mod build_query;
-mod query;
 mod counter;
-mod msms;
-mod functional_groups;
-mod tissues;
-mod matrices;
-mod mtx_dropdown;
-mod user_tables;
-pub mod table;
 mod database_view;
+mod functional_groups;
+mod matrices;
+mod msms;
+mod mtx_dropdown;
+mod query;
+mod sql_handler;
+pub mod table;
+mod tissues;
+mod user_tables;
 
-use self::database_view::{ get_db_data, db_ids_and_names};
-use self::sql_handler::sql_handler;
 use self::counter::sql_counter;
-use self::msms::{ get_msms, get_msms_spectra, get_name_from_identifier_msms, ms2_search_spectra, match_msms_to_ui, add_msms_to_db, show_user_msms_db, remove_row_from_msms_user_db };
+use self::database_view::{db_ids_and_names, get_db_data};
 use self::functional_groups::get_functional_groups;
-use self::tissues::get_tissues;
 use self::matrices::get_matrices;
-use self::user_tables::{ update_user_metabolites, remove_row_from_user_metabolites, remove_row_from_user_matrices, update_user_matrices, update_user_fgs, remove_user_fgs};
+use self::msms::{
+    add_msms_to_db, get_msms, get_msms_spectra, get_name_from_identifier_msms, match_msms_to_ui,
+    ms2_search_spectra, remove_row_from_msms_user_db, show_user_msms_db,
+};
 use self::mtx_dropdown::matrix_dropdown;
+use self::sql_handler::sql_handler;
+use self::tissues::get_tissues;
+use self::user_tables::{
+    remove_row_from_user_matrices, remove_row_from_user_metabolites, remove_user_fgs,
+    update_user_fgs, update_user_matrices, update_user_metabolites,
+};
 
-use std::collections::HashMap;
-use serde::{ Serialize, Deserialize };
 use rusqlite::{Result, Row};
-
-
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 pub struct Args {
     metabolome: String,
     matrix: String,
     met_type: Vec<String>,
-    adducts: Vec<String>
+    adducts: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -71,7 +75,7 @@ pub struct MS2DbRow {
     tof: String,
     mz: String,
     data: (Vec<f64>, Vec<i64>),
-    matrix: String
+    matrix: String,
 }
 
 #[derive(Debug)]
@@ -85,7 +89,7 @@ pub struct MS2DbRow2 {
     tof: String,
     mz: String,
     data: (Vec<f64>, Vec<i64>),
-    matrix: String
+    matrix: String,
 }
 
 #[derive(Debug)]
@@ -100,11 +104,16 @@ pub struct SpectrumPoint {
     y: i64,
 }
 
-
-
-
 #[tauri::command]
-pub fn sql_handler_tauri(met: String, mat: String, typ: Vec<String>, adducts: Vec<String>, _mass_error: String, masses: Vec<String>, mzwindow: String) -> Vec<Vec<HashMap<String, String>>> {
+pub fn sql_handler_tauri(
+    met: String,
+    mat: String,
+    typ: Vec<String>,
+    adducts: Vec<String>,
+    _mass_error: String,
+    masses: Vec<String>,
+    mzwindow: String,
+) -> Vec<Vec<HashMap<String, String>>> {
     sql_handler(met, mat, typ, adducts, _mass_error, masses, mzwindow)
 }
 
@@ -114,7 +123,7 @@ pub fn sql_counter_tauri(met: String, mat: String, typ: Vec<String>, adducts: Ve
 }
 
 #[tauri::command]
-pub fn get_msms_tauri() -> Vec<Vec<String>>{
+pub fn get_msms_tauri() -> Vec<Vec<String>> {
     get_msms()
 }
 
@@ -129,7 +138,13 @@ pub fn get_name_from_identifier_msms_tauri(identifier: String) -> String {
 }
 
 #[tauri::command]
-pub fn ms2_search_spectra_tauri(name: String, fragment: String, ms1mass: String, fragmentslider: String, _ms1massslider: String) -> Vec<Vec<String>> {
+pub fn ms2_search_spectra_tauri(
+    name: String,
+    fragment: String,
+    ms1mass: String,
+    fragmentslider: String,
+    _ms1massslider: String,
+) -> Vec<Vec<String>> {
     ms2_search_spectra(name, fragment, ms1mass, fragmentslider, _ms1massslider)
 }
 
@@ -149,13 +164,36 @@ pub fn get_matrices_tauri() -> Vec<String> {
 }
 
 #[tauri::command]
-pub fn match_msms_to_ui_tauri(binsize: f64, threshold: f64) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<String>, Vec<f64>, Vec<String>) {
+pub fn match_msms_to_ui_tauri(
+    binsize: f64,
+    threshold: f64,
+) -> (
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<f64>,
+    Vec<String>,
+) {
     match_msms_to_ui(binsize, threshold)
 }
 
 #[tauri::command]
-pub fn add_msms_to_db_tauri(name: String, adduct: String, mz: String, cid: String, tof: String, mzwindow: String, identifier: String, path: String, matrix: String) -> String {
-    add_msms_to_db(name, adduct, mz, cid, tof, mzwindow, identifier, path, matrix)
+pub fn add_msms_to_db_tauri(
+    name: String,
+    adduct: String,
+    mz: String,
+    cid: String,
+    tof: String,
+    mzwindow: String,
+    identifier: String,
+    path: String,
+    matrix: String,
+) -> String {
+    add_msms_to_db(
+        name, adduct, mz, cid, tof, mzwindow, identifier, path, matrix,
+    )
 }
 
 #[tauri::command]
@@ -203,35 +241,18 @@ pub fn matrix_dropdown_tauri() -> HashMap<String, Vec<String>> {
     matrix_dropdown()
 }
 #[tauri::command]
-pub fn db_data_tauri(index: usize) -> (String, String, String, String, HashMap<String, HashMap<String, f64>>) {
+pub fn db_data_tauri(
+    index: usize,
+) -> (
+    String,
+    String,
+    String,
+    String,
+    HashMap<String, HashMap<String, f64>>,
+) {
     get_db_data(index)
 }
 #[tauri::command]
 pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, usize, i64)> {
     db_ids_and_names(inputvalue)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
