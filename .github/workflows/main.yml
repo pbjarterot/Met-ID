@@ -28,11 +28,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libglib2.0-dev pkg-config
           npm install @types/jquery --save-dev
-          npm ci
-          find /usr -name "glib-2.0.pc"
-          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-          pkg-config --libs --cflags glib-2.0 || echo "glib-2.0 not found"
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
         working-directory: met-id
+
+      - name: Verify glib-2.0
+        run: |
+            echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+            pkg-config --modversion glib-2.0
+
 
 
       - name: Set up Python
