@@ -1,17 +1,21 @@
+use crate::add_to_db::functional_group_server::functional_group_server;
 use crate::database_setup::get_connection;
-use crate::sidecar::sidecar_function2;
+use crate::sidecar::sidecar_function3;
 use crate::sql_mod::table::check_if_table_exists;
+use crate::{get_app_handle, MSDBPATH};
+
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Result, ToSql};
 use std::collections::HashMap;
 use std::iter::repeat;
 use std::sync::mpsc;
 
-use super::get_table_column_names;
 
+use super::{functional_group_server, get_table_column_names};
+/* 
 fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usize> {
     smiles.insert(0, smarts.to_owned());
-    let sidecar_output = sidecar_function2("metabolite".to_string(), smiles.to_owned());
+    let sidecar_output = sidecar_function3(get_app_handle().unwrap(), "metabolite".to_string(), smiles.to_owned());
     let result: Vec<usize> = match sidecar_output {
         Ok(s) => s.iter().map(|n| *n as usize).collect(),
         Err(_) => Vec::new(),
@@ -19,7 +23,8 @@ fn single_functional_group(smiles: &mut Vec<String>, smarts: &String) -> Vec<usi
 
     result
 }
-
+*/
+/* 
 pub fn update_functional_groups(
     table_name: &str,
     table2_name: &str,
@@ -28,17 +33,11 @@ pub fn update_functional_groups(
     progress_sender: &mpsc::Sender<f32>,
 ) {
     check_if_table_exists("metabolites", "user_metabolites").unwrap();
-
-    const BATCH_SIZE: usize = 10000;
+    const BATCH_SIZE: usize = 100;
 
     let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     let conn2: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
-    conn.execute(
-        &format!("ALTER TABLE {} ADD COLUMN {} INTEGER", table_name, name),
-        [],
-    )
-    .unwrap();
     let mode: String = conn
         .query_row("PRAGMA journal_mode=WAL;", [], |row| row.get(0))
         .unwrap();
@@ -113,13 +112,14 @@ pub fn update_functional_groups(
         progress_sender.send(progress).unwrap();
     }
 }
+*/
 
 pub fn add_fg_to_db(
     conn: r2d2::PooledConnection<SqliteConnectionManager>,
     name: String,
     smarts: String,
     matrices: HashMap<String, bool>,
-    progress_sender: &mpsc::Sender<f32>,
+    progress_sender: std::sync::mpsc::Sender<f32>,
 ) -> () {
     check_if_table_exists("functional_group_smarts", "user_functional_group_smarts").unwrap();
     check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
@@ -132,27 +132,43 @@ pub fn add_fg_to_db(
     )
     .unwrap();
 
+    conn.execute(
+        &format!("ALTER TABLE functional_groups ADD COLUMN '{}' INTEGER", name),
+        [],
+    )
+    .unwrap();
+
+    conn.execute(
+        &format!(
+            "ALTER TABLE user_functional_groups ADD COLUMN '{}' INTEGER",
+            name
+        ),
+        [],
+    )
+    .unwrap();
+
+    functional_group_server(progress_sender, smarts.clone(), "functional_groups".to_string(), name.clone()).unwrap();
+
     //update functional_groups & user_functional_groups
     // Add the new column (as before)
-    update_functional_groups(
-        "functional_groups",
-        "metabolites",
-        &name,
-        &smarts,
-        progress_sender,
-    );
-    update_functional_groups(
-        "user_functional_groups",
-        "user_metabolites",
-        &name,
-        &smarts,
-        progress_sender,
-    );
-
+    
+    conn.execute(&format!("INSERT INTO functional_group_smarts (name, smarts) VALUES ('{}', '{}')", name, smarts), []).unwrap();
     //if any matrix is pressed, update derivatized_by and user_matrices
     update_matrix_table_with_functional_group("matrices", &name, &matrices);
     update_matrix_table_with_functional_group("user_matrices", &name, &matrices);
 }
+/* 
+fn update_functional_groups2(
+    table_name: &str,
+    table2_name: &str,
+    name: &String,
+    smarts: &String,
+    progress_sender: &mpsc::Sender<f32>
+) -> () {
+    sidecar_function3(get_app_handle().unwrap(), progress_sender);
+}
+*/
+
 
 /*
 fn get_hashmap_from_table(conn: &r2d2::PooledConnection<SqliteConnectionManager>) -> HashMap<String, String> {
@@ -185,7 +201,7 @@ fn update_matrix_table_with_functional_group(
 ) {
     let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     conn.execute(
-        &format!("ALTER TABLE {} ADD COLUMN {} TEXT", table_name, name),
+        &format!("ALTER TABLE {} ADD COLUMN '{}' TEXT", table_name, name),
         [],
     )
     .unwrap();
@@ -193,7 +209,7 @@ fn update_matrix_table_with_functional_group(
     let tx = conn.transaction().unwrap();
     for (key, value) in matrices {
         tx.execute(
-            &format!("UPDATE {table_name} SET {name} = ?1 WHERE matrix = ?2"),
+            &format!("UPDATE {table_name} SET '{name}' = ?1 WHERE matrix = ?2"),
             params![value, key],
         )
         .unwrap();

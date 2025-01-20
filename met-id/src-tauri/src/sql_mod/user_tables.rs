@@ -142,11 +142,15 @@ pub fn update_user_fgs() -> Vec<Vec<String>> {
     check_if_table_exists("functional_group_smarts", "user_functional_group_smarts").unwrap();
     check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
     check_if_table_exists("matrices", "user_matrices").unwrap();
+
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+
     ensure_id_column(&conn, "user_functional_group_smarts").unwrap();
+
     let mut stmt: rusqlite::Statement = conn
         .prepare("SELECT id, name, smarts FROM user_functional_group_smarts")
         .expect("Query cannot be run");
+
     let db_iter = stmt
         .query_map([], |row: &rusqlite::Row<'_>| {
             Ok(MS1UserFgsRow {
@@ -160,7 +164,6 @@ pub fn update_user_fgs() -> Vec<Vec<String>> {
     let mut ids: Vec<String> = Vec::new();
     let mut names: Vec<String> = Vec::new();
     let mut smarts: Vec<String> = Vec::new();
-    let mut derivatizes2: Vec<String> = Vec::new();
 
     //parse results for passing back to the parent function
     for (index, item) in db_iter.enumerate() {
@@ -168,11 +171,10 @@ pub fn update_user_fgs() -> Vec<Vec<String>> {
         ids.insert(index, row.id.to_string());
         names.insert(index, row.name);
         smarts.insert(index, row.smarts);
-        derivatizes2.insert(index, "".to_string());
     }
     println!("{:?}", smarts);
 
-    let return_data: Vec<Vec<String>> = vec![ids, names, smarts, derivatizes2];
+    let return_data: Vec<Vec<String>> = vec![ids, names, smarts];
     return_data
 }
 
@@ -181,11 +183,30 @@ pub fn remove_user_fgs(rowid: usize, column_to_remove: &str) -> usize {
     let sql: &str = "DELETE FROM user_functional_group_smarts WHERE id = ?1";
     conn.execute(sql, params![rowid]).unwrap();
 
-    remove_column_from_table("matrices", column_to_remove).unwrap();
-    remove_column_from_table("matrices", column_to_remove).unwrap();
+    println!("column_to_remove: {}", column_to_remove);
+    match remove_column_from_table("matrices", column_to_remove) {
+        Ok(_) => (),
+        Err(e) => eprintln!("{:?}", e)
+    };
 
-    remove_column_from_table("functional_groups", column_to_remove).unwrap();
-    remove_column_from_table("user_functional_groups", column_to_remove).unwrap();
+    match remove_column_from_table("user_matrices", column_to_remove) {
+        Ok(_) => (),
+        Err(e) => eprintln!("{:?}", e)
+    };
+
+    match remove_column_from_table("functional_groups", column_to_remove) {
+        Ok(_) => (),
+        Err(e) => eprintln!("{:?}", e)
+    };
+    match remove_column_from_table("user_functional_groups", column_to_remove) {
+        Ok(_) => (),
+        Err(e) => eprintln!("{:?}", e)
+    };
+
+    match conn.execute(&format!("DELETE FROM functional_group_smarts WHERE name = '{}'", column_to_remove), []) {
+        Ok(_) => (),
+        Err(e) => eprintln!("{:?}", e)
+    };
 
     return 1;
 }
@@ -197,52 +218,47 @@ fn remove_row_from_table(rowid: usize, table_name: &str) -> usize {
     return 1;
 }
 
-fn remove_column_from_table(table_name: &str, column_to_remove: &str) -> Result<()> {
+
+fn remove_column_from_table(table_name: &str, column_to_drop: &str) -> Result<()> {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
-
-    // Get the column names
-    let mut stmt = conn.prepare("PRAGMA table_info(?1);")?;
-    let columns = stmt.query_map(params![table_name], |row| Ok(row.get::<_, String>(1)?))?;
-
-    // Filter out the column to remove and join the remaining columns
-    let filtered_columns: Vec<String> = columns
-        .filter_map(Result::ok)
-        .filter(|col| col != column_to_remove)
+    // Step 1: Fetch the column names
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({});", table_name))?;
+    let mut columns: Vec<String> = stmt
+        .query_map([], |row| row.get::<_, String>(1))? // Get column names
+        .filter_map(|res| res.ok()) // Ignore errors
+        .filter(|col| col != column_to_drop) // Exclude the column to drop
         .collect();
-    let column_list = filtered_columns.join(", ");
 
-    // Start a transaction
-    conn.execute("BEGIN TRANSACTION;", params![])?;
+    columns = columns
+        .iter()
+        .map(|item| format!("\"{}\"", item))
+        .collect();
 
-    // Create a temporary table
-    conn.execute(
-        &format!("CREATE TEMPORARY TABLE ?1_backup AS SELECT * FROM ?2 WHERE 1=0;"),
-        params![table_name, table_name],
-    )?;
+    // Step 2: Build a new table without the dropped column
+    let new_table_name = format!("{}_new", table_name);
+    let columns_list = columns.join(", "); // List of remaining columns
+    let create_new_table_sql = format!(
+        "CREATE TABLE {new_table} AS SELECT {columns} FROM {old_table};",
+        new_table = new_table_name,
+        columns = columns_list,
+        old_table = table_name
+    );
 
-    // Copy data to temporary table
-    conn.execute(
-        &format!(
-            "INSERT INTO bar_backup SELECT {} FROM {};",
-            column_list, table_name
-        ),
-        params![],
-    )?;
+    conn.execute(&create_new_table_sql, [])?;
 
-    // Drop the original table
-    conn.execute("DROP TABLE ?1;", params![table_name])?;
+    // Step 3: Drop the old table
+    conn.execute(&format!("DROP TABLE {};", table_name), [])?;
 
-    // Rename the temporary table
-    conn.execute(
-        "ALTER TABLE ?1_backup RENAME TO ?2;",
-        params![table_name, table_name],
-    )?;
+    // Step 4: Rename the new table to the original table name
+    conn.execute(&format!("ALTER TABLE {} RENAME TO {};", new_table_name, table_name), [])?;
 
-    // Commit the transaction
-    conn.execute("COMMIT;", params![])?;
-
+    println!(
+        "Successfully dropped column '{}' from table '{}'.",
+        column_to_drop, table_name
+    );
     Ok(())
 }
+
 
 fn ensure_id_column(conn: &Connection, table_name: &str) -> Result<()> {
     let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))?;
@@ -291,4 +307,27 @@ fn ensure_id_column(conn: &Connection, table_name: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+
+pub fn check_fg_duplicate(name: String) -> bool {
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+
+    // Function to check if a column exists in a table
+    fn column_exists(conn: &Connection, table_name: &str, column_name: String) -> Result<bool> {
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))?;
+        let column_names: Vec<String> = stmt
+            .query_map([], |row| row.get::<_, String>(1))? // Column 1 contains the column name
+            .filter_map(Result::ok)
+            .collect();
+        Ok(column_names.contains(&column_name.to_string()))
+    }
+    
+    // Example usage
+    if column_exists(&conn, "functional_groups", name).unwrap() {
+        return true;
+    } 
+    
+    return false;
+    
 }

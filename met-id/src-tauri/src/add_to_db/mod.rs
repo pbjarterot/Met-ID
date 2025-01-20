@@ -6,6 +6,7 @@ pub mod in_tissue;
 pub mod matrix;
 pub mod metabolite;
 pub mod msms;
+mod functional_group_server;
 
 use crate::add_to_db::functional_group::add_fg_to_db;
 use crate::add_to_db::metabolite::add_metabolite_to_db;
@@ -44,7 +45,7 @@ pub fn add_to_db_rust(
     endo_exo_or_other: HashMap<String, bool>,
     in_tissue: HashMap<String, bool>,
     _adducts: Vec<String>,
-    progress_sender: &mpsc::Sender<f32>,
+    progress_sender:std::sync::mpsc::Sender<f32> ,
 ) -> bool {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 

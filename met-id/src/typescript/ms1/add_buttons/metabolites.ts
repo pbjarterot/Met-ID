@@ -31,7 +31,7 @@ export async function addToHTML_Metabolite(table:string) {
 
 		table += `
 			<div class="ms1-slidein-spreadsheet-div" id="ms1-slidein-spreadsheet-div">
-			<h1> MS1 User Metabolites 
+			<h1> User metabolites 
 				<span class="ms1-slidein-table-h1-refresh-icon" id="ms1-slidein-table-h1-refresh">
 					<ion-icon name="refresh"></ion-icon>
 				</span>
@@ -56,7 +56,7 @@ export async function addToHTML_Metabolite(table:string) {
 				</div>
 			</div>
 			`;
-  return [checkboxes, table];
+	return [checkboxes, table];
 }
 
 interface USER_METABOLITES {
@@ -107,17 +107,17 @@ async function renderSmallItemsFor_UserMetabolites(ids: string[], names: string[
 			}
 			if (ids.length > 0) {
 				template.innerHTML = `<tr>
-																<td>${ids[i]}</td>
-																<td>${names[i]}</td>
-																<td>${smiless[i]}</td>
-																<td>${formulas[i]}</td>
-																<td>${mzs[i]}</td>
-																<td>
-																		<button class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
-																				<ion-icon name="trash-outline"></ion-icon>
-																		</button>
-																</td>
-														</tr>`;
+										<td>${ids[i]}</td>
+										<td>${names[i]}</td>
+										<td>${smiless[i]}</td>
+										<td>${formulas[i]}</td>
+										<td>${mzs[i]}</td>
+										<td>
+												<button class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
+														<ion-icon name="trash-outline"></ion-icon>
+												</button>
+										</td>
+									</tr>`;
 				const templateContent = template.content;
 				res_div.appendChild(templateContent);
                 rowIds.push(`ms1-slidein-table-trashbutton-${ids[i]}`)

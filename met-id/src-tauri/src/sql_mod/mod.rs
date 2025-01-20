@@ -24,7 +24,7 @@ use self::sql_handler::sql_handler;
 use self::tissues::get_tissues;
 use self::user_tables::{
     remove_row_from_user_matrices, remove_row_from_user_metabolites, remove_user_fgs,
-    update_user_fgs, update_user_matrices, update_user_metabolites,
+    update_user_fgs, update_user_matrices, update_user_metabolites, check_fg_duplicate,
 };
 
 use rusqlite::{Result, Row};
@@ -255,4 +255,9 @@ pub fn db_data_tauri(
 #[tauri::command]
 pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, usize, i64)> {
     db_ids_and_names(inputvalue)
+}
+
+#[tauri::command]
+pub fn check_fg_duplicate_tauri(name: String) -> bool {
+    check_fg_duplicate(name)
 }

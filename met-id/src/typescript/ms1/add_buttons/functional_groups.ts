@@ -14,12 +14,17 @@ let FgRefreshElement: HTMLSpanElement | null = null;
 
 listen('update-progress', (event: any) => {
 	const progress: number = event.payload;
-
 	const progressBarFill: HTMLElement | null = document.getElementById('round-progress-bar-add-fg');
 	if (progressBarFill) {
 			const progressString = progress.toString();//.toFixed(2);
 			progressBarFill.setAttribute('data-percent', progressString);
 			updateProgressBarFromDataPercent(); // Refresh the progress bar visually
+
+			if (progressString == "100")  {
+				let addbutton = document.getElementById("add-fg-to-db") as HTMLButtonElement;
+				addbutton.disabled = false;
+				console.log("Button re-enabled");
+			}
 	}
 });
 
@@ -78,45 +83,76 @@ function renderProgressBar(el: HTMLElement): void {
 }
 
 
-
-
 export function createAndAttachFg() {
-  FunctionalGroupListener = async () => {
-    let name = document.getElementById("add-name-to-db") as HTMLInputElement;
-    let smarts = document.getElementById("add-smarts-to-db") as HTMLInputElement;
-    //const smartsResult = await check_smarts(smarts!.value);
-    const smartsResult = true;
+	FunctionalGroupListener = async () => {
+		let name = document.getElementById("add-name-to-db") as HTMLInputElement;
+		let smarts = document.getElementById("add-smarts-to-db") as HTMLInputElement;
+		console.log("name:", name!.value);
 
-    const fgCheckboxObject = {}
+		let duplicate = await invoke("check_fg_duplicate_tauri", {name:name!.value});
+		console.log("duplicate: ", duplicate);
+		if (duplicate == true) {
+			console.log("found a duplicate")
+			alert(`${name!.value} already exists`)
+			return;
+		} 
+	
+		const smartsResult = true; // Assume validation is successful for simplicity
+	
+		const fgCheckboxObject: Record<string, boolean> = {};
+		const divElement = document.getElementById('add-to-database-checkboxes');
+	
+		if (divElement) {
+			const checkboxes = divElement.querySelectorAll('input[type=checkbox]');
+			checkboxes.forEach((checkbox) => {
+				const inputCheckbox = checkbox as HTMLInputElement;
+				fgCheckboxObject[inputCheckbox.id.replace("add-", "")] = inputCheckbox.checked;
+			});
+		}
+	
+		if (smartsResult) {
+			remove_warning_message();
+	
+			try {
+				// Disable the submit button
+				let addbutton = document.getElementById("add-fg-to-db") as HTMLButtonElement;
+				addbutton.disabled = true;
+				console.log("Button disabled");
+	
+				// Wait for the Rust function to complete
+				console.log("Starting Rust computation...");
+				const result = await add_to_db_rust(
+					name!.value,
+					smarts!.value,
+					"fg",
+					fgCheckboxObject,
+					{},
+					[]
+				);
+				console.log("Rust computation complete:", result);
+			} catch (error) {
+				console.error("Error during computation:", error);
+			} finally {
+				// Re-enable the submit button
+				//let addbutton = document.getElementById("add-fg-to-db") as HTMLButtonElement;
+				//addbutton.disabled = false;
+				//console.log("Button re-enabled");
+			}
+		} else {
+			add_warning_message("SMARTS");
+		}
+	};
+	
+	SubmitFgElement?.addEventListener("click", FunctionalGroupListener);
 
-    const divElement = document.getElementById('add-to-database-checkboxes');
-    if (divElement) {
-      const checkboxes = divElement.querySelectorAll('input[type=checkbox]');
-      checkboxes.forEach((checkbox) => {
-        const inputCheckbox = checkbox as HTMLInputElement;
-        fgCheckboxObject[inputCheckbox.id.replace("add-", "")] = inputCheckbox.checked
-        console.log(inputCheckbox.id, inputCheckbox.checked); // will be true or false
-      });
-    }
-
-    if (smartsResult) {
-      remove_warning_message();
-      add_to_db_rust(name!.value, smarts!.value, "fg", fgCheckboxObject, {}, [])
-    } else {
-      add_warning_message("SMARTS")
-    }
-
-  };
-  SubmitFgElement?.addEventListener("click", FunctionalGroupListener);
-
-  FunctionalGroupRefreshListener = async () => {
-    update_user_fgs()
-  }
-  FgRefreshElement?.addEventListener("click", FunctionalGroupRefreshListener);
+	FunctionalGroupRefreshListener = async () => {
+	update_user_fgs()
+	}
+	FgRefreshElement?.addEventListener("click", FunctionalGroupRefreshListener);
 }
 
 export function destroyAndDetachFg() {
-  if (FunctionalGroupListener) {
+	if (FunctionalGroupListener) {
 		SubmitFgElement!.removeEventListener("click", FunctionalGroupListener);
 		FunctionalGroupListener = null;
 	}
@@ -202,7 +238,7 @@ export async function addToHTML_FG(progressbar:string, table:string) {
 		</li>`;
 		table += `
 			<div class="ms1-slidein-spreadsheet-div" id="ms1-slidein-spreadsheet-div-fg">
-				<h1> MS1 User Functional groups 
+				<h1> User functional groups 
 					<span class="ms1-slidein-table-h1-refresh-icon" id="ms1-slidein-table-h1-refresh-fg">
 						<ion-icon name="refresh"></ion-icon>
 					</span>
@@ -214,7 +250,6 @@ export async function addToHTML_FG(progressbar:string, table:string) {
 								<th>ID</th>
 								<th>Name</th>
 								<th>SMARTS</th>
-								<th>Finished Processing?</th>
 								<!-- Add more column headers as needed -->
 							</tr>
 						</thead>
@@ -241,9 +276,8 @@ interface USER_FGS {
 
 export async function update_user_fgs() {
 	let fgs: USER_FGS = await invoke("update_user_fgs_tauri");
-	console.log("hello there")
 
-	await renderSmallItemsFor_UserFgs(fgs[0], fgs[1], fgs[2], fgs[3])
+	await renderSmallItemsFor_UserFgs(fgs[0], fgs[1], fgs[2])
 }
 
 
@@ -256,7 +290,7 @@ export async function remove_row_from_user_fgs(row_id: string, toremove:string) 
 }
 
 
-async function renderSmallItemsFor_UserFgs(ids: string[], names: string[], smarts: string[], finished: string[]) {
+async function renderSmallItemsFor_UserFgs(ids: string[], names: string[], smarts: string[]) {
 	console.log("rendering small fgs");
 	console.log(ids, names, smarts);
 	const res_div = document.getElementById("ms1-slidein-tbody") as HTMLTableElement;
@@ -280,16 +314,15 @@ async function renderSmallItemsFor_UserFgs(ids: string[], names: string[], smart
 			}
 			if (ids.length > 0) {
 				template.innerHTML = `<tr>
-																<td>${ids[i]}</td>
-																<td>${names[i]}</td>
-																<td>${smarts[i]}</td>
-																<td>${finished[i]}</td>
-																<td>
-																		<span class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
-																				<ion-icon name="trash-outline"></ion-icon>
-																		</span>
-																</td>
-															</tr>`;
+										<td>${ids[i]}</td>
+										<td>${names[i]}</td>
+										<td>${smarts[i]}</td>
+										<td>
+												<span class="ms1-slidein-table-trashbutton" id="ms1-slidein-table-trashbutton-${ids[i]}">
+														<ion-icon name="trash-outline"></ion-icon>
+												</span>
+										</td>
+									</tr>`;
 				const templateContent = template.content;
 				res_div.appendChild(templateContent);
                 rowIds.push(`ms1-slidein-table-trashbutton-${ids[i]}`)

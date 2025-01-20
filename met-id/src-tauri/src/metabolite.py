@@ -1,6 +1,8 @@
 import sys
-import json
-import struct
+import grpc
+import asyncio
+import streaming_pb2
+import streaming_pb2_grpc
 from rdkit import Chem
 
 def substruct_matches(smiles_strings, smarts_pattern):
@@ -16,31 +18,70 @@ def substruct_matches(smiles_strings, smarts_pattern):
         else:
             matches = len(input_mol.GetSubstructMatches(smarts_mol))
             results.append(matches)
+    #print("results:", results)
     return results
 
-def main():
-    # Read the length of the incoming data
-    length_data = sys.stdin.buffer.read(4)
-    length = struct.unpack('I', length_data)[0]
 
-    # Read the actual data
-    input_data = sys.stdin.buffer.read(length)
+async def perform_computation(smiles, smarts):
+    """Simulates a time-consuming computation."""
+    #print(f"Starting computation for: {message}")
+    #print("smarts: ", smarts, "smiles:", smiles)
+    result = substruct_matches(smiles, smarts)
+    #await asyncio.sleep(0.1)  # Simulate computation delay
+
+    #print(f"Finished computation for: {result}")
+    return ", ".join(str(x) for x in result)
+
+async def stream_batched_messages(stub, smarts):
     
-    # Deserialize the JSON to a list of strings
-    data = json.loads(input_data)
-    #print(f"Child received data length: {len(data)}")
+    async def request_stream():
+        rcvd = 1
+        done = 1
 
-    # Process the data to integers
-    result = substruct_matches(data[1:], data[0])  # Example: convert strings to their lengths
+        while True:
+            # Wait for the server's response
+            #print("Waiting for server response...")
+            received = await responses_queue.get()
+            if received is None:
+                #print("No more messages to process. Ending stream.")
+                break
 
-    # Serialize the result to JSON
-    result_json = json.dumps(result)
-    result_bytes = result_json.encode()
+            #print(f"Received from server: {received.messages}")
 
-    # Send the length of the result followed by the actual result
-    sys.stdout.buffer.write(struct.pack('I', len(result_bytes)))
-    sys.stdout.buffer.write(result_bytes)
-    sys.stdout.buffer.flush()
+            # If server sends "stop", send a stop response and break
+            if "stop" in received.messages:
+                #print("Received stop signal from server. Sending stop response...")
+                yield streaming_pb2.MessageBatch(messages=["stop"])
+                break
 
-if __name__ == "__main__":
-    main()
+            # Perform computation and send back the result
+            #for message in received.messages:
+            print("received: ", rcvd)
+            rcvd += 1
+            result = await perform_computation(received.messages, smarts)  # Compute the result
+            print("sent: ", done)
+            done += 1
+            #print(f"Sending result back to server: {result}")
+            yield streaming_pb2.MessageBatch(messages=[result])
+
+    responses_queue = asyncio.Queue()
+
+    #print("Starting bidirectional streaming...")
+    try:
+        async for response in stub.StreamBatchedMessages(request_stream()):
+            await responses_queue.put(response)
+    except grpc.aio.AioRpcError as e:
+        print(f"gRPC error: {e}")
+    finally:
+        await responses_queue.put(None)
+        #print("Stream completed.")
+
+async def main(smarts):
+    async with grpc.aio.insecure_channel('localhost:50051') as channel:
+        stub = streaming_pb2_grpc.StreamingServiceStub(channel)
+        #print("Client started.")
+        await stream_batched_messages(stub, smarts)
+
+if __name__ == '__main__':
+    smarts = sys.argv[1]
+    asyncio.run(main(smarts))

@@ -1,4 +1,3 @@
-
 use crate::database_setup::get_connection;
 use fuzzy_matcher::{clangd::ClangdMatcher, FuzzyMatcher};
 use std::collections::HashMap;

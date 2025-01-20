@@ -29,6 +29,7 @@ use std::path::PathBuf;
 use tauri::AppHandle;
 
 pub static MSMSPATH: OnceCell<String> = OnceCell::new();
+pub static MSDBPATH: OnceCell<String> = OnceCell::new();
 
 pub static APP_HANDLE: OnceCell<AppHandle> = OnceCell::new();
 fn set_app_handle(handle: AppHandle) {
@@ -62,6 +63,7 @@ pub fn run() {
     }));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             set_app_handle(app.handle().clone());
@@ -76,6 +78,11 @@ pub fn run() {
             MSMSPATH
                 .set(msms_db_path.to_string_lossy().to_string())
                 .expect("Failed to set MSMS DB PATH");
+            /* 
+            MSDBPATH
+                .set(db_path.clone().to_string_lossy().to_string())
+                .expect("Failed to set MS Db Path");
+            */
             //let _python_path: PathBuf = install_helper_functions::ensure_python_in_appdata(&app, "");
             /*
             let binary_path = match std::env::consts::OS {
@@ -152,9 +159,11 @@ pub fn run() {
             sql_mod::update_user_fgs_tauri,
             sql_mod::db_data_tauri,
             sql_mod::db_ids_and_names_tauri,
+            sql_mod::check_fg_duplicate_tauri,
             regression::mass_error_regression,
             is_backend_ready
         ])
+        .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

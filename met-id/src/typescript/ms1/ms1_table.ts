@@ -27,9 +27,13 @@ export function createTableRowHTML(input_mz: number): string {
 
 function appendToMSTable() {
     let input_mass_element = document.getElementById("add-to-ms1-table-input") as HTMLInputElement;
-    let input_mass = input_mass_element!.value
+    let input_mass = parseFloat(input_mass_element!.value)
+    if (Number.isNaN(input_mass)) {
+      alert("Input is not a Number")
+      return;
+    }
 
-    table_body!.innerHTML += createTableRowHTML(parseFloat(input_mass))
+    table_body!.innerHTML += createTableRowHTML(input_mass)
 }
 
 function deleteRows() {

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package streaming;
+
+service StreamingService {
+  rpc StreamBatchedMessages(stream MessageBatch) returns (stream MessageBatch);
+}
+
+service StreamingAnswers {
+  rpc StreamAnswer(stream MessageBatch) returns (stream MessageBatch);
+}
+
+message MessageBatch {
+  repeated string messages = 1;
+}
