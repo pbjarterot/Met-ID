@@ -25,14 +25,12 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "args": false,
-          "cmd": "",
+          "args": true,
           "name": "pyinstaller/dist/metabolite",
           "sidecar": true
         },
         {
-          "args": false,
-          "cmd": "",
+          "args": true,
           "name": "pyinstaller/dist/metabolite_for_db",
           "sidecar": true
         }
@@ -44,6 +42,11 @@
     "dialog:allow-message",
     "dialog:allow-ask",
     "dialog:allow-confirm",
-    "fs:default"
+    "fs:default",
+    "fs:allow-write",
+    "fs:allow-read",
+    "fs:allow-read-file",
+    "shell:default",
+    "shell:default"
   ]
 }

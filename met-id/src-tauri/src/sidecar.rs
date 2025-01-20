@@ -1,14 +1,15 @@
 use serde::Serialize;
 use std::fmt;
+use std::sync::mpsc;
 use tauri_plugin_shell::process::CommandEvent;
 //use tauri::api::process::{Command, CommandEvent};
+use crate::get_app_handle;
 use bincode::{deserialize, serialize};
 use serde_json::to_vec;
 use std::io::{Read, Write};
 use std::process::Stdio;
 use tauri_plugin_shell::ShellExt;
-
-use crate::get_app_handle;
+use tauri::{Emitter, Window};
 
 // Custom error type
 #[derive(Debug, Serialize)]
@@ -63,7 +64,7 @@ pub fn sidecar_function2(
     _sidecar_name: String,
     sidecar_arguments: Vec<String>,
 ) -> std::io::Result<Vec<i32>> {
-    println!("here");
+    println!("here in sidecar function2");
     // Generate a large vector of strings
     let _binary_path = match std::env::consts::OS {
         "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
@@ -75,17 +76,15 @@ pub fn sidecar_function2(
         "linux" => "metabolite_for_db-x86_64-unknown-linux-gnu",
         _ => "",
     };
-    //let data: Vec<String> = (0..100_000).map(|i| format!("string_{}", i)).collect();
-    let data_bytes = to_vec(&sidecar_arguments).unwrap(); // Serialize the vector to JSON
+    println!("bin_path: {:?}", _binary_path);
+    let data_bytes: Vec<u8> = to_vec(&sidecar_arguments).unwrap(); // Serialize the vector to JSON
 
     // Create a length-prefixed message
     let length = data_bytes.len() as u32;
     let length_bytes = serialize(&length).unwrap();
 
-    println!("env: {:?}", std::env::current_dir());
-
     // Spawn the child process
-    let mut child =
+    let mut child: std::process::Child =
         std::process::Command::new("./pyinstaller/dist/metabolite-x86_64-pc-windows-msvc.exe")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -110,17 +109,54 @@ pub fn sidecar_function2(
 
     // Deserialize the received JSON to a vector of integers
     let received_data: Vec<i32> = serde_json::from_slice(&buffer).unwrap();
-    println!(
-        "Received data length: {}\nData: {:?}",
-        received_data.len(),
-        received_data
-    );
+    println!("Received data length: {}", received_data.len());
 
     // Wait for the child process to exit
     child.wait()?;
 
     Ok(received_data)
 }
+
+pub fn sidecar_function3(
+    app: &tauri::AppHandle,
+    progress_sender: std::sync::mpsc::Sender<f32>,
+    sidecar_arguments: Vec<String>,
+) -> std::io::Result<()> {
+    println!("Spawning sidecar...");
+
+    let sidecar_command = app
+        .shell()
+        .sidecar("metabolite")
+        .unwrap()
+        .args(sidecar_arguments);
+
+    let (mut rx, _child) = sidecar_command.spawn().unwrap();
+
+    tauri::async_runtime::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(line_bytes) => {
+                    let line = String::from_utf8_lossy(&line_bytes);
+                    println!("Output: {}", line);
+
+                    if let Err(e) = progress_sender.send(100.0) {
+                        eprintln!("Failed to send progress: {}", e);
+                    }
+                }
+                CommandEvent::Stderr(line_bytes) => {
+                    let line = String::from_utf8_lossy(&line_bytes);
+                    eprintln!("Error: {}", line);
+                }
+                _ => {}
+            }
+        }
+
+        println!("Sidecar finished processing.");
+    });
+
+    Ok(())
+}
+
 
 /*
 pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<String> {
@@ -177,3 +213,4 @@ pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -
     Ok("".to_string())
 }
 */
+

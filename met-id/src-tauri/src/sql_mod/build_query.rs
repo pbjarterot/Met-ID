@@ -55,8 +55,15 @@ fn table_exists(tx: &rusqlite::Transaction<'_>) -> Result<usize> {
 }
 
 pub fn check_temp_tables() {
-    let mut conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
-        get_connection().unwrap();
+    let mut conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
+
+    check_if_table_exists("metabolites", "user_metabolites").unwrap();
+    check_if_table_exists("derivatized_by", "user_derivatized_by").unwrap();
+    check_if_table_exists("endogeneity", "user_endogeneity").unwrap();
+    check_if_table_exists("in_tissue", "user_in_tissue").unwrap();
+    check_if_table_exists("db_accessions", "user_db_accessions").unwrap();
+    check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
+    check_if_table_exists("adducts", "user_adducts").unwrap();
 
     let tx: rusqlite::Transaction<'_> = conn.transaction().unwrap();
     match table_exists(&tx) {

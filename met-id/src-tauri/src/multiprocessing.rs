@@ -18,7 +18,9 @@ pub struct MyCommandArgs {
 #[tauri::command]
 pub fn my_command(window: Window, args: MyCommandArgs) {
     let (tx, rx) = mpsc::channel();
+    let tx_clone = tx.clone();
     thread::spawn(move || {
+        tx.send(1 as f32).unwrap();
         add_to_db_rust(
             args.name,
             args.smilesSmartsMz,
@@ -26,10 +28,10 @@ pub fn my_command(window: Window, args: MyCommandArgs) {
             args.endoExoOrOther,
             args.inTissue,
             args.adducts,
-            &tx,
+            tx,
         );
         // Signal completion using -1.0 as the sentinel value
-        tx.send(-1.0).unwrap();
+        tx_clone.send(-1.0).unwrap();
     });
 
     // Spawn a new thread for listening to progress updates

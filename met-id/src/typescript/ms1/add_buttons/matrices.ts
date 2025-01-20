@@ -198,7 +198,7 @@ export async function addToHTML_Matrix(adducts:string, table:string) {
 
 		table += `
 			<div class="ms1-slidein-spreadsheet-div" id="ms1-slidein-spreadsheet-div-matrix">
-				<h1> MS1 User Matrices 
+				<h1> User matrices 
 					<span class="ms1-slidein-table-h1-refresh-icon" id="ms1-slidein-table-h1-refresh-matrix">
 						<ion-icon name="refresh"></ion-icon>
 					</span>

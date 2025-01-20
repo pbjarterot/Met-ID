@@ -12,7 +12,6 @@ import { add_matrix } from './add_buttons/matrices';
 import { add_functional_group } from "./add_buttons/functional_groups";
 
 
-
 window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ms1-sidebar-add-metabolite")!.addEventListener("click", async () => add_metabolite());
     document.getElementById("ms1-sidebar-add-matrix")!.addEventListener("click", async () => add_matrix());
@@ -47,10 +46,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     addSearchbarListener();
 })
-
-
-
-
 
 async function check_options_for_sql_counter() {
     fill_under_dropdown.metabolites("metabolome-dropdown", "metabolome-checkbox-container")

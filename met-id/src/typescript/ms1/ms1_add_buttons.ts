@@ -120,11 +120,11 @@ export async function addToHTML(submit_id: string, add_term: string, inputs: str
 			
 			<li>
 				<div class="grid grid-2">
-					<button class="btn-grid" type="submit" id="${submit_id}" enabled>
+					<button class="btn-grid" type="submit" id="${submit_id}">
 						<span class="back">
 							<img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/email-icon.svg" alt="">
 						</span>
-						<span class="front">SUBMIT</span>
+						<span class="front">Add to Database</span>
 					</button>
 					<button class="btn-grid" type="reset" disabled>
 						<span class="back">
