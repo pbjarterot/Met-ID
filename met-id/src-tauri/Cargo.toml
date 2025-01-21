@@ -55,7 +55,6 @@ tokio-stream = "0.1.17"
 tonic = "0.12.3"
 protobuf = "3.7.1"
 prost = "0.13"
-protoc-bin = "2.26.0"
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
 
 [features]
