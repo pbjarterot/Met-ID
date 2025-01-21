@@ -41,6 +41,7 @@ jobs:
           pip install pyinstaller
           pip install grpcio
           pip install grpcio_tools
+          pip install protobuf
 
       - name: Install proto
         run: |
