@@ -103,8 +103,12 @@ jobs:
           # Add your upload commands here
 
 
-      - name: install frontend dependencies
+      - name: Install Frontend Dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
+        working-directory: met-id
+
+      - name: Build Frontend
+        run: npm run build
         working-directory: met-id
 
 
