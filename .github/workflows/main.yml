@@ -26,7 +26,7 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y glib-2.0 gobject-2.0 gio-2.0 libglib2.0-dev pkg-config libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler
+          sudo apt-get install -y glib-2.0 gobject-2.0 gio-2.0 libglib2.0-dev pkg-config libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler
           npm install @types/jquery --save-dev
       - name: check pkg-config
         if: matrix.platform == 'ubuntu-latest'
