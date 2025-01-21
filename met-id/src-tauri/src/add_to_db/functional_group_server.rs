@@ -46,7 +46,8 @@ fn get_smiles_from_db() -> Vec<Vec<String>> {
 }
 
 pub mod streaming {
-    tonic::include_proto!("streaming");
+    //tonic::include_proto!("./streaming");
+    include!("streaming.rs");
 }
 
 #[derive(Debug)]
