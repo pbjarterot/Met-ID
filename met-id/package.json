@@ -17,8 +17,8 @@
     "decimal.js": "^10.4.3",
     "html2canvas": "^1.4.1",
     "normalize.css": "^8.0.1",
-    "npm": "^10.9.2",
-    "puppeteer": "^23.10.4",
+    "npm": "11.0.0",
+    "puppeteer": "24.1.0",
     "regression": "^2.0.1",
     "smiles-drawer": "^2.1.7",
     "tauri-plugin-sql-api": "github:tauri-apps/tauri-plugin-sql"
@@ -26,14 +26,14 @@
   "devDependencies": {
     "@babel/core": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
-    "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/cli": "^2.1.0",
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/cli": "^2.2.5",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-fs": "^2.2.0",
     "@tauri-apps/plugin-sql": "^2.2.0",
     "@types/jest": "^29.5.8",
     "@types/jquery": "^3.5.16",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.10.7",
     "babel-jest": "^29.7.0",
     "gulp": "^5.0.0",
     "gulp-cli": "^3.0.0",
@@ -41,8 +41,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
     "webpack": "^5.97.1"
   }
 }

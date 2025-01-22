@@ -1,15 +1,9 @@
+use log::warn;
 use serde::Serialize;
 use std::fmt;
-use std::sync::mpsc;
 use tauri_plugin_shell::process::CommandEvent;
-//use tauri::api::process::{Command, CommandEvent};
 use crate::get_app_handle;
-use bincode::{deserialize, serialize};
-use serde_json::to_vec;
-use std::io::{Read, Write};
-use std::process::Stdio;
 use tauri_plugin_shell::ShellExt;
-use tauri::{Emitter, Window};
 
 // Custom error type
 #[derive(Debug, Serialize)]
@@ -59,64 +53,6 @@ pub fn sidecar_function(
     Ok(output)
 }
 
-#[tauri::command]
-pub fn sidecar_function2(
-    _sidecar_name: String,
-    sidecar_arguments: Vec<String>,
-) -> std::io::Result<Vec<i32>> {
-    println!("here in sidecar function2");
-    // Generate a large vector of strings
-    let _binary_path = match std::env::consts::OS {
-        "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
-        "macos" => match std::env::consts::ARCH {
-            "x86_64" => "metabolite_for_db-x86_64-apple-darwin",
-            "aarch64" => "metabolite_for_db-aarch64-apple-darwin",
-            _ => "",
-        },
-        "linux" => "metabolite_for_db-x86_64-unknown-linux-gnu",
-        _ => "",
-    };
-    println!("bin_path: {:?}", _binary_path);
-    let data_bytes: Vec<u8> = to_vec(&sidecar_arguments).unwrap(); // Serialize the vector to JSON
-
-    // Create a length-prefixed message
-    let length = data_bytes.len() as u32;
-    let length_bytes = serialize(&length).unwrap();
-
-    // Spawn the child process
-    let mut child: std::process::Child =
-        std::process::Command::new("./pyinstaller/dist/metabolite-x86_64-pc-windows-msvc.exe")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()?;
-
-    {
-        // Get a handle to the child's stdin
-        let stdin = child.stdin.as_mut().unwrap();
-        // Write the length and data to the child's stdin
-        stdin.write_all(&length_bytes)?;
-        stdin.write_all(&data_bytes)?;
-    }
-
-    // Get a handle to the child's stdout
-    let stdout = child.stdout.as_mut().unwrap();
-    let mut length_buffer = [0u8; 4];
-    stdout.read_exact(&mut length_buffer)?;
-    let output_length: u32 = deserialize(&length_buffer).unwrap();
-
-    let mut buffer = vec![0u8; output_length as usize];
-    stdout.read_exact(&mut buffer)?;
-
-    // Deserialize the received JSON to a vector of integers
-    let received_data: Vec<i32> = serde_json::from_slice(&buffer).unwrap();
-    println!("Received data length: {}", received_data.len());
-
-    // Wait for the child process to exit
-    child.wait()?;
-
-    Ok(received_data)
-}
-
 pub fn sidecar_function3(
     app: &tauri::AppHandle,
     progress_sender: std::sync::mpsc::Sender<f32>,
@@ -141,11 +77,13 @@ pub fn sidecar_function3(
 
                     if let Err(e) = progress_sender.send(100.0) {
                         eprintln!("Failed to send progress: {}", e);
+                        warn!("Failed to send progress: {}", e);
                     }
                 }
                 CommandEvent::Stderr(line_bytes) => {
                     let line = String::from_utf8_lossy(&line_bytes);
                     eprintln!("Error: {}", line);
+                    warn!("Error: {}", line);
                 }
                 _ => {}
             }
@@ -157,60 +95,4 @@ pub fn sidecar_function3(
     Ok(())
 }
 
-
-/*
-pub fn sidecar_function2(sidecar_name: String, sidecar_arguments: Vec<String>) -> std::io::Result<String> {
-    // Serialize the vector to JSON
-    let data_bytes = to_vec(&sidecar_arguments).unwrap();
-
-    // Create a length-prefixed message
-    let length = data_bytes.len() as u32;
-    let length_bytes = serialize(&length).unwrap();
-
-    // Get the current directory
-    println!("env: {:?}", std::env::current_dir());
-
-    // Execute the sidecar command
-    let sidecar_command = Command::new_sidecar(&sidecar_name)?;
-
-    // Spawn the child process
-    let (mut rx, mut stdin, mut stdout) = sidecar_command
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-
-    // Write the length and data to the child's stdin
-    if let Some(mut stdin) = stdin {
-        stdin.write_all(&length_bytes)?;
-        stdin.write_all(&data_bytes)?;
-    }
-
-    // Read the output from the child's stdout
-    if let Some(mut stdout) = stdout {
-        let mut length_buffer = [0u8; 4];
-        stdout.read_exact(&mut length_buffer)?;
-        let output_length: u32 = deserialize(&length_buffer).unwrap();
-
-        let mut buffer = vec![0u8; output_length as usize];
-        stdout.read_exact(&mut buffer)?;
-
-        // Deserialize the received JSON to a vector of integers
-        let received_data: Vec<i32> = serde_json::from_slice(&buffer).unwrap();
-        println!("Received data length: {}\nData: {:?}", received_data.len(), received_data);
-    }
-
-    // Handle the events from the command execution
-    while let Some(event) = rx.blocking_recv() {
-        match event {
-            CommandEvent::Stderr(line) => eprintln!("stderr: {}", line),
-            CommandEvent::Stdout(line) => println!("stdout: {}", line),
-            CommandEvent::Error(e) => return Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
-            CommandEvent::Terminated(_) => break,
-            _ => todo!(),
-        }
-    }
-
-    Ok("".to_string())
-}
-*/
 

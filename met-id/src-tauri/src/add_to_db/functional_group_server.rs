@@ -1,11 +1,12 @@
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
-use tonic::{transport::Server, Response, Status};
-use tokio_stream::wrappers::ReceiverStream;
+use tonic::{transport::Server, Status, Response};
 use tokio::sync::{mpsc, Mutex};
 use streaming::streaming_service_server::{StreamingService, StreamingServiceServer};
 use streaming::MessageBatch;
 use std::sync::Arc;
+use log::{warn, info};
+use tokio_stream::wrappers::ReceiverStream;
 
 use crate::sidecar::sidecar_function3;
 use crate::get_app_handle;
@@ -94,10 +95,12 @@ impl StreamingService for MyStreamingService {
                 };
 
                 println!("Sending message to client: {:?}", sent_count);
+                info!("Sending message to client: {:?}", sent_count);
                 sent_count = sent_count + 1;
                 progress_sender.send(((sent_count as f32) / 220.0 ) * 50.0 ).unwrap();
                 if let Err(e) = tx.send(Ok(message_batch)).await {
                     eprintln!("Failed to send message: {}", e);
+                    warn!("Failed to send message: {}", e);
                     return;
                 }
 
@@ -110,8 +113,10 @@ impl StreamingService for MyStreamingService {
             };
 
             println!("Sending stop message to client: {:?}", stop_message);
+            info!("Sending stop message to client: {:?}", stop_message);
             if let Err(e) = tx.send(Ok(stop_message)).await {
                 eprintln!("Failed to send stop message: {}", e);
+                warn!("Failed to send stop message: {}", e);
                 return;
             }
 
@@ -122,6 +127,7 @@ impl StreamingService for MyStreamingService {
 
                 if batch.messages.contains(&"stop".to_string()) {
                     println!("Received stop confirmation from client. Shutting down...");
+                    info!("Received stop confirmation from client. Shutting down...");
                     let mut shutdown_tx = shutdown_tx.lock().await;
                     if let Some(tx) = shutdown_tx.take() {
                         let _ = tx.send(()); // Trigger the shutdown signal
@@ -141,6 +147,7 @@ impl StreamingService for MyStreamingService {
 
                         if idx == 0 {
                             println!("message: {:?}, idx: {:?}", message, new_idx);
+                            info!("message: {:?}, idx: {:?}", message, new_idx);
                         }
                         
                     }
@@ -151,6 +158,8 @@ impl StreamingService for MyStreamingService {
             }
             println!("sent: {:?}, received: {:?}", sent_count, received_count);
             println!("Stream handling completed.");
+            info!("sent: {:?}, received: {:?}", sent_count, received_count);
+            info!("Stream handling completed.");
         });
         Ok(Response::new(ReceiverStream::new(rx)))
     }
@@ -169,8 +178,10 @@ pub async fn functional_group_server(progress_sender: std::sync::mpsc::Sender<f3
         progress_sender: progress_sender.clone(),
     };
     println!("table_name: {:?}, column_name: {:?}", table_name, column_name);
+    info!("Table name: {:?}, column name: {:?}", table_name, column_name);
 
     println!("Server listening on {}", addr);
+    info!("Server listening on {}", addr);
     let sidecar_arguments: Vec<String> = vec![smarts];
 
 
@@ -186,5 +197,6 @@ pub async fn functional_group_server(progress_sender: std::sync::mpsc::Sender<f3
         .await?;
     
     println!("Server has shut down gracefully.");
+    info!("Server has shut down gracefully.");
     Ok(())
 }
