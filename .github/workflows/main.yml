@@ -46,6 +46,7 @@ jobs:
           pip install grpcio
           pip install grpcio_tools
           pip install protobuf
+          pip install rdkit
 
       - name: Install proto
         run: |
