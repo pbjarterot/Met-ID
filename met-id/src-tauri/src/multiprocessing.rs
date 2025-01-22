@@ -2,6 +2,7 @@ use crate::add_to_db::add_to_db_rust;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
+use log::warn;
 use tauri::{Emitter, Window};
 
 #[derive(serde::Deserialize)]
@@ -50,6 +51,7 @@ pub fn my_command(window: Window, args: MyCommandArgs) {
                 }
                 Err(e) => {
                     eprintln!("Error receiving progress: {}", e);
+                    warn!("error receiving progress: {}", e);
                     break;
                 }
             }

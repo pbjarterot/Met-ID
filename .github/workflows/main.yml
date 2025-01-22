@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-20.04] #[macos-latest, ubuntu-20.04, windows-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -19,16 +19,16 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-20.04'
+      - name: install dependencies (Linux)
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler
-          npm install @types/jquery --save-dev
+          sudo apt-get install -y webkit2gtk-4.1 javascriptcoregtk-4.1 libsoup-3.0 glib-2.0 gobject-2.0 gio-2.0 libglib2.0-dev pkg-config libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler
 
+          npm install @types/jquery --save-dev
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -41,12 +41,18 @@ jobs:
           pip install pyinstaller
           pip install grpcio
           pip install grpcio_tools
+          pip install protobuf
+          pip install rdkit
 
       - name: Install proto
         run: |
-          python -m grpc_tools.protoc -I src --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
-        working-directory: met-id/src-tauri/src/add-to-db
-      
+          python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
+        working-directory: met-id/src-tauri/src
+
+      - name: List directories
+        run: |
+          ls -R
+        working-directory: met-id/src-tauri/src
 
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
@@ -64,7 +70,7 @@ jobs:
         shell: bash
 
       - name: Use Pyinstaller (Linux)
-        if: matrix.platform == 'ubuntu-20.04'
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           chmod +x make_linux_executables.sh
           ./make_linux_executables.sh
@@ -97,11 +103,9 @@ jobs:
         run: |
           # Add your upload commands here
 
-
-      - name: install frontend dependencies
+      - name: Install Frontend Dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
-
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -113,8 +117,9 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: Met-ID-v0.1.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Met-ID v0.1.0'
+          tagName: Met-ID-v0.3.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Met-ID v0.3.0'
           releaseBody: 'See the assets to download this version and install.'
+          projectPath: ./met-id
           releaseDraft: false
           prerelease: false

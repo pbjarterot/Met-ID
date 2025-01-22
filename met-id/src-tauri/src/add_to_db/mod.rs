@@ -14,7 +14,7 @@ use crate::add_to_db::metabolite::add_metabolite_to_db;
 use crate::database_setup::get_connection;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::Result;
-use std::{collections::HashMap, sync::mpsc};
+use std::collections::HashMap;
 
 fn get_hashmap_from_table(
     conn: &r2d2::PooledConnection<SqliteConnectionManager>,
@@ -51,7 +51,12 @@ pub fn add_to_db_rust(
 
     match &met_type[..] {
         "metabolite" => {
-            add_metabolite_to_db(conn, name, smiles_smarts_mz, in_tissue, endo_exo_or_other)
+            add_metabolite_to_db(
+                conn, 
+                name, 
+                smiles_smarts_mz, 
+                in_tissue, 
+                endo_exo_or_other)
         }
         "fg" => add_fg_to_db(
             conn,
