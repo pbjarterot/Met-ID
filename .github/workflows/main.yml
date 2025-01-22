@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest] #[macos-latest, ubuntu-latest, windows-latest]
+        platform: [macos-latest] #[macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -102,15 +102,9 @@ jobs:
         run: |
           # Add your upload commands here
 
-
       - name: Install Frontend Dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
-
-      - name: Build Frontend
-        run: npm run tauri build
-        working-directory: met-id
-
 
       - uses: tauri-apps/tauri-action@v0
         env:
