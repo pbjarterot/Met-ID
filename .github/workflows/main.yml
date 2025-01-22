@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
+        platform: [macos-latest] #[macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -46,11 +46,6 @@ jobs:
       - name: Install proto
         run: |
           python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
-        working-directory: met-id/src-tauri/src
-
-      - name: List directories
-        run: |
-          ls -R
         working-directory: met-id/src-tauri/src
 
       - name: Use Pyinstaller (Windows)
