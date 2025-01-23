@@ -98,14 +98,6 @@ jobs:
 
           # Skip signing the `src-tauri` directory (do not attempt to sign it)
           
-      - name: Notarize MacOS Application
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-        run: |
-          xcrun altool --notarize-app -f met-id/src-tauri/pyinstaller/dist.zip --primary-bundle-id com.example.met-id --username "${APPLE_ID}" --password "${APPLE_PASSWORD}" --team-id ${{ secrets.APPLE_TEAM_ID }}
-          xcrun stapler staple met-id/src-tauri/pyinstaller/dist
 
 
       - name: Upload Bin
