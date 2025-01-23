@@ -90,15 +90,14 @@ jobs:
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
-          # Sign all binary files produced by sidecar
+          # Sign all binary files produced by PyInstaller
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-          
-          # Verify signatures
+
+          # Verify signatures of the signed binaries
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
 
-          # Sign the entire app
-          codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp ./met-id/src-tauri
-
+          # Skip signing the `src-tauri` directory (do not attempt to sign it)
+          
       - name: Notarize MacOS Application
         if: matrix.platform == 'macos-latest'
         env:
