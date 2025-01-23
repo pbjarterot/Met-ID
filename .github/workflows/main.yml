@@ -90,8 +90,24 @@ jobs:
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
+          # Sign all binary files produced by sidecar
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-      
+          
+          # Verify signatures
+          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
+
+          # Sign the entire app
+          codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp ./met-id/src-tauri
+
+      - name: Notarize MacOS Application
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          xcrun altool --notarize-app -f met-id/src-tauri/pyinstaller/dist.zip --primary-bundle-id com.example.met-id --username "${APPLE_ID}" --password "${APPLE_PASSWORD}" --team-id ${{ secrets.APPLE_TEAM_ID }}
+          xcrun stapler staple met-id/src-tauri/pyinstaller/dist
+
 
       - name: Upload Bin
         run: |
