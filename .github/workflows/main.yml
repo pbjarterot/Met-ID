@@ -98,6 +98,24 @@ jobs:
         run: |
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
       
+      - name: Re-sign Python Shared Library
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          # Locate and re-sign the Python shared library
+          find met-id/src-tauri/pyinstaller/dist -type f -name "libpython*.dylib" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
+
+      
+      - name: Re-sign Python Interpreter
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          # Locate and re-sign the Python interpreter
+          find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
+
+
 
       - name: Upload Bin
         run: |
