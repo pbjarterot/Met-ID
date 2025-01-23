@@ -71,7 +71,6 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
     
-
       - name: Import Apple Certificate (MacOS)
         if: matrix.platform == 'macos-latest'
         env:
