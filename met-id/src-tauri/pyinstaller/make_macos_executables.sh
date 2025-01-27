@@ -4,7 +4,8 @@
 set -e
 
 # Developer ID Application Certificate
-DEVELOPER_ID="Developer ID Application: Your Name (TEAM_ID)"
+DEVELOPER_ID= ${DEVELOPER_ID:-"Developer ID Application: Unknown"}
+TEAM_ID= ${TEAM_ID:-"UnknownTeamID"}  
 
 # Paths
 OUTPUT_DIR="dist"

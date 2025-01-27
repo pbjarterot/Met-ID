@@ -63,6 +63,9 @@ jobs:
 
       - name: Use Pyinstaller (MacOS)
         if: matrix.platform == 'macos-latest'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
