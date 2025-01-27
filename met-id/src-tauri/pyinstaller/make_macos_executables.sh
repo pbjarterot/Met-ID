@@ -4,8 +4,8 @@
 set -e
 
 # Read Developer ID and Team ID from environment variables
-DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application: Unknown}"
-TEAM_ID="${TEAM_ID:-UnknownTeamID}"
+APPLE_DEVELOPER_ID="${APPLE_DEVELOPER_ID:-Developer ID Application: Unknown}"
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-UnknownTeamID}"
 
 # Paths
 OUTPUT_DIR="dist"
@@ -29,7 +29,7 @@ pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-x86_64-ap
 pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-aarch64-apple-darwin
 
 # Code signing and verification for each binary
-echo "Signing binaries with Developer ID: $DEVELOPER_ID and Team ID: $TEAM_ID..."
+echo "Signing binaries with Developer ID: $APPLE_DEVELOPER_ID and Team ID: $APPLE_TEAM_ID..."
 for BINARY in $OUTPUT_DIR/*; do
   echo "Signing $BINARY..."
   
@@ -37,7 +37,7 @@ for BINARY in $OUTPUT_DIR/*; do
   security find-identity -v -p codesigning
   
   # Attempt signing with verbose output
-  codesign --deep --force --verify --verbose --sign "$DEVELOPER_ID" "$BINARY"
+  codesign --deep --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" "$BINARY"
   
   # Verify the signature
   codesign --verify --verbose "$BINARY"

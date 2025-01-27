@@ -53,6 +53,19 @@ jobs:
         run: |
           ls -R
         working-directory: met-id/src-tauri/src
+        
+      - name: Import Apple Certificate (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
@@ -64,8 +77,8 @@ jobs:
       - name: Use Pyinstaller (MacOS)
         if: matrix.platform == 'macos-latest'
         env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
@@ -81,18 +94,7 @@ jobs:
         shell: bash
     
 
-      - name: Import Apple Certificate (MacOS)
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+      
 
       - name: Sign MacOS Binaries
         if: matrix.platform == 'macos-latest'
