@@ -23,6 +23,7 @@ Files to install Met-ID are located on the right hand side under "Releases" or c
 To install Met-ID on Windows, download the .msi file found in releases and follow the instructions.
 
 ### MacOS
+There are currently some issues with adding functional groups on MacOS. I am working on it as fast as I can.
 To install Met-ID on MacOS, download the .dmg file found in releases and follow the instructions.
 
 ### Linux (Debian systems, e.g. Ubuntu)
