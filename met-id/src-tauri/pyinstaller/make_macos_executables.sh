@@ -3,9 +3,9 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Developer ID Application Certificate
-DEVELOPER_ID= ${DEVELOPER_ID:-"Developer ID Application: Unknown"}
-TEAM_ID= ${TEAM_ID:-"UnknownTeamID"}  
+# Read Developer ID and Team ID from environment variables
+DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application: Unknown}"
+TEAM_ID="${TEAM_ID:-UnknownTeamID}"
 
 # Paths
 OUTPUT_DIR="dist"
@@ -29,7 +29,7 @@ pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-x86_64-ap
 pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-aarch64-apple-darwin
 
 # Code signing and verification for each binary
-echo "Signing binaries..."
+echo "Signing binaries with Developer ID: $DEVELOPER_ID and Team ID: $TEAM_ID..."
 for BINARY in $OUTPUT_DIR/*; do
   echo "Signing $BINARY..."
   codesign --deep --force --verify --verbose --sign "$DEVELOPER_ID" "$BINARY"
