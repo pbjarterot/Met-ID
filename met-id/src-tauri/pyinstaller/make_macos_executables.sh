@@ -32,10 +32,18 @@ pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-aarch64-a
 echo "Signing binaries with Developer ID: $DEVELOPER_ID and Team ID: $TEAM_ID..."
 for BINARY in $OUTPUT_DIR/*; do
   echo "Signing $BINARY..."
+  
+  # Test if the certificate is accessible
+  security find-identity -v -p codesigning
+  
+  # Attempt signing with verbose output
   codesign --deep --force --verify --verbose --sign "$DEVELOPER_ID" "$BINARY"
+  
+  # Verify the signature
   codesign --verify --verbose "$BINARY"
   spctl -a -t exec -vv "$BINARY"
 done
+
 
 # Zip all binaries for distribution
 echo "Creating zip files for distribution..."
