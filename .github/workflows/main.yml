@@ -113,7 +113,7 @@ jobs:
         run: |
           # Locate and re-sign the Python interpreter
           find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-
+          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
 
 
       - name: Upload Bin
