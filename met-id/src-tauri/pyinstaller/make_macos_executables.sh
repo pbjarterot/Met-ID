@@ -54,6 +54,9 @@ cd ..
 echo "Submitting zip file for notarization..."
 xcrun notarytool submit dist/metabolite-aarch64-apple-darwin.zip --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
 
+echo "Verifying Notarization"
+xcrun notarytool history --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE"
+
 # Staple notarization ticket
 echo "Stapling notarization ticket..."
 xcrun stapler staple dist/metabolite-aarch64-apple-darwin
