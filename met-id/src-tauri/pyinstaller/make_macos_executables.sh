@@ -13,11 +13,13 @@ APPLE_PASSWORD="${APPLE_PASSWORD:-}"
 OUTPUT_DIR="dist"
 BUILD_DIR="build"
 
-# Unlock the keychain
+# Unlock keychain and ensure Developer ID is available
 echo "Unlocking keychain..."
 security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" ~/Library/Keychains/login.keychain-db
 security list-keychains -s ~/Library/Keychains/login.keychain-db
 security default-keychain -s ~/Library/Keychains/login.keychain-db
+
+
 
 # Cleanup previous builds
 if [ -d "$OUTPUT_DIR" ]; then
@@ -33,13 +35,12 @@ pip install --upgrade pyinstaller
 # Build executables for both architectures
 pyinstaller ../src/metabolite.py --onefile -n metabolite-aarch64-apple-darwin
 
-# Code signing
 echo "Signing binaries with Developer ID: $APPLE_DEVELOPER_ID..."
 for BINARY in $OUTPUT_DIR/*; do
   echo "Signing $BINARY..."
   codesign --deep --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" "$BINARY"
-  codesign --verify --verbose "$BINARY"
 done
+
 
 # Notarization
 echo "Submitting binary for notarization..."
