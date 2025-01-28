@@ -39,20 +39,28 @@ for BINARY in $OUTPUT_DIR/*; do
   codesign --verify --verbose "$BINARY"
 done
 
-# Notarization
-echo "Submitting binary for notarization..."
+# Create a zip archive of the binary
+echo "Creating a zip file for notarization..."
 for BINARY in $OUTPUT_DIR/*; do
-  xcrun notarytool submit "$BINARY" --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
+  zip "${BINARY}.zip" "$BINARY"
+done
+
+# Notarization
+echo "Submitting zip file for notarization..."
+for ZIPFILE in $OUTPUT_DIR/*.zip; do
+  xcrun notarytool submit "$ZIPFILE" --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
 done
 
 # Staple notarization ticket
 echo "Stapling notarization ticket..."
 for BINARY in $OUTPUT_DIR/*; do
-  xcrun stapler staple "$BINARY"
+  if [[ "$BINARY" != *.zip ]]; then
+    xcrun stapler staple "$BINARY"
+  fi
 done
 
 # Zip all binaries for distribution
-echo "Creating zip files for distribution..."
+echo "Creating final zip file for distribution..."
 cd $OUTPUT_DIR
 zip -r metabolite-macos.zip metabolite-*
 
