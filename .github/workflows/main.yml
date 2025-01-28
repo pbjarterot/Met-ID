@@ -55,6 +55,7 @@ jobs:
         working-directory: met-id/src-tauri/src
 
       - name: Import Apple Developer Certificate
+        if: matrix.platform == 'macos-latest'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -67,6 +68,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
       
       - name: Debug Keychain
+        if: matrix.platform == 'macos-latest'
         run: |
           echo "Listing keychains..."
           security list-keychains
@@ -74,8 +76,9 @@ jobs:
           security default-keychain
           echo "Valid identities:"
           security find-identity -p codesigning -v
-          
+
       - name: Configure Notarytool Credentials
+        if: matrix.platform == 'macos-latest'
         env:
           NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
           NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}

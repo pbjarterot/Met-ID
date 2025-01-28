@@ -29,37 +29,36 @@ fi
 pip install --upgrade pyinstaller
 
 # Build executables
+echo "Building the executable..."
 pyinstaller ../src/metabolite.py --onefile -n metabolite-aarch64-apple-darwin
 
-# Sign binaries
-echo "Signing binaries with Developer ID: $APPLE_DEVELOPER_ID..."
-for BINARY in $OUTPUT_DIR/*; do
-  echo "Signing $BINARY..."
-  codesign --deep --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" "$BINARY"
-  codesign --verify --verbose "$BINARY"
-done
+# Sign the main binary
+echo "Signing the main binary with Developer ID: $APPLE_DEVELOPER_ID..."
+codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" dist/metabolite-aarch64-apple-darwin
+
+# Re-sign all embedded components
+echo "Re-signing all embedded components..."
+find dist/metabolite-aarch64-apple-darwin -type f -exec codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" {} \;
+
+# Verify the entire binary
+echo "Verifying the signed binary..."
+codesign --verify --deep --verbose dist/metabolite-aarch64-apple-darwin
 
 # Create a zip file for notarization
 echo "Creating zip file for notarization..."
-for BINARY in $OUTPUT_DIR/*; do
-  zip "${BINARY}.zip" "$BINARY"
-done
+cd dist
+zip metabolite-aarch64-apple-darwin.zip metabolite-aarch64-apple-darwin
+cd ..
 
 # Notarization
 echo "Submitting zip file for notarization..."
-for ZIPFILE in $OUTPUT_DIR/*.zip; do
-  echo "Submitting $ZIPFILE..."
-  xcrun notarytool submit "$ZIPFILE" --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
-done
+xcrun notarytool submit dist/metabolite-aarch64-apple-darwin.zip --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
 
-# Validate stapling
+# Staple notarization ticket
 echo "Stapling notarization ticket..."
-for BINARY in $OUTPUT_DIR/*; do
-  if [[ "$BINARY" != *.zip ]]; then
-    echo "Stapling $BINARY..."
-    xcrun stapler staple "$BINARY"
-    xcrun stapler validate "$BINARY"
-  fi
-done
+xcrun stapler staple dist/metabolite-aarch64-apple-darwin
 
-echo "Build, signing, and packaging complete."
+# Verify stapling
+xcrun stapler validate dist/metabolite-aarch64-apple-darwin
+
+echo "Build, signing, notarization, and stapling completed successfully."
