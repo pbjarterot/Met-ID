@@ -53,7 +53,7 @@ jobs:
         run: |
           ls -R
         working-directory: met-id/src-tauri/src
-        
+
       - name: Import Apple Certificate (MacOS)
         if: matrix.platform == 'macos-latest'
         env:
@@ -79,6 +79,9 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
         run: |
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
@@ -120,6 +123,20 @@ jobs:
           find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
 
+      - name: Notarize MacOS Binary
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          echo "Submitting binary for notarization..."
+          xcrun altool --notarize-app \
+            --primary-bundle-id "com.farmbio.metid" \
+            --username "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --file dist/metabolite-aarch64-apple-darwin
+      
+          echo "Stapling notarization ticket..."
+          xcrun stapler staple dist/metabolite-aarch64-apple-darwin
 
       - name: Upload Bin
         run: |
