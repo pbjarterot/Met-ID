@@ -74,6 +74,18 @@ jobs:
           security default-keychain
           echo "Valid identities:"
           security find-identity -p codesigning -v
+          
+      - name: Configure Notarytool Credentials
+        env:
+          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
+          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
+          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
+        run: |
+          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
+          xcrun notarytool store-credentials "AC_API" \
+            --key AuthKey.p8 \
+            --key-id "$NOTARYTOOL_KEY_ID" \
+            --issuer "$NOTARYTOOL_ISSUER_ID"
         
 
       - name: Use Pyinstaller (Windows)
@@ -132,17 +144,7 @@ jobs:
           find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
 
-      - name: Configure Notarytool Credentials
-        env:
-          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
-          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
-          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
-        run: |
-          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
-          xcrun notarytool store-credentials "AC_API" \
-            --key AuthKey.p8 \
-            --key-id "$NOTARYTOOL_KEY_ID" \
-            --issuer "$NOTARYTOOL_ISSUER_ID"
+      
 
             
       - name: Notarize MacOS Binary
