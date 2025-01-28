@@ -32,13 +32,13 @@ pip install --upgrade pyinstaller
 echo "Building the executable..."
 pyinstaller ../src/metabolite.py --onefile -n metabolite-aarch64-apple-darwin
 
-# Sign the main binary
-echo "Signing the main binary with Developer ID: $APPLE_DEVELOPER_ID..."
-codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" dist/metabolite-aarch64-apple-darwin
+# Sign the main binary with hardened runtime enabled
+echo "Signing the main binary with Developer ID and Hardened Runtime enabled..."
+codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" --options runtime dist/metabolite-aarch64-apple-darwin
 
 # Re-sign all embedded components
 echo "Re-signing all embedded components..."
-find dist/metabolite-aarch64-apple-darwin -type f -exec codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" {} \;
+find dist/metabolite-aarch64-apple-darwin -type f -exec codesign --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" --options runtime {} \;
 
 # Verify the entire binary
 echo "Verifying the signed binary..."
@@ -50,17 +50,9 @@ cd dist
 zip metabolite-aarch64-apple-darwin.zip metabolite-aarch64-apple-darwin
 cd ..
 
-#Verification
-echo "Verifying signature"
-codesign --verify --deep --verbose dist/metabolite-aarch64-apple-darwin
-codesign -d --verbose=4 dist/metabolite-aarch64-apple-darwin
-
-# Notarization
+# Submit for notarization
 echo "Submitting zip file for notarization..."
 xcrun notarytool submit dist/metabolite-aarch64-apple-darwin.zip --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
-
-echo "Verifying Notarization"
-xcrun notarytool history --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE"
 
 # Staple notarization ticket
 echo "Stapling notarization ticket..."
