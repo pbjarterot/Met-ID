@@ -50,6 +50,11 @@ cd dist
 zip metabolite-aarch64-apple-darwin.zip metabolite-aarch64-apple-darwin
 cd ..
 
+#Verification
+echo "Verifying signature"
+codesign --verify --deep --verbose dist/metabolite-aarch64-apple-darwin
+codesign -d --verbose=4 dist/metabolite-aarch64-apple-darwin
+
 # Notarization
 echo "Submitting zip file for notarization..."
 xcrun notarytool submit dist/metabolite-aarch64-apple-darwin.zip --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
