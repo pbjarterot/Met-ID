@@ -66,6 +66,19 @@ jobs:
           security unlock-keychain -p "" build.keychain
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+      - name: Fetch Notarization Logs
+        env:
+          SUBMISSION_ID: ${{ secrets.SUBMISSION_ID }}
+          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
+          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
+          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
+        run: |
+          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
+          xcrun notarytool store-credentials "AC_API" \
+            --key AuthKey.p8 \
+            --key-id "$NOTARYTOOL_KEY_ID" \
+            --issuer "$NOTARYTOOL_ISSUER_ID"
+          xcrun notarytool log "$SUBMISSION_ID" --keychain-profile "AC_API"
       
       - name: Debug Keychain
         if: matrix.platform == 'macos-latest'
