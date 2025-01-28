@@ -59,6 +59,7 @@ xcrun notarytool submit dist/metabolite-aarch64-apple-darwin.zip --keychain-prof
 
 # Staple notarization ticket
 echo "Stapling notarization ticket..."
+shasum -a 256 dist/metabolite-aarch64-apple-darwin
 xcrun stapler staple dist/metabolite-aarch64-apple-darwin
 
 # Verify stapling
