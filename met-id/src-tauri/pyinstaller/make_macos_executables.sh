@@ -45,7 +45,7 @@ done
 echo "Submitting binary for notarization..."
 for BINARY in $OUTPUT_DIR/*; do
   xcrun altool --notarize-app \
-    --primary-bundle-id "com.example.metabolite" \
+    --primary-bundle-id "com.farmbio.metid" \
     --username "$APPLE_ID" \
     --password "$APPLE_PASSWORD" \
     --file "$BINARY"

@@ -54,8 +54,7 @@ jobs:
           ls -R
         working-directory: met-id/src-tauri/src
 
-      - name: Import Apple Certificate (MacOS)
-        if: matrix.platform == 'macos-latest'
+      - name: Import Apple Developer Certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -66,7 +65,12 @@ jobs:
           security unlock-keychain -p "" build.keychain
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-
+      
+      - name: Debug Keychain
+        run: |
+          security list-keychains
+          security find-identity -v -p codesigning
+          
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
