@@ -68,9 +68,14 @@ jobs:
       
       - name: Debug Keychain
         run: |
+          echo "Listing keychains..."
           security list-keychains
-          security find-identity -v -p codesigning
-          
+          echo "Default keychain:"
+          security default-keychain
+          echo "Valid identities:"
+          security find-identity -p codesigning -v
+        
+
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
@@ -83,7 +88,7 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
         run: |

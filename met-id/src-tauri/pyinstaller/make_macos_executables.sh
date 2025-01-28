@@ -4,7 +4,7 @@
 set -e
 
 # Developer ID and Apple credentials
-APPLE_DEVELOPER_ID="${APPLE_DEVELOPER_ID:-Developer ID Application: Your Name (APPLE_TEAM_ID)}"
+APPLE_DEVELOPER_ID="${APPLE_DEVELOPER_ID:-Developer ID Application: Your Name (TEAM_ID)}"
 APPLE_KEYCHAIN_PASSWORD="${APPLE_KEYCHAIN_PASSWORD:-}"
 APPLE_ID="${APPLE_ID:-}"
 APPLE_PASSWORD="${APPLE_PASSWORD:-}"
@@ -13,13 +13,11 @@ APPLE_PASSWORD="${APPLE_PASSWORD:-}"
 OUTPUT_DIR="dist"
 BUILD_DIR="build"
 
-# Unlock keychain and ensure Developer ID is available
+# Unlock and set the keychain
 echo "Unlocking keychain..."
-security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" ~/Library/Keychains/login.keychain-db
-security list-keychains -s ~/Library/Keychains/login.keychain-db
-security default-keychain -s ~/Library/Keychains/login.keychain-db
-
-
+security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" ~/Library/Keychains/build.keychain-db
+security list-keychains -s ~/Library/Keychains/build.keychain-db
+security default-keychain -s ~/Library/Keychains/build.keychain-db
 
 # Cleanup previous builds
 if [ -d "$OUTPUT_DIR" ]; then
@@ -35,12 +33,13 @@ pip install --upgrade pyinstaller
 # Build executables for both architectures
 pyinstaller ../src/metabolite.py --onefile -n metabolite-aarch64-apple-darwin
 
+# Sign binaries
 echo "Signing binaries with Developer ID: $APPLE_DEVELOPER_ID..."
 for BINARY in $OUTPUT_DIR/*; do
   echo "Signing $BINARY..."
   codesign --deep --force --verify --verbose --sign "$APPLE_DEVELOPER_ID" "$BINARY"
+  codesign --verify --verbose "$BINARY"
 done
-
 
 # Notarization
 echo "Submitting binary for notarization..."
