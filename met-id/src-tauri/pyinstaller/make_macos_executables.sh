@@ -5,9 +5,7 @@ set -e
 
 # Developer ID and Apple credentials
 APPLE_DEVELOPER_ID="${APPLE_DEVELOPER_ID:-Developer ID Application: Your Name (TEAM_ID)}"
-APPLE_KEYCHAIN_PASSWORD="${APPLE_KEYCHAIN_PASSWORD:-}"
-APPLE_ID="${APPLE_ID:-}"
-APPLE_PASSWORD="${APPLE_PASSWORD:-}"
+NOTARYTOOL_KEYCHAIN_PROFILE="AC_API"
 
 # Paths
 OUTPUT_DIR="dist"
@@ -44,13 +42,12 @@ done
 # Notarization
 echo "Submitting binary for notarization..."
 for BINARY in $OUTPUT_DIR/*; do
-  xcrun altool --notarize-app \
-    --primary-bundle-id "com.farmbio.metid" \
-    --username "$APPLE_ID" \
-    --password "$APPLE_PASSWORD" \
-    --file "$BINARY"
+  xcrun notarytool submit "$BINARY" --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
+done
 
-  echo "Stapling notarization ticket..."
+# Staple notarization ticket
+echo "Stapling notarization ticket..."
+for BINARY in $OUTPUT_DIR/*; do
   xcrun stapler staple "$BINARY"
 done
 

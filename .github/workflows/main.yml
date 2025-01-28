@@ -132,20 +132,35 @@ jobs:
           find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
 
-      - name: Notarize MacOS Binary
+      - name: Configure Notarytool Credentials
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
+          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
+          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
         run: |
-          echo "Submitting binary for notarization..."
-          xcrun altool --notarize-app \
-            --primary-bundle-id "com.farmbio.metid" \
-            --username "$APPLE_ID" \
-            --password "$APPLE_PASSWORD" \
-            --file dist/metabolite-aarch64-apple-darwin
-      
-          echo "Stapling notarization ticket..."
-          xcrun stapler staple dist/metabolite-aarch64-apple-darwin
+          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
+          xcrun notarytool store-credentials "AC_API" \
+            --key AuthKey.p8 \
+            --key-id "$NOTARYTOOL_KEY_ID" \
+            --issuer "$NOTARYTOOL_ISSUER_ID"
+
+            
+      - name: Notarize MacOS Binary
+        run: |
+          for BINARY in dist/*; do
+            echo "Submitting $BINARY for notarization..."
+            xcrun notarytool submit "$BINARY" --keychain-profile "AC_API" --wait
+          done
+
+      - name: Staple Notarization Ticket
+        run: |
+          for BINARY in dist/*; do
+            echo "Stapling notarization ticket for $BINARY..."
+            xcrun stapler staple "$BINARY"
+          done
+        
+          
+
 
       - name: Upload Bin
         run: |
