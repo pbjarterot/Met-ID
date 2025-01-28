@@ -28,7 +28,7 @@ fi
 # Ensure PyInstaller is installed
 pip install --upgrade pyinstaller
 
-# Build executables for both architectures
+# Build executables
 pyinstaller ../src/metabolite.py --onefile -n metabolite-aarch64-apple-darwin
 
 # Sign binaries
@@ -39,8 +39,8 @@ for BINARY in $OUTPUT_DIR/*; do
   codesign --verify --verbose "$BINARY"
 done
 
-# Create a zip archive of the binary
-echo "Creating a zip file for notarization..."
+# Create a zip file for notarization
+echo "Creating zip file for notarization..."
 for BINARY in $OUTPUT_DIR/*; do
   zip "${BINARY}.zip" "$BINARY"
 done
@@ -48,20 +48,18 @@ done
 # Notarization
 echo "Submitting zip file for notarization..."
 for ZIPFILE in $OUTPUT_DIR/*.zip; do
+  echo "Submitting $ZIPFILE..."
   xcrun notarytool submit "$ZIPFILE" --keychain-profile "$NOTARYTOOL_KEYCHAIN_PROFILE" --wait
 done
 
-# Staple notarization ticket
+# Validate stapling
 echo "Stapling notarization ticket..."
 for BINARY in $OUTPUT_DIR/*; do
   if [[ "$BINARY" != *.zip ]]; then
+    echo "Stapling $BINARY..."
     xcrun stapler staple "$BINARY"
+    xcrun stapler validate "$BINARY"
   fi
 done
 
-# Zip all binaries for distribution
-echo "Creating final zip file for distribution..."
-cd $OUTPUT_DIR
-zip -r metabolite-macos.zip metabolite-*
-
-echo "Build, signing, and packaging complete. Files available in 'dist/'"
+echo "Build, signing, and packaging complete."
