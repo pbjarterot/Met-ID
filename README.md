@@ -36,7 +36,9 @@ To report any issue with the software, please use the "Issues" tab above.
 To discuss anything regarding the software, please use the "Discussions" tab above.
 
 ## Preprint / Paper
-Coming soon...
+Preprint:
+
+https://www.biorxiv.org/content/10.1101/2025.01.24.634674v1
 
 ## Platforms 
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://www.linux.org/)
