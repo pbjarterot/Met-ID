@@ -106,7 +106,7 @@ impl StreamingService for MyStreamingService {
                     let transaction = conn.transaction().unwrap();
 
                     for (idx, message) in batch.messages[0].split(", ").enumerate() {
-                        let new_idx: usize = (received_count* 1_000) + idx;
+                        let new_idx: usize = (received_count* 1_000) + idx + 1;
                         
                         
                         transaction.execute(
