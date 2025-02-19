@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest] #[macos-latest, ubuntu-latest, windows-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -89,7 +89,7 @@ jobs:
           security unlock-keychain -p "" build.keychain
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-          
+
       - name: Sign MacOS Binaries
         if: matrix.platform == 'macos-latest'
         env:
@@ -97,7 +97,6 @@ jobs:
         run: |
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
       
-
       - name: Upload Bin
         run: |
           # Add your upload commands here
