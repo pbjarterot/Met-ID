@@ -10,15 +10,15 @@ use std::iter::repeat;
 use super::get_table_column_names;
 
 
-//functional_groups adder for unix
-#[cfg(target_family = "unix")]
+//functional_groups adder for MacOS
+#[cfg(target_os = "macos")]
 fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()> {
-    use crate::add_to_db::functional_group_unix::functional_group_unix;
-    functional_group_unix(progress_sender, smarts, table, name.clone())
+    use crate::add_to_db::functional_group_macos::functional_group_macos;
+    functional_group_macos(progress_sender, smarts, table, name.clone())
 }
 
-//functional_groups adder for windows
-#[cfg(target_family = "windows")]
+//functional_groups adder for windows, linux
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()>{
     functional_group_server(progress_sender, smarts, table, name.clone()).unwrap();
     Ok(())

@@ -73,7 +73,7 @@ jobs:
         shell: bash
 
       - name: Install rdkit (MacOS)
-        if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest'
+        if: matrix.platform == 'macos-latest'
         run: |
           brew install rdkit
 
@@ -115,8 +115,8 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: Met-ID-v0.3.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Met-ID v0.3.0'
+          tagName: Met-ID-v0.4.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Met-ID v0.4.0'
           releaseBody: 'See the assets to download this version and install.'
           projectPath: ./met-id
           releaseDraft: false

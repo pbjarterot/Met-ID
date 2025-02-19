@@ -7,7 +7,7 @@ pub mod matrix;
 pub mod metabolite;
 pub mod msms;
 mod functional_group_server;
-pub mod functional_group_unix;
+pub mod functional_group_macos;
 
 use crate::add_to_db::functional_group::add_fg_to_db;
 use crate::add_to_db::metabolite::add_metabolite_to_db;

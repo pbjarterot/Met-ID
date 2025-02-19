@@ -1,6 +1,6 @@
 [package]
 name = "Met-ID"
-version = "0.0.5"
+version = "0.4.0"
 description = "A Tauri App"
 authors = ["you"]
 license = "CC BY-NC"
@@ -58,7 +58,7 @@ prost = "0.13"
 
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
 
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(macos)'.dependencies]
 rdkit = "0.4.11"
 
 

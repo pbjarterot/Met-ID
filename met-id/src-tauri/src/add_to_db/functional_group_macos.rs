@@ -1,6 +1,6 @@
 use rusqlite::{params, Result};
-#[cfg(target_family = "unix")]
-pub fn functional_group_unix(
+#[cfg(target_os = "macos")]
+pub fn functional_group_macos(
     progress_sender: std::sync::mpsc::Sender<f32>, 
     smarts: String, 
     table_name: String, 
