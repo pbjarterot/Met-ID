@@ -56,10 +56,27 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: pwsh
 
-      - name: Install rdkit (Unix)
+      - name: Use Pyinstaller (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+      - name: Use Pyinstaller (Linux)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          chmod +x make_linux_executables.sh
+          ./make_linux_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+      - name: Install rdkit (MacOS)
         if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest'
         run: |
           brew install rdkit
+
           
 
 
