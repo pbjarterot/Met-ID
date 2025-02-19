@@ -77,6 +77,27 @@ jobs:
         run: |
           brew install rdkit
 
+      - name: Import Apple Certificate (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          
+      - name: Sign MacOS Binaries
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
+      
+
       - name: Upload Bin
         run: |
           # Add your upload commands here
