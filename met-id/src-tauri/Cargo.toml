@@ -58,7 +58,7 @@ prost = "0.13"
 
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
 
-[target.family.unix.dependencies]
+[target.'cfg(unix)'.dependencies]
 rdkit = "0.4.11"
 
 

@@ -27,7 +27,7 @@
     "@babel/core": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
     "@tauri-apps/api": "^2.2.0",
-    "@tauri-apps/cli": "^2.2.5",
+    "@tauri-apps/cli": "^2.2.7",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-fs": "^2.2.0",
     "@tauri-apps/plugin-sql": "^2.2.0",
