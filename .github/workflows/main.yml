@@ -77,9 +77,6 @@ jobs:
         run: |
           brew install rdkit
 
-          
-
-
       - name: Upload Bin
         run: |
           # Add your upload commands here
