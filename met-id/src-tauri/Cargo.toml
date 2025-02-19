@@ -55,8 +55,12 @@ tokio-stream = "0.1.17"
 tonic = "0.12.3"
 protobuf = "3.7.1"
 prost = "0.13"
-rdkit = "0.4.11"
+
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
+
+[target.family.unix.dependencies]
+rdkit = "0.4.11"
+
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

@@ -1,5 +1,4 @@
 use crate::add_to_db::functional_group_server::functional_group_server;
-use crate::add_to_db::functional_group_unix::functional_group_unix;
 use crate::database_setup::get_connection;
 use crate::sql_mod::table::check_if_table_exists;
 
@@ -14,14 +13,15 @@ use super::get_table_column_names;
 //functional_groups adder for unix
 #[cfg(target_family = "unix")]
 fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()> {
+    use crate::add_to_db::functional_group_unix::functional_group_unix;
     functional_group_unix(progress_sender, smarts, table, name.clone())
 }
 
 //functional_groups adder for windows
 #[cfg(target_family = "windows")]
-
 fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()>{
-    functional_group_server(progress_sender, smarts, table, name.clone())
+    functional_group_server(progress_sender, smarts, table, name.clone()).unwrap();
+    Ok(())
 }
 
 
