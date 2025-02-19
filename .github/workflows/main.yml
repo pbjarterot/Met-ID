@@ -56,6 +56,13 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: pwsh
 
+      - name: Install rdkit (Unix)
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-latest'
+        run: |
+          brew install rdkit
+          
+
+
       - name: Upload Bin
         run: |
           # Add your upload commands here
