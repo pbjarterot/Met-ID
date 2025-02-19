@@ -1,4 +1,5 @@
 use crate::add_to_db::functional_group_server::functional_group_server;
+use crate::add_to_db::functional_group_unix::functional_group_unix;
 use crate::database_setup::get_connection;
 use crate::sql_mod::table::check_if_table_exists;
 
@@ -8,6 +9,21 @@ use std::collections::HashMap;
 use std::iter::repeat;
 
 use super::get_table_column_names;
+
+
+//functional_groups adder for unix
+#[cfg(target_family = "unix")]
+fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()> {
+    functional_group_unix(progress_sender, smarts, table, name.clone())
+}
+
+//functional_groups adder for windows
+#[cfg(target_family = "windows")]
+
+fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()>{
+    functional_group_server(progress_sender, smarts, table, name.clone())
+}
+
 
 
 pub fn add_fg_to_db(
@@ -43,7 +59,7 @@ pub fn add_fg_to_db(
     )
     .unwrap();
 
-    functional_group_server(progress_sender, smarts.clone(), "functional_groups".to_string(), name.clone()).unwrap();
+    functional_group_target(progress_sender, smarts.clone(), "functional_groups".to_string(), name.clone()).unwrap();
 
     //update functional_groups & user_functional_groups
     // Add the new column (as before)
@@ -135,4 +151,38 @@ pub fn fill_user_functional_groups(
     let values: Vec<&dyn ToSql> = data.iter().map(|(_, value)| value as &dyn ToSql).collect();
 
     conn.execute(&sql, values.as_slice()).unwrap();
+}
+
+pub fn get_smiles_from_db() -> Vec<Vec<String>> {
+    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+    const BATCH_SIZE: usize = 1_000;
+
+    let mode: String = conn
+        .query_row("PRAGMA journal_mode=WAL;", [], |row| row.get(0))
+        .unwrap();
+
+    assert_eq!(mode, "wal");
+
+    let mut select_stmt = conn
+        .prepare(&format!("SELECT smiles FROM metabolites", ))
+        .unwrap();
+
+    //let total_rows = select_stmt.query_map([], |_row| Ok(())).unwrap().count();
+    //let mut processed_rows = 0;
+
+    let mut smiles_vec = Vec::new();
+
+    for row in select_stmt
+        .query_map([], |row| {
+            let smiles: String = row.get(0)?;
+            Ok(smiles)
+        })
+        .unwrap()
+        {
+            let smiles = row.unwrap();
+            smiles_vec.push(smiles);
+        };
+
+    smiles_vec.chunks(BATCH_SIZE).map(|chunk| chunk.to_vec()).collect()
+
 }

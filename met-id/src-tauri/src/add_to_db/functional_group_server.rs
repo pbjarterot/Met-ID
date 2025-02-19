@@ -11,40 +11,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use crate::sidecar::sidecar_function3;
 use crate::get_app_handle;
 use crate::database_setup::get_connection;
+use crate::add_to_db::functional_group::get_smiles_from_db;
 
-fn get_smiles_from_db() -> Vec<Vec<String>> {
-    let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
-    const BATCH_SIZE: usize = 1_000;
-
-    let mode: String = conn
-        .query_row("PRAGMA journal_mode=WAL;", [], |row| row.get(0))
-        .unwrap();
-
-    assert_eq!(mode, "wal");
-
-    let mut select_stmt = conn
-        .prepare(&format!("SELECT smiles FROM metabolites", ))
-        .unwrap();
-
-    //let total_rows = select_stmt.query_map([], |_row| Ok(())).unwrap().count();
-    //let mut processed_rows = 0;
-
-    let mut smiles_vec = Vec::new();
-
-    for row in select_stmt
-        .query_map([], |row| {
-            let smiles: String = row.get(0)?;
-            Ok(smiles)
-        })
-        .unwrap()
-        {
-            let smiles = row.unwrap();
-            smiles_vec.push(smiles);
-        };
-
-    smiles_vec.chunks(BATCH_SIZE).map(|chunk| chunk.to_vec()).collect()
-
-}
 
 pub mod streaming {
     //tonic::include_proto!("./streaming");
