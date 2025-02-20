@@ -7,6 +7,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "externalBin": [
       "pyinstaller/dist/metabolite",
       "pyinstaller/dist/metabolite_for_db"
@@ -28,7 +29,17 @@
   "mainBinaryName": "Met-ID",
   "version": "0.4.0",
   "identifier": "com.farmbio.metid",
-  "plugins": {},
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM1MUQxQUVFQkZFQ0VBNDQKUldSRTZ1eS83aG9kTldBaG1hQWY5Q0g4NCtWZDlyY0xKcWd4VjFPTjFNaEIzUmVKTEVFTE9TQTAK",
+      "endpoints": [
+        "https://github.com/pbjarterot/Met-ID/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "app": {
     "windows": [
       {

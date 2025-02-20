@@ -23,8 +23,8 @@ use self::mtx_dropdown::matrix_dropdown;
 use self::sql_handler::sql_handler;
 use self::tissues::get_tissues;
 use self::user_tables::{
-    remove_row_from_user_matrices, remove_row_from_user_metabolites, remove_user_fgs,
-    update_user_fgs, update_user_matrices, update_user_metabolites, check_fg_duplicate,
+    check_fg_duplicate, remove_row_from_user_matrices, remove_row_from_user_metabolites,
+    remove_user_fgs, update_user_fgs, update_user_matrices, update_user_metabolites,
 };
 
 use rusqlite::{Result, Row};

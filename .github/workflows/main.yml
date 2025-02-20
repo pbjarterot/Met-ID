@@ -114,9 +114,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: Met-ID-v0.4.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Met-ID v0.4.0'
+          tagName: Met-ID-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Met-ID v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           projectPath: ./met-id
           releaseDraft: false

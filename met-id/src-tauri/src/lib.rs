@@ -63,6 +63,7 @@ pub fn run() {
     }));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
@@ -78,7 +79,7 @@ pub fn run() {
             MSMSPATH
                 .set(msms_db_path.to_string_lossy().to_string())
                 .expect("Failed to set MSMS DB PATH");
-            /* 
+            /*
             MSDBPATH
                 .set(db_path.clone().to_string_lossy().to_string())
                 .expect("Failed to set MS Db Path");
