@@ -27,6 +27,7 @@ use std::env;
 use std::panic;
 use std::path::PathBuf;
 use tauri::AppHandle;
+use tauri_plugin_updater::UpdaterExt;
 
 pub static MSMSPATH: OnceCell<String> = OnceCell::new();
 pub static MSDBPATH: OnceCell<String> = OnceCell::new();
@@ -49,6 +50,31 @@ fn is_backend_ready() -> bool {
     database_setup::MSMS_POOL.get().is_some() && database_setup::POOL.get().is_some()
 }
 
+async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+    if let Some(update) = app.updater()?.check().await? {
+        let mut downloaded = 0;
+
+        // alternatively we could also call update.download() and update.install() separately
+        update
+        .download_and_install(
+            |chunk_length, content_length| {
+            downloaded += chunk_length;
+            println!("downloaded {downloaded} from {content_length:?}");
+            },
+            || {
+            println!("download finished");
+            },
+        )
+        .await?;
+
+        println!("update installed");
+        app.restart();
+    }
+
+    Ok(())
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize logger
@@ -67,7 +93,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                update(handle).await.unwrap();
+            });
+            
             set_app_handle(app.handle().clone());
+
+            
             //let splashscreen_window: Window = app.get_window("splashscreen").unwrap();
             //let main_window: Window = app.get_window("main").unwrap();
 
@@ -79,29 +112,6 @@ pub fn run() {
             MSMSPATH
                 .set(msms_db_path.to_string_lossy().to_string())
                 .expect("Failed to set MSMS DB PATH");
-            /*
-            MSDBPATH
-                .set(db_path.clone().to_string_lossy().to_string())
-                .expect("Failed to set MS Db Path");
-            */
-            //let _python_path: PathBuf = install_helper_functions::ensure_python_in_appdata(&app, "");
-            /*
-            let binary_path = match std::env::consts::OS {
-                "windows" => "metabolite-x86_64-pc-windows-msvc.exe",
-                "macos" => {
-                    match std::env::consts::ARCH {
-                        "x86_64" => "metabolite_for_db-x86_64-apple-darwin",
-                        "aarch64" => "metabolite_for_db-aarch64-apple-darwin",
-                        _ => "",
-                    }
-                },
-                "linux" => "metabolite_for_db-x86_64-unknown-linux-gnu",
-                _ => "",
-            };
-            */
-            //let metabolite_bin_path: PathBuf = install_helper_functions::ensure_bin_in_appdata(&app, binary_path);
-
-            //binary_setup::METABOLITE_BIN_PATH.set(metabolite_bin_path);
 
             let pool: Pool<SqliteConnectionManager> =
                 install_helper_functions::create_pool_from_app_path(&app, db_path);

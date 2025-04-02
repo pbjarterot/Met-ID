@@ -1,4 +1,4 @@
-use rusqlite::{params, Result};
+
 #[cfg(target_os = "macos")]
 pub fn functional_group_macos(
     progress_sender: std::sync::mpsc::Sender<f32>,
@@ -6,11 +6,11 @@ pub fn functional_group_macos(
     table_name: String,
     column_name: String,
 ) -> Result<()> {
+    use rusqlite::{params, Result};
     use super::functional_group::get_smiles_from_db;
     use crate::database_setup::get_connection;
     use r2d2_sqlite::SqliteConnectionManager;
     use rdkit::{substruct_match, ROMol, RWMol, SubstructMatchParameters};
-    use rusqlite::params;
 
     let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     let transaction = conn.transaction().unwrap();
