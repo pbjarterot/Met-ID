@@ -4,6 +4,14 @@ use maplit::hashmap;
 use rusqlite::Result;
 use std::collections::HashMap;
 
+/* 
+This file contains functions to build the SQLite query for the mass matching of the database
+
+
+Patrik Bjärterot - March 2025
+*/
+
+
 struct Adduct {
     adduct: String,
 }
