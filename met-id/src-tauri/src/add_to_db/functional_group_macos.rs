@@ -1,3 +1,5 @@
+#[cfg(target_os = "macos")]
+use rusqlite::Result;
 
 #[cfg(target_os = "macos")]
 pub fn functional_group_macos(
