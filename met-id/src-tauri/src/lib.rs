@@ -81,6 +81,8 @@ pub fn run() {
 
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
+                println!("Checking for updates");
+                info!("Checking for updates");
                 updater::update(handle, callback_map).await.unwrap();               
             });
             

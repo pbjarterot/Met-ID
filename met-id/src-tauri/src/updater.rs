@@ -58,7 +58,10 @@ pub async fn update(app: tauri::AppHandle, callback_map: CallbackMap) -> tauri_p
             println!("update installed");
             app.restart();
         }
+    } else {
+        info!("Up to date!")
     }
+
 
     Ok(())
 }
