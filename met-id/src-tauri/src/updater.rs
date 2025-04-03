@@ -27,14 +27,14 @@ pub fn emit_and_wait(app: &AppHandle, state: CallbackMap) -> bool {
 
     // Wait for response (blocking)
     let response = rx.recv().unwrap();
-    println!("Got response from frontend: {}", response);
+    info!("Got response from frontend: {}", response);
     response
 }
 
 
 pub async fn update(app: tauri::AppHandle, callback_map: CallbackMap) -> tauri_plugin_updater::Result<()> {
     if let Some(update) = app.updater()?.check().await? {
-
+        info!("Sending to frontend");
         let state = callback_map.clone();
         let update_bool = emit_and_wait(&app, state);
         info!("Result from frontend: {}", update_bool);
