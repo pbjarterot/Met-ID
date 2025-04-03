@@ -1,6 +1,6 @@
 [package]
 name = "Met-ID"
-version = "0.5.1"
+version = "0.5.2"
 description = "A Tauri App"
 authors = ["you"]
 license = "CC BY-NC"
@@ -55,6 +55,7 @@ tokio-stream = "0.1.17"
 tonic = "0.12.3"
 protobuf = "3.7.1"
 prost = "0.13"
+uuid = "1.16.0"
 
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
 

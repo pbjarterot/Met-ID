@@ -6,6 +6,19 @@ import { invoke } from '@tauri-apps/api/core'
 import { new_tgt_matrix } from './dropdown';
 const appWindow = getCurrentWebviewWindow()
 
+
+import { listen } from "@tauri-apps/api/event";
+
+listen<string>("ask-frontend-bool", async (event) => {
+	const id = event.payload;
+	const userResponse = window.confirm("Would you like to update Met-ID?");
+
+	await invoke("frontend_bool_response", {
+    id,
+    value: userResponse,
+	});
+});
+
 window.addEventListener("DOMContentLoaded", () => {
 	invoke('close_splashscreen')
 	document.getElementById('titlebar-minimize')!.addEventListener('click', () => appWindow.minimize());

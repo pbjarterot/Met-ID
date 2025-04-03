@@ -27,7 +27,7 @@
   },
   "productName": "Met-ID",
   "mainBinaryName": "Met-ID",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "identifier": "com.farmbio.metid",
   "plugins": {
     "updater": {

@@ -14,6 +14,7 @@ mod regression;
 mod sidecar;
 mod splashscreen;
 pub mod sql_mod;
+pub mod updater;
 #[cfg(test)]
 mod testing;
 
@@ -23,11 +24,13 @@ use once_cell::sync::OnceCell;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use sql_mod::build_query::check_temp_tables;
+use std::collections::HashMap;
 use std::env;
 use std::panic;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tauri::AppHandle;
-use tauri_plugin_updater::UpdaterExt;
 
 pub static MSMSPATH: OnceCell<String> = OnceCell::new();
 pub static MSDBPATH: OnceCell<String> = OnceCell::new();
@@ -50,29 +53,7 @@ fn is_backend_ready() -> bool {
     database_setup::MSMS_POOL.get().is_some() && database_setup::POOL.get().is_some()
 }
 
-async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
-    if let Some(update) = app.updater()?.check().await? {
-        let mut downloaded = 0;
 
-        // alternatively we could also call update.download() and update.install() separately
-        update
-        .download_and_install(
-            |chunk_length, content_length| {
-            downloaded += chunk_length;
-            println!("downloaded {downloaded} from {content_length:?}");
-            },
-            || {
-            println!("download finished");
-            },
-        )
-        .await?;
-
-        println!("update installed");
-        app.restart();
-    }
-
-    Ok(())
-}
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -87,15 +68,20 @@ pub fn run() {
         error!("Uncaught panic: {}", info);
         default_hook(info);
     }));
+    
+    let callback_map: updater::CallbackMap = Arc::new(Mutex::new(HashMap::new()));
+
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(callback_map.clone())
         .setup(|app| {
+
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                update(handle).await.unwrap();
+                updater::update(handle, callback_map).await.unwrap();               
             });
             
             set_app_handle(app.handle().clone());
@@ -172,7 +158,8 @@ pub fn run() {
             sql_mod::db_ids_and_names_tauri,
             sql_mod::check_fg_duplicate_tauri,
             regression::mass_error_regression,
-            is_backend_ready
+            is_backend_ready,
+            updater::frontend_bool_response
         ])
         .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())
