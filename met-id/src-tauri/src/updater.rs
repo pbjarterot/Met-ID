@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::sync::mpsc;
 use uuid::Uuid;
+use log::info;
 // For storing pending responses
 pub type CallbackMap = Arc<Mutex<HashMap<String, mpsc::Sender<bool>>>>;
 
@@ -36,7 +37,7 @@ pub async fn update(app: tauri::AppHandle, callback_map: CallbackMap) -> tauri_p
 
         let state = callback_map.clone();
         let update_bool = emit_and_wait(&app, state);
-        println!("Result from frontend: {}", update_bool);
+        info!("Result from frontend: {}", update_bool);
 
         if update_bool == true {
             let mut downloaded = 0;
