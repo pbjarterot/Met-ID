@@ -6,7 +6,7 @@ pub fn functional_group_macos(
     table_name: String,
     column_name: String,
 ) -> Result<()> {
-    use rusqlite::{params, Result};
+    use rusqlite::params;
     use super::functional_group::get_smiles_from_db;
     use crate::database_setup::get_connection;
     use r2d2_sqlite::SqliteConnectionManager;
