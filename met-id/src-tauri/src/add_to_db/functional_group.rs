@@ -10,7 +10,7 @@ use super::get_table_column_names;
 
 //functional_groups adder for MacOS
 #[cfg(target_os = "macos")]
-fn functional_group_target(
+pub fn functional_group_target(
     progress_sender: std::sync::mpsc::Sender<f32>,
     smarts: String,
     table: String,
