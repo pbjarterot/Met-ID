@@ -72,7 +72,7 @@ pub fn add_fg_to_db(
     .unwrap();
 
     functional_group_target(
-        progress_sender,
+        progress_sender.clone(),
         smarts.clone(),
         "functional_groups".to_string(),
         name.clone(),
