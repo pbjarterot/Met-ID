@@ -1,4 +1,3 @@
-use crate::add_to_db::functional_group_server::functional_group_server;
 use crate::database_setup::get_connection;
 use crate::sql_mod::table::check_if_table_exists;
 
@@ -30,6 +29,7 @@ pub fn functional_group_target(
     name: String,
     smiles_table: String,
 ) -> Result<()> {
+    use crate::add_to_db::functional_group_server::functional_group_server;
     functional_group_server(progress_sender, smarts, table, name.clone(), smiles_table).unwrap();
     Ok(())
 }
