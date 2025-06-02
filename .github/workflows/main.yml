@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest] #[macos-latest, ubuntu-latest, windows-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -49,61 +49,6 @@ jobs:
           python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
         working-directory: met-id/src-tauri/src
 
-      - name: List directories
-        run: |
-          ls -R
-        working-directory: met-id/src-tauri/src
-
-      - name: Import Apple Developer Certificate
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-      - name: Fetch Notarization Logs
-        env:
-          SUBMISSION_ID: ${{ secrets.SUBMISSION_ID }}
-          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
-          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
-          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
-        run: |
-          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
-          xcrun notarytool store-credentials "AC_API" \
-            --key AuthKey.p8 \
-            --key-id "$NOTARYTOOL_KEY_ID" \
-            --issuer "$NOTARYTOOL_ISSUER_ID"
-          xcrun notarytool log "$SUBMISSION_ID" --keychain-profile "AC_API"
-      
-      - name: Debug Keychain
-        if: matrix.platform == 'macos-latest'
-        run: |
-          echo "Listing keychains..."
-          security list-keychains
-          echo "Default keychain:"
-          security default-keychain
-          echo "Valid identities:"
-          security find-identity -p codesigning -v
-
-      - name: Configure Notarytool Credentials
-        if: matrix.platform == 'macos-latest'
-        env:
-          NOTARYTOOL_KEY_ID: ${{ secrets.NOTARYTOOL_KEY_ID }}
-          NOTARYTOOL_ISSUER_ID: ${{ secrets.NOTARYTOOL_ISSUER_ID }}
-          NOTARYTOOL_PRIVATE_KEY: ${{ secrets.NOTARYTOOL_PRIVATE_KEY }}
-        run: |
-          echo "${NOTARYTOOL_PRIVATE_KEY}" | base64 --decode > AuthKey.p8
-          xcrun notarytool store-credentials "AC_API" \
-            --key AuthKey.p8 \
-            --key-id "$NOTARYTOOL_KEY_ID" \
-            --issuer "$NOTARYTOOL_ISSUER_ID"
-        
-
       - name: Use Pyinstaller (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
@@ -113,12 +58,6 @@ jobs:
 
       - name: Use Pyinstaller (MacOS)
         if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
         run: |
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
@@ -132,9 +71,24 @@ jobs:
           ./make_linux_executables.sh
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
-    
 
-      
+      - name: Install rdkit (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          brew install rdkit
+
+      - name: Import Apple Certificate (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
       - name: Sign MacOS Binaries
         if: matrix.platform == 'macos-latest'
@@ -143,43 +97,6 @@ jobs:
         run: |
           find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --deep --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
       
-      - name: Re-sign Python Shared Library
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-        run: |
-          # Locate and re-sign the Python shared library
-          find met-id/src-tauri/pyinstaller/dist -type f -name "libpython*.dylib" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-
-      - name: Re-sign Python Interpreter
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-        run: |
-          # Locate and re-sign the Python interpreter
-          find met-id/src-tauri/pyinstaller/dist -type f -name "Python" -exec codesign --force --verify --verbose --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-          find met-id/src-tauri/pyinstaller/dist -type f -exec codesign --verify --verbose {} \;
-
-      
-
-            
-      - name: Notarize MacOS Binary
-        run: |
-          for BINARY in dist/*; do
-            echo "Submitting $BINARY for notarization..."
-            xcrun notarytool submit "$BINARY" --keychain-profile "AC_API" --wait
-          done
-
-      - name: Staple Notarization Ticket
-        run: |
-          for BINARY in dist/*; do
-            echo "Stapling notarization ticket for $BINARY..."
-            xcrun stapler staple "$BINARY"
-          done
-        
-          
-
-
       - name: Upload Bin
         run: |
           # Add your upload commands here
@@ -197,9 +114,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: Met-ID-v0.3.0 # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Met-ID v0.3.0'
+          tagName: Met-ID-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Met-ID v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           projectPath: ./met-id
           releaseDraft: false

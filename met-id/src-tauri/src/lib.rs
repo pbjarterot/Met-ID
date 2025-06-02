@@ -14,6 +14,7 @@ mod regression;
 mod sidecar;
 mod splashscreen;
 pub mod sql_mod;
+pub mod updater;
 #[cfg(test)]
 mod testing;
 mod updater;
@@ -28,6 +29,8 @@ use sql_mod::latest_database::check_latest_database;
 use std::env;
 use std::panic;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tauri::AppHandle;
 
 pub static MSMSPATH: OnceCell<String> = OnceCell::new();
@@ -52,6 +55,9 @@ fn is_backend_ready() -> bool {
     database_setup::MSMS_POOL.get().is_some() && database_setup::POOL.get().is_some()
 }
 
+
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize logger
@@ -64,11 +70,15 @@ pub fn run() {
         error!("Uncaught panic: {}", info);
         default_hook(info);
     }));
+    
+    let callback_map: updater::CallbackMap = Arc::new(Mutex::new(HashMap::new()));
+
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(callback_map.clone())
         .setup(|app| {
             /*
             tauri::async_runtime::spawn(async move {

@@ -3,6 +3,7 @@ import './ms2/ms2_main';
 import './ms1/ms1_main';
 import './database_tab/db_main.ts';
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from "@tauri-apps/api/event";
 import { new_tgt_matrix } from './dropdown';
 import { confirm } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';

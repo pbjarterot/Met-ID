@@ -1,18 +1,17 @@
+use log::{info, warn};
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
-use tonic::{transport::Server, Status, Response};
-use tokio::sync::{mpsc, Mutex};
+use std::sync::Arc;
 use streaming::streaming_service_server::{StreamingService, StreamingServiceServer};
 use streaming::MessageBatch;
-use std::sync::Arc;
-use log::{warn, info};
+use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
+use tonic::{transport::Server, Response, Status};
 
-use crate::sidecar::sidecar_function3;
-use crate::get_app_handle;
-use crate::database_setup::get_connection;
 use crate::add_to_db::functional_group::get_smiles_from_db;
-
+use crate::database_setup::get_connection;
+use crate::get_app_handle;
+use crate::sidecar::sidecar_function3;
 
 pub mod streaming {
     //tonic::include_proto!("./streaming");
@@ -28,8 +27,6 @@ pub struct MyStreamingService {
     smiles_table: String
 }
 
-
-
 #[tonic::async_trait]
 impl StreamingService for MyStreamingService {
     type StreamBatchedMessagesStream = ReceiverStream<Result<MessageBatch, Status>>;
@@ -38,7 +35,6 @@ impl StreamingService for MyStreamingService {
         &self,
         request: tonic::Request<tonic::Streaming<MessageBatch>>,
     ) -> Result<Response<Self::StreamBatchedMessagesStream>, Status> {
-
         let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
         let mut stream = request.into_inner();
@@ -60,14 +56,14 @@ impl StreamingService for MyStreamingService {
 
             for message in messages {
                 //println!("mssg: {:?}", message);
-                let message_batch = MessageBatch {
-                    messages: message,
-                };
+                let message_batch = MessageBatch { messages: message };
 
                 println!("Sending message to client: {:?}", sent_count);
                 info!("Sending message to client: {:?}", sent_count);
                 sent_count = sent_count + 1;
-                progress_sender.send(((sent_count as f32) / 220.0 ) * 50.0 ).unwrap();
+                progress_sender
+                    .send(((sent_count as f32) / 220.0) * 50.0)
+                    .unwrap();
                 if let Err(e) = tx.send(Ok(message_batch)).await {
                     eprintln!("Failed to send message: {}", e);
                     warn!("Failed to send message: {}", e);
@@ -93,7 +89,6 @@ impl StreamingService for MyStreamingService {
             // Step 3: Wait for client's stop response
             while let Ok(Some(batch)) = stream.message().await {
                 //println!("Received batch from client: {:?}", batch.messages);
-                
 
                 if batch.messages.contains(&"stop".to_string()) {
                     println!("Received stop confirmation from client. Shutting down...");
@@ -103,27 +98,32 @@ impl StreamingService for MyStreamingService {
                         let _ = tx.send(()); // Trigger the shutdown signal
                     }
                     break;
-                }
-                else {
+                } else {
                     let transaction = conn.transaction().unwrap();
 
                     for (idx, message) in batch.messages[0].split(", ").enumerate() {
-                        let new_idx: usize = (received_count* 1_000) + idx + 1;
-                        
-                        
-                        transaction.execute(
-                                &format!("UPDATE '{}' SET '{}' = ?1 WHERE rowid = ?2", table_name, column_name),
-                                params![message, new_idx]).unwrap();
+                        let new_idx: usize = (received_count * 1_000) + idx + 1;
+
+                        transaction
+                            .execute(
+                                &format!(
+                                    "UPDATE '{}' SET '{}' = ?1 WHERE rowid = ?2",
+                                    table_name, column_name
+                                ),
+                                params![message, new_idx],
+                            )
+                            .unwrap();
 
                         if idx == 0 {
                             println!("message: {:?}, idx: {:?}", message, new_idx);
                             info!("message: {:?}, idx: {:?}", message, new_idx);
                         }
-                        
                     }
                     transaction.commit().unwrap();
                 }
-                progress_sender.send((((received_count as f32) / 220.0 ) * 50.0) + 50.0 ).unwrap();
+                progress_sender
+                    .send((((received_count as f32) / 220.0) * 50.0) + 50.0)
+                    .unwrap();
                 received_count = received_count + 1;
             }
             println!("sent: {:?}, received: {:?}", sent_count, received_count);
@@ -134,7 +134,6 @@ impl StreamingService for MyStreamingService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
-
 
 #[tokio::main]
 pub async fn functional_group_server(
@@ -167,9 +166,12 @@ pub async fn functional_group_server(
     info!("Server listening on {}", addr);
     let sidecar_arguments: Vec<String> = vec![smarts];
 
-
-
-    sidecar_function3(get_app_handle().unwrap(), progress_sender.clone(), sidecar_arguments).unwrap();
+    sidecar_function3(
+        get_app_handle().unwrap(),
+        progress_sender.clone(),
+        sidecar_arguments,
+    )
+    .unwrap();
 
     // Graceful shutdown
     Server::builder()
@@ -178,7 +180,7 @@ pub async fn functional_group_server(
             shutdown_rx.await.ok();
         })
         .await?;
-    
+
     println!("Server has shut down gracefully.");
     info!("Server has shut down gracefully.");
     Ok(())

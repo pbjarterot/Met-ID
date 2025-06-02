@@ -2,6 +2,8 @@ pub mod db_accessions;
 pub mod derivatized_by;
 pub mod endogeneity;
 pub mod functional_group;
+pub mod functional_group_macos;
+mod functional_group_server;
 pub mod in_tissue;
 pub mod lipids_functional_groups;
 pub mod matrix;
