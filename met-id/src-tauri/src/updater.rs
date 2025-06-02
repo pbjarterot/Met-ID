@@ -5,9 +5,7 @@ use tauri_plugin_updater::UpdaterExt;
 //use std::sync::mpsc;
 use log::info;
 use tokio::sync::oneshot;
-use uuid::Uuid;
 
-use crate::get_app_handle;
 // For storing pending responses
 pub type CallbackMap = Arc<Mutex<HashMap<String, oneshot::Sender<bool>>>>;
 

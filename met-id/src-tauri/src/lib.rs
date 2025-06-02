@@ -17,7 +17,6 @@ pub mod sql_mod;
 pub mod updater;
 #[cfg(test)]
 mod testing;
-mod updater;
 
 use log::{error, info};
 use logging::LOGGER;
@@ -26,6 +25,7 @@ use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use sql_mod::build_query::check_temp_tables;
 use sql_mod::latest_database::check_latest_database;
+use std::collections::HashMap;
 use std::env;
 use std::panic;
 use std::path::PathBuf;

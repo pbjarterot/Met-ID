@@ -9,7 +9,6 @@ pub mod lipids_functional_groups;
 pub mod matrix;
 pub mod metabolite;
 pub mod msms;
-pub mod functional_group_server;
 
 use crate::add_to_db::functional_group::add_fg_to_db;
 use crate::add_to_db::metabolite::add_metabolite_to_db;
