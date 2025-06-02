@@ -68,6 +68,7 @@ pub fn sql_handler(
         Vec<i32>,
     ) = sql_query(&query_str);
 
+    println!("masses: {:?}", db_input.0);
     let msms_ids: Vec<String> = get_msms_ids();
 
     let db_input_array: Box<[f64]> = db_input.0.into_boxed_slice();

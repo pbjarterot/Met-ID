@@ -1,8 +1,8 @@
+use crate::get_app_handle;
 use log::warn;
 use serde::Serialize;
 use std::fmt;
 use tauri_plugin_shell::process::CommandEvent;
-use crate::get_app_handle;
 use tauri_plugin_shell::ShellExt;
 
 // Custom error type
@@ -94,5 +94,3 @@ pub fn sidecar_function3(
 
     Ok(())
 }
-
-

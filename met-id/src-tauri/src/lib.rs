@@ -16,6 +16,7 @@ mod splashscreen;
 pub mod sql_mod;
 #[cfg(test)]
 mod testing;
+mod updater;
 
 use log::{error, info};
 use logging::LOGGER;
@@ -23,6 +24,7 @@ use once_cell::sync::OnceCell;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use sql_mod::build_query::check_temp_tables;
+use sql_mod::latest_database::check_latest_database;
 use std::env;
 use std::panic;
 use std::path::PathBuf;
@@ -37,6 +39,7 @@ fn set_app_handle(handle: AppHandle) {
         eprintln!("AppHandle is already set!");
     }
 }
+
 fn get_app_handle() -> Option<&'static AppHandle> {
     APP_HANDLE.get()
 }
@@ -63,10 +66,19 @@ pub fn run() {
     }));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            /*
+            tauri::async_runtime::spawn(async move {
+                println!("Checking for updates");
+                info!("Checking for updates");
+                updater::update(handle, callback_map).await.unwrap();
+            });
+            */
             set_app_handle(app.handle().clone());
+
             //let splashscreen_window: Window = app.get_window("splashscreen").unwrap();
             //let main_window: Window = app.get_window("main").unwrap();
 
@@ -78,7 +90,7 @@ pub fn run() {
             MSMSPATH
                 .set(msms_db_path.to_string_lossy().to_string())
                 .expect("Failed to set MSMS DB PATH");
-            /* 
+            /*
             MSDBPATH
                 .set(db_path.clone().to_string_lossy().to_string())
                 .expect("Failed to set MS Db Path");
@@ -119,6 +131,7 @@ pub fn run() {
                 database_setup::MSMS_POOL
             );
 
+            check_latest_database().unwrap();
             check_temp_tables();
 
             // we perform the initialization code on a new task so the app doesn't freeze
@@ -161,7 +174,9 @@ pub fn run() {
             sql_mod::db_ids_and_names_tauri,
             sql_mod::check_fg_duplicate_tauri,
             regression::mass_error_regression,
-            is_backend_ready
+            is_backend_ready,
+            updater::frontend_bool_response,
+            updater::frontend_ready
         ])
         .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())

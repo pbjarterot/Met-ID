@@ -3,11 +3,11 @@ pub mod derivatized_by;
 pub mod endogeneity;
 pub mod functional_group;
 pub mod in_tissue;
+pub mod lipids_functional_groups;
 pub mod matrix;
 pub mod metabolite;
 pub mod msms;
-mod functional_group_server;
-pub mod functional_group_unix;
+pub mod functional_group_server;
 
 use crate::add_to_db::functional_group::add_fg_to_db;
 use crate::add_to_db::metabolite::add_metabolite_to_db;
@@ -46,18 +46,13 @@ pub fn add_to_db_rust(
     endo_exo_or_other: HashMap<String, bool>,
     in_tissue: HashMap<String, bool>,
     _adducts: Vec<String>,
-    progress_sender:std::sync::mpsc::Sender<f32> ,
+    progress_sender: std::sync::mpsc::Sender<f32>,
 ) -> bool {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
     match &met_type[..] {
         "metabolite" => {
-            add_metabolite_to_db(
-                conn, 
-                name, 
-                smiles_smarts_mz, 
-                in_tissue, 
-                endo_exo_or_other)
+            add_metabolite_to_db(conn, name, smiles_smarts_mz, in_tissue, endo_exo_or_other)
         }
         "fg" => add_fg_to_db(
             conn,

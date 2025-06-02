@@ -2,6 +2,7 @@ pub mod build_query;
 mod counter;
 mod database_view;
 mod functional_groups;
+pub mod latest_database;
 mod matrices;
 mod msms;
 mod mtx_dropdown;
@@ -23,10 +24,11 @@ use self::mtx_dropdown::matrix_dropdown;
 use self::sql_handler::sql_handler;
 use self::tissues::get_tissues;
 use self::user_tables::{
-    remove_row_from_user_matrices, remove_row_from_user_metabolites, remove_user_fgs,
-    update_user_fgs, update_user_matrices, update_user_metabolites, check_fg_duplicate,
+    check_fg_duplicate, remove_row_from_user_matrices, remove_row_from_user_metabolites,
+    remove_user_fgs, update_user_fgs, update_user_matrices, update_user_metabolites,
 };
 
+use database_view::ParsedDBData;
 use rusqlite::{Result, Row};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -240,20 +242,14 @@ pub fn remove_from_user_fgs_tauri(rowid: usize, toremove: &str) -> usize {
 pub fn matrix_dropdown_tauri() -> HashMap<String, Vec<String>> {
     matrix_dropdown()
 }
+
 #[tauri::command]
-pub fn db_data_tauri(
-    index: usize,
-) -> (
-    String,
-    String,
-    String,
-    String,
-    HashMap<String, HashMap<String, f64>>,
-) {
-    get_db_data(index)
+pub fn db_data_tauri(index: usize, origin: String) -> ParsedDBData {
+    get_db_data(index, origin).unwrap()
 }
+
 #[tauri::command]
-pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, usize, i64)> {
+pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, (String, usize), i64)> {
     db_ids_and_names(inputvalue)
 }
 

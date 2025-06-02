@@ -27,26 +27,26 @@ async function generate_results_cards(inputvalue: string) {
   div!.innerHTML = "";
   if (!div) return; // Early exit if the div is not found
 
-  let namelist2: [string, number, number] = await invoke("db_ids_and_names_tauri", {inputvalue});
+  let namelist2: [string, [string, number], number] = await invoke("db_ids_and_names_tauri", {inputvalue});
 
   for (let i = 0; i < namelist2.length; i++) {
     const tempDiv = document.createElement('div');
-    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), false);
+    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], false);
     tempDiv.innerHTML = `${L}`;
     tempDiv.classList.add("db-small-results-card")
-    tempDiv.id = "db-small-results-card-" + namelist2[i][1];
+    tempDiv.id = "db-small-results-card-" + namelist2[i][1][1];
     div!.appendChild(tempDiv);
 
     function attachClickListener() {
-        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[i][1]);
+        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[i][1][1]);
         if (childElement) {
             childElement.addEventListener("click", async () => {
                 if (tempDiv.classList.contains("db-open")) {
-                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), false);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], false);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.remove("db-open");
                 } else {
-                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1]), true);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], true);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.add("db-open");
                 }
@@ -93,43 +93,56 @@ export function renderDBHTML() {
   
 }
 
-export async function generate_db_small_results_card2(name: string, index: number, open_: boolean) {
+export async function generate_db_small_results_card2(name: string, index: number, origin: string, open_: boolean) {
 
-  let template = `<div class="db-small-results-card-top" id="db-small-results-card-top-${index}">
-                    	<div class="db-small-results-card-textbox">
-                      	<div class="db-small-results-card-name">
-                        	<label class="db-small-results-card-name">${name}</label>
-                    	  </div>
-                  	  </div>
-                	  </div>
+	let template = `<div class="db-small-results-card-top" id="db-small-results-card-top-${index}">
+                    <div class="db-small-results-card-textbox">
+                    	<div class="db-small-results-card-name">
+                		<label class="db-small-results-card-name">${name}</label>
+                    	</div>
+					</div>
+                	</div>
                     <div class="db-molecule-information" id="db-molecule-information-${index}"></div>`
     if (open_) {
-      let dataHtml = await add_data_to_small_results_card(index);
-      template = template.replace(`<div class="db-molecule-information" id="db-molecule-information-${index}"></div>`, 
+    	let dataHtml = await add_data_to_small_results_card(index, origin);
+    	template = template.replace(`<div class="db-molecule-information" id="db-molecule-information-${index}"></div>`, 
                                   `<div class="db-molecule-information" id="db-molecule-information-${index}">${dataHtml}</div>`);
     }
     return template;
 }
 
-async function add_data_to_small_results_card(index: number){
-  let [name, formula, smiles, identifier, adductmap]: [string, string, string, string, Record<string, Record<string, number>>] = await invoke("db_data_tauri", {index})
+export interface ParsedDBData {
+  name: string;
+  mz: string;
+  db_accession: string;
+  smiles: string;
+  formula: string;
+  map: Record<string, Record<string, number>>;
+}
+
+async function add_data_to_small_results_card(index: number, origin){
+  let d: ParsedDBData = await invoke("db_data_tauri", {index, origin})
+  if (origin == "lipids") {
+	d.db_accession = "";
+  }
   let temp  = ` <div class="db-molecule-information-top">
                   <div class="db-molecule-information">
-                    <div class="db-molecule-name">${name}</div>
-                    <div class="db-molecule-info-smaller" id="db-molecule-formula">${formula}</div>
-                    <div class="db-molecule-info-smaller" id="db-molecule-id">${identifier}</div>
+                    <div class="db-molecule-name">${d.name}</div>
+                    <div class="db-molecule-info-smaller" id="db-molecule-formula">${d.formula}</div>
+                    <div class="db-molecule-info-smaller" id="db-molecule-mass">${d.mz}</div>
+                    <div class="db-molecule-info-smaller" id="db-molecule-id">${d.db_accession}</div>
                     <div class="db-molecule-matrices">`
   
-  for (const key in adductmap) {
-    if (adductmap.hasOwnProperty(key)) {
-      temp += adduct_div(key, adductmap[key])
+  for (const key in d.map) {
+    if (d.map.hasOwnProperty(key)) {
+      temp += adduct_div(key, d.map[key])
     }
   }
   //adduct_div("AMPP", adductmap['AMPP'])}
   temp +=  `</div>
             </div>
             <div class="mol-im-container" id="mol-im-container">
-            <img data-smiles="${smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
+            <img data-smiles="${d.smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
             </div>
           </div>`            
   return temp

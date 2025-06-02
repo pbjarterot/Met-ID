@@ -9,22 +9,30 @@ use std::iter::repeat;
 
 use super::get_table_column_names;
 
-
-//functional_groups adder for unix
-#[cfg(target_family = "unix")]
-fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()> {
-    use crate::add_to_db::functional_group_unix::functional_group_unix;
-    functional_group_unix(progress_sender, smarts, table, name.clone())
+//functional_groups adder for MacOS
+#[cfg(target_os = "macos")]
+fn functional_group_target(
+    progress_sender: std::sync::mpsc::Sender<f32>,
+    smarts: String,
+    table: String,
+    name: String,
+) -> Result<()> {
+    use crate::add_to_db::functional_group_macos::functional_group_macos;
+    functional_group_macos(progress_sender, smarts, table, name.clone(), smiles_table)
 }
 
-//functional_groups adder for windows
-#[cfg(target_family = "windows")]
-fn functional_group_target(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table: String, name: String) -> Result<()>{
-    functional_group_server(progress_sender, smarts, table, name.clone()).unwrap();
+//functional_groups adder for windows, linux
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+pub fn functional_group_target(
+    progress_sender: std::sync::mpsc::Sender<f32>,
+    smarts: String,
+    table: String,
+    name: String,
+    smiles_table: String,
+) -> Result<()> {
+    functional_group_server(progress_sender, smarts, table, name.clone(), smiles_table).unwrap();
     Ok(())
 }
-
-
 
 pub fn add_fg_to_db(
     conn: r2d2::PooledConnection<SqliteConnectionManager>,
@@ -45,7 +53,10 @@ pub fn add_fg_to_db(
     .unwrap();
 
     conn.execute(
-        &format!("ALTER TABLE functional_groups ADD COLUMN '{}' INTEGER", name),
+        &format!(
+            "ALTER TABLE functional_groups ADD COLUMN '{}' INTEGER",
+            name
+        ),
         [],
     )
     .unwrap();
@@ -59,12 +70,26 @@ pub fn add_fg_to_db(
     )
     .unwrap();
 
-    functional_group_target(progress_sender, smarts.clone(), "functional_groups".to_string(), name.clone()).unwrap();
+    functional_group_target(
+        progress_sender,
+        smarts.clone(),
+        "functional_groups".to_string(),
+        name.clone(),
+        "metabolites".to_string(),
+    )
+    .unwrap();
 
     //update functional_groups & user_functional_groups
     // Add the new column (as before)
-    
-    conn.execute(&format!("INSERT INTO functional_group_smarts (name, smarts) VALUES ('{}', '{}')", name, smarts), []).unwrap();
+
+    conn.execute(
+        &format!(
+            "INSERT INTO functional_group_smarts (name, smarts) VALUES ('{}', '{}')",
+            name, smarts
+        ),
+        [],
+    )
+    .unwrap();
     //if any matrix is pressed, update derivatized_by and user_matrices
     update_matrix_table_with_functional_group("matrices", &name, &matrices);
     update_matrix_table_with_functional_group("user_matrices", &name, &matrices);
@@ -153,7 +178,7 @@ pub fn fill_user_functional_groups(
     conn.execute(&sql, values.as_slice()).unwrap();
 }
 
-pub fn get_smiles_from_db() -> Vec<Vec<String>> {
+pub fn get_smiles_from_db(table: String) -> Vec<Vec<String>> {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     const BATCH_SIZE: usize = 1_000;
 
@@ -164,7 +189,7 @@ pub fn get_smiles_from_db() -> Vec<Vec<String>> {
     assert_eq!(mode, "wal");
 
     let mut select_stmt = conn
-        .prepare(&format!("SELECT smiles FROM metabolites", ))
+        .prepare(&format!("SELECT smiles FROM {:?}", table))
         .unwrap();
 
     //let total_rows = select_stmt.query_map([], |_row| Ok(())).unwrap().count();
@@ -178,11 +203,13 @@ pub fn get_smiles_from_db() -> Vec<Vec<String>> {
             Ok(smiles)
         })
         .unwrap()
-        {
-            let smiles = row.unwrap();
-            smiles_vec.push(smiles);
-        };
+    {
+        let smiles = row.unwrap();
+        smiles_vec.push(smiles);
+    }
 
-    smiles_vec.chunks(BATCH_SIZE).map(|chunk| chunk.to_vec()).collect()
-
+    smiles_vec
+        .chunks(BATCH_SIZE)
+        .map(|chunk| chunk.to_vec())
+        .collect()
 }

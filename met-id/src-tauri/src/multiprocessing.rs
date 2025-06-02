@@ -1,8 +1,8 @@
 use crate::add_to_db::add_to_db_rust;
+use log::warn;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
-use log::warn;
 use tauri::{Emitter, Window};
 
 #[derive(serde::Deserialize)]

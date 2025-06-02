@@ -81,8 +81,16 @@ fn create_tables(conn: &Connection) -> () {
         []
     ).unwrap();
 
+    conn.execute("CREATE TABLE lipids_functional_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        'Phenolic Hydroxyls' INTEGER NOT NULL,  
+        'Aldehydes' INTEGER NOT NULL, 
+        'Carboxylic Acids' INTEGER NOT NULL, 
+        'Primary Amines' INTEGER NOT NULL)",
+        []
+    ).unwrap();
+
     conn.execute("CREATE TABLE derivatized_by (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            FMP-10 INTEGER NOT NULL, 
+            'FMP-10' INTEGER NOT NULL, 
             AMPP INTEGER NOT NULL)",
     []
     ).unwrap();
@@ -108,7 +116,6 @@ fn create_tables(conn: &Connection) -> () {
 
     ()
 }
-
 
 fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error + Send>> {
     create_tables(conn);
@@ -173,7 +180,7 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
         ));
 
         sql.push_str(&format!(
-            "INSERT INTO derivatized_by (FMP-10, AMPP) VALUES ({}, {});\n",
+            "INSERT INTO derivatized_by ('FMP-10', AMPP) VALUES ({}, {});\n",
             fmp10, ampp
         ));
 
@@ -257,6 +264,8 @@ fn make_lipid_db(conn: &Connection) -> Result<(), rusqlite::Error> {
         "CREATE TABLE lipids (name TEXT NOT NULL, mz TEXT NOT NULL, formula TEXT NOT NULL, smiles TEXT NOT NULL)",
          [],
     )?;
+    let functional_smarts: HashMap<String, String> = import_tsv("database/smarts2.tsv");
+    
 
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py: Python| {
@@ -279,8 +288,33 @@ fn make_lipid_db(conn: &Connection) -> Result<(), rusqlite::Error> {
             let a: [&String; 4] = [&name, &mz, &formula, &smiles];
             
             let mut stmt: rusqlite::Statement = conn.prepare("INSERT INTO lipids (name, mz, formula, smiles) 
-                                                                            VALUES (:name, :mz, :formula, :smiles)").unwrap();
+                                                                        VALUES (:name, :mz, :formula, :smiles)").unwrap();
             stmt.execute(&a).unwrap();
+
+            let mut fgh: HashMap<String, String> = HashMap::new();
+
+            for (key, value) in &functional_smarts {
+                let mol = rdkit.getattr("MolFromSmiles").unwrap().call1((smiles.clone(),)).unwrap();
+                if !mol.is_none() {
+                    let func = rdkit.getattr("MolFromSmarts").unwrap().call1((value,)).unwrap();
+                    let a = mol.call_method1("GetSubstructMatches", (func,)).unwrap();
+                    let aa: Vec<Vec<usize>> = a.extract().unwrap();
+                    let tuple_len = aa.len();
+                    fgh.insert(key.clone(), tuple_len.to_string());
+                } else {
+                    println!("Error: {:?}", smiles.clone());
+                    fgh.insert(key.clone(), "0".to_string());
+                }
+            }
+
+            let b: [&usize; 4] = [&get_fgh("Phenolic Hydroxyls", &fgh), &get_fgh("Aldehydes", &fgh), &get_fgh("Carboxylic Acids", &fgh), &get_fgh("Primary Amines", &fgh),];
+
+            //functional_groups_lipids
+            let mut stmt: rusqlite::Statement = conn.prepare(
+                "INSERT INTO lipids_functional_groups ('Phenolic Hydroxyls', Aldehydes, 'Carboxylic Acids', 'Primary Amines') VALUES (:ph, :a, :ca, :pa);",
+            ).unwrap();
+
+            stmt.execute(&b).unwrap();
         
         }
         
@@ -396,20 +430,23 @@ fn drop_columns_except(conn: &Connection, table_name: &str, columns_to_keep: Vec
 fn main() -> () {
     
     let db_path = "db.db";
+
     //let db_path = ":memory:";
     
     //remove the database if it already exists
     //std::fs::remove_file(db_path).expect("Database could not be removed");
 
     let conn: Connection = Connection::open(db_path).expect("Could not open db");
-    //make_metabolite_db(&conn).unwrap();
+    make_metabolite_db(&conn).unwrap();
     //conn.execute("DROP TABLE functional_group_smarts", []).unwrap();
-    //make_functional_group_smarts_table(&conn).unwrap();
-    //make_lipid_db(&conn).unwrap();
-    conn.execute("DROP TABLE adducts", []).unwrap();
+    //conn.execute("DROP TABLE lipids", []).unwrap();
+    //create_tables(&conn);
+    make_functional_group_smarts_table(&conn).unwrap();
+    make_lipid_db(&conn).unwrap();
+    //conn.execute("DROP TABLE adducts", []).unwrap();
     make_adduct_db(&conn).unwrap();
     //conn.execute("DROP TABLE matrices", []).unwrap();
-    //make_matrices_db(&conn).unwrap();
+    make_matrices_db(&conn).unwrap();
     //let columns_to_keep = vec!["id", "phenols", "aldehydes", "carboxylicacids", "primaryamines"];
     //drop_columns_except(&conn, "functional_groups", columns_to_keep).unwrap();
 

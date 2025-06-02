@@ -15,6 +15,7 @@ pub fn sql_query(
     // Connect to db
     let conn = get_connection().unwrap();
     // Query
+    println!("QUERY:::::::{:?}", query);
     let mut stmt = match conn.prepare(query) {
         Ok(stmt) => stmt,
         Err(e) => {

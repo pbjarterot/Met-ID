@@ -25,6 +25,7 @@ pub struct MyStreamingService {
     table_name: String,
     column_name: String,
     progress_sender: std::sync::mpsc::Sender<f32>,
+    smiles_table: String
 }
 
 
@@ -48,13 +49,14 @@ impl StreamingService for MyStreamingService {
         let table_name: String = self.table_name.clone();
         let column_name: String = self.column_name.clone();
         let progress_sender: std::sync::mpsc::Sender<f32> = self.progress_sender.clone();
+        let smiles_table = self.smiles_table.clone();
 
         tokio::spawn(async move {
             // Step 1: Send each message individually
             let mut sent_count = 0;
             let mut received_count = 0;
 
-            let messages: Vec<Vec<String>> = get_smiles_from_db();
+            let messages: Vec<Vec<String>> = get_smiles_from_db(smiles_table);
 
             for message in messages {
                 //println!("mssg: {:?}", message);
@@ -135,7 +137,13 @@ impl StreamingService for MyStreamingService {
 
 
 #[tokio::main]
-pub async fn functional_group_server(progress_sender: std::sync::mpsc::Sender<f32>, smarts: String, table_name: String, column_name: String) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn functional_group_server(
+    progress_sender: std::sync::mpsc::Sender<f32>,
+    smarts: String,
+    table_name: String,
+    column_name: String,
+    smiles_table: String
+) -> Result<(), Box<dyn std::error::Error>> {
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
 
     let addr = "[::1]:50051".parse()?;
@@ -144,9 +152,16 @@ pub async fn functional_group_server(progress_sender: std::sync::mpsc::Sender<f3
         table_name: table_name.clone(),
         column_name: column_name.clone(),
         progress_sender: progress_sender.clone(),
+        smiles_table: smiles_table.clone()
     };
-    println!("table_name: {:?}, column_name: {:?}", table_name, column_name);
-    info!("Table name: {:?}, column name: {:?}", table_name, column_name);
+    println!(
+        "table_name: {:?}, column_name: {:?}, smarts: {:?}",
+        table_name, column_name, smarts
+    );
+    info!(
+        "Table name: {:?}, column name: {:?}",
+        table_name, column_name
+    );
 
     println!("Server listening on {}", addr);
     info!("Server listening on {}", addr);

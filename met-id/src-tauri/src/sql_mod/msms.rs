@@ -559,6 +559,8 @@ pub fn match_msms_to_ui(
             cossim = Vec::new();
         }
     }
+    replace_nan_with_zero(&mut cossim);
+
     sort_by_corresponding_f64(
         &mut cossim,
         &mut identifiers,
@@ -572,6 +574,14 @@ pub fn match_msms_to_ui(
     (names, identifiers, adducts, cids, mzs, cossim, matrices)
 }
 
+fn replace_nan_with_zero(vec: &mut Vec<f64>) {
+    for x in vec.iter_mut() {
+        if x.is_nan() {
+            *x = 0.0;
+        }
+    }
+}
+
 fn sort_by_corresponding_f64(
     vec_f64: &mut Vec<f64>,
     vec_str1: &mut Vec<String>,
@@ -581,6 +591,10 @@ fn sort_by_corresponding_f64(
     vec_str5: &mut Vec<String>,
     vec_str6: &mut Vec<String>,
 ) {
+    println!(
+        "cossim: {:?}\nstr1: {:?}\nstr2: {:?}\nstr3: {:?}\nstr4: {:?}\nstr5: {:?}\nstr6: {:?}",
+        vec_f64, vec_str1, vec_str2, vec_str3, vec_str4, vec_str5, vec_str6
+    );
     let mut combined: Vec<(_, _, _, _, _, _, _)> = vec_f64
         .iter()
         .cloned()
@@ -592,8 +606,14 @@ fn sort_by_corresponding_f64(
         .zip(vec_str6.iter().cloned())
         .map(|((((((a, b), c), d), e), f), g)| (a, b, c, d, e, f, g))
         .collect();
+    println!("Combined: {:?}", combined);
 
-    combined.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+    combined.sort_by(
+        |a: &(f64, String, String, String, String, String, String),
+         b: &(f64, String, String, String, String, String, String)| {
+            b.0.partial_cmp(&a.0).unwrap()
+        },
+    );
 
     for (i, (num, text1, text2, text3, text4, text5, text6)) in combined.into_iter().enumerate() {
         vec_f64[i] = num;

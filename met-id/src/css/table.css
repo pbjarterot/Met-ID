@@ -380,8 +380,15 @@
 }
 .datatable {
     width: 100%;
-}
 
+}
+.datatable-container .datatable td:nth-child(5)::-webkit-scrollbar {
+    height: 8px;
+}
+.datatable-container .datatable td:nth-child(5)::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 5px;
+}
 
 .datatable-container .datatable th:nth-child(0),
 .datatable-container .datatable td:nth-child(0) {
@@ -409,7 +416,7 @@
 .datatable-container .datatable th:nth-child(5),
 .datatable-container .datatable td:nth-child(5) {
     width: 150px;
-
+    overflow-x: auto;
 }
 
 .datatable-container .datatable th:nth-child(6),
@@ -428,17 +435,14 @@
 .datatable-container .datatable th:nth-child(9),
 .datatable-container .datatable td:nth-child(9) {
     width: 80px;
-
 }
 .datatable-container .datatable th:nth-child(10),
 .datatable-container .datatable td:nth-child(10) {
     width: 100px;
-
 }
 .datatable-container .datatable th:nth-child(11),
 .datatable-container .datatable td:nth-child(11) {
     width: 30px;
-
 }
 
 #ms1-searchbar-input {

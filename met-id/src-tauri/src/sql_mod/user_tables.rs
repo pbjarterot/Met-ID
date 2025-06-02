@@ -75,8 +75,10 @@ struct MS1UserMatricesRow {
 pub fn update_user_matrices() -> Vec<Vec<String>> {
     check_if_table_exists("matrices", "user_matrices").unwrap();
     check_if_table_exists("adducts", "user_adducts").unwrap();
+
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     ensure_id_column(&conn, "user_matrices").unwrap();
+
     let mut stmt: rusqlite::Statement = conn
         .prepare("SELECT id, matrix FROM user_matrices")
         .expect("Query cannot be run");
@@ -186,26 +188,32 @@ pub fn remove_user_fgs(rowid: usize, column_to_remove: &str) -> usize {
     println!("column_to_remove: {}", column_to_remove);
     match remove_column_from_table("matrices", column_to_remove) {
         Ok(_) => (),
-        Err(e) => eprintln!("{:?}", e)
+        Err(e) => eprintln!("{:?}", e),
     };
 
     match remove_column_from_table("user_matrices", column_to_remove) {
         Ok(_) => (),
-        Err(e) => eprintln!("{:?}", e)
+        Err(e) => eprintln!("{:?}", e),
     };
 
     match remove_column_from_table("functional_groups", column_to_remove) {
         Ok(_) => (),
-        Err(e) => eprintln!("{:?}", e)
+        Err(e) => eprintln!("{:?}", e),
     };
     match remove_column_from_table("user_functional_groups", column_to_remove) {
         Ok(_) => (),
-        Err(e) => eprintln!("{:?}", e)
+        Err(e) => eprintln!("{:?}", e),
     };
 
-    match conn.execute(&format!("DELETE FROM functional_group_smarts WHERE name = '{}'", column_to_remove), []) {
+    match conn.execute(
+        &format!(
+            "DELETE FROM functional_group_smarts WHERE name = '{}'",
+            column_to_remove
+        ),
+        [],
+    ) {
         Ok(_) => (),
-        Err(e) => eprintln!("{:?}", e)
+        Err(e) => eprintln!("{:?}", e),
     };
 
     return 1;
@@ -218,7 +226,6 @@ fn remove_row_from_table(rowid: usize, table_name: &str) -> usize {
     return 1;
 }
 
-
 fn remove_column_from_table(table_name: &str, column_to_drop: &str) -> Result<()> {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     // Step 1: Fetch the column names
@@ -229,10 +236,7 @@ fn remove_column_from_table(table_name: &str, column_to_drop: &str) -> Result<()
         .filter(|col| col != column_to_drop) // Exclude the column to drop
         .collect();
 
-    columns = columns
-        .iter()
-        .map(|item| format!("\"{}\"", item))
-        .collect();
+    columns = columns.iter().map(|item| format!("\"{}\"", item)).collect();
 
     // Step 2: Build a new table without the dropped column
     let new_table_name = format!("{}_new", table_name);
@@ -250,7 +254,10 @@ fn remove_column_from_table(table_name: &str, column_to_drop: &str) -> Result<()
     conn.execute(&format!("DROP TABLE {};", table_name), [])?;
 
     // Step 4: Rename the new table to the original table name
-    conn.execute(&format!("ALTER TABLE {} RENAME TO {};", new_table_name, table_name), [])?;
+    conn.execute(
+        &format!("ALTER TABLE {} RENAME TO {};", new_table_name, table_name),
+        [],
+    )?;
 
     println!(
         "Successfully dropped column '{}' from table '{}'.",
@@ -259,8 +266,9 @@ fn remove_column_from_table(table_name: &str, column_to_drop: &str) -> Result<()
     Ok(())
 }
 
-
 fn ensure_id_column(conn: &Connection, table_name: &str) -> Result<()> {
+    println!("ensuring id column for {:?}", table_name);
+
     let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))?;
     let columns = stmt.query_map([], |row| Ok(row.get::<_, String>(1)?))?;
 
@@ -309,7 +317,6 @@ fn ensure_id_column(conn: &Connection, table_name: &str) -> Result<()> {
     Ok(())
 }
 
-
 pub fn check_fg_duplicate(name: String) -> bool {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
@@ -322,12 +329,11 @@ pub fn check_fg_duplicate(name: String) -> bool {
             .collect();
         Ok(column_names.contains(&column_name.to_string()))
     }
-    
+
     // Example usage
     if column_exists(&conn, "functional_groups", name).unwrap() {
         return true;
-    } 
-    
+    }
+
     return false;
-    
 }

@@ -20,11 +20,11 @@ prost-build = "0.11"
 protoc-grpcio = "3.0"
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
-serde = { version = "1.0.216", features = ["derive"] }
-tauri-plugin-dialog = "2.2.0-rc.0"
-tauri-plugin-fs = "2.2.0"
-serde_json = "1.0.133"
+tauri = { version = "2.4.1", features = ["tray-icon"] }
+serde = { version = "1.0.219", features = ["derive"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2.2.1"
+serde_json = "1.0.140"
 csv = "1.3.1"
 libsqlite3-sys = { version = "^0", features = ["bundled"] } # DO NOT REMOVE, IF REMOVED BREAKS RUSQLITE
 rusqlite = "0.32.1"
@@ -55,11 +55,15 @@ tokio-stream = "0.1.17"
 tonic = "0.12.3"
 protobuf = "3.7.1"
 prost = "0.13"
+uuid = "1.17.0"
 
 # rdkit = { path = "C:/Users/patbj751/Documents/GitHub/rdkit-rust-fork" }
 
 [target.'cfg(unix)'.dependencies]
 rdkit = "0.4.11"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
 
 
 [features]
