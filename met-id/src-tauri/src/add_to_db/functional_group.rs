@@ -15,6 +15,7 @@ fn functional_group_target(
     smarts: String,
     table: String,
     name: String,
+    smiles_table: String
 ) -> Result<()> {
     use crate::add_to_db::functional_group_macos::functional_group_macos;
     functional_group_macos(progress_sender, smarts, table, name.clone(), smiles_table)
@@ -76,6 +77,15 @@ pub fn add_fg_to_db(
         "functional_groups".to_string(),
         name.clone(),
         "metabolites".to_string(),
+    )
+    .unwrap();
+
+    functional_group_target(
+        progress_sender,
+        smarts.clone(),
+        "lipids_functional_groups".to_string(),
+        name.clone(),
+        "lipids".to_string(),
     )
     .unwrap();
 
