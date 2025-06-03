@@ -202,7 +202,7 @@ fn get_smarts_for_names(
     if names.is_empty() {
         return Ok(HashMap::new());
     }
-    check_if_table_exists("functional_groups_smarts", "functional_groups_smarts").unwrap();
+    check_if_table_exists("functional_groups_smarts", "user_functional_groups_smarts").unwrap();
 
     let csv_quoted = names
         .iter()
