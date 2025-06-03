@@ -3,6 +3,8 @@ use crate::database_setup::get_connection;
 use rusqlite::Result;
 use std::collections::HashMap;
 
+use super::table::check_if_table_exists;
+
 pub fn check_latest_database() -> Result<()> {
     let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
         get_connection().unwrap();
