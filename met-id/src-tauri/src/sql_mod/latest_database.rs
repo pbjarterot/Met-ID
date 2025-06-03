@@ -170,7 +170,7 @@ fn add_missing_columns(
     for (col_name, col_type) in from_columns {
         if !to_columns.contains(&col_name) {
             let alter_sql = format!(
-                "ALTER TABLE {} ADD COLUMN {} {}",
+                "ALTER TABLE {} ADD COLUMN '{}' {}",
                 to_table, col_name, col_type
             );
             altered_columns.push(col_name);
