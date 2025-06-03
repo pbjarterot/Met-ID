@@ -93,7 +93,7 @@ jobs:
       - name: Re-sign RDKit dylibs (MacOS)
         if: matrix.platform == 'macos-latest'
         env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
         run: |
           RDKIT_LIB_DIR=$(brew --prefix rdkit)/lib
           echo "Resigning RDKit libraries in $RDKIT_LIB_DIR"
