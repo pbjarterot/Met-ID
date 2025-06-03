@@ -77,19 +77,6 @@ jobs:
         run: |
           brew install rdkit
 
-      - name: Re-sign RDKit dylibs (MacOS)
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
-        run: |
-          RDKIT_LIB_DIR=$(brew --prefix rdkit)/lib
-          echo "Resigning RDKit libraries in $RDKIT_LIB_DIR"
-
-          find "$RDKIT_LIB_DIR" -name "libRDKit*.dylib" -print0 | while IFS= read -r -d '' lib; do
-            echo "Signing $lib"
-            codesign --force --deep --sign "${APPLE_DEVELOPER_ID}" "$lib"
-          done
-
       - name: Import Apple Certificate (MacOS)
         if: matrix.platform == 'macos-latest'
         env:
@@ -103,6 +90,19 @@ jobs:
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
+      - name: Re-sign RDKit dylibs (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_ID }}
+        run: |
+          RDKIT_LIB_DIR=$(brew --prefix rdkit)/lib
+          echo "Resigning RDKit libraries in $RDKIT_LIB_DIR"
+
+          find "$RDKIT_LIB_DIR" -name "libRDKit*.dylib" -print0 | while IFS= read -r -d '' lib; do
+            echo "Signing $lib"
+            codesign --force --deep --sign "${APPLE_DEVELOPER_ID}" "$lib"
+          done
+          
       - name: Sign MacOS Binaries
         if: matrix.platform == 'macos-latest'
         env:
