@@ -89,7 +89,7 @@ jobs:
           security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
-      - name: ✅ Bundle RDKit into App (MacOS)
+      - name: Bundle RDKit into App (MacOS)
         if: matrix.platform == 'macos-latest'
         run: |
           APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
@@ -98,46 +98,6 @@ jobs:
           
           # Copy all required RDKit dylibs
           cp $(brew --prefix rdkit)/lib/libRDKit*.dylib "$FRAMEWORKS_PATH"
-
-      - name: ✅ Fix RPATH and IDs (MacOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          APP_BIN="met-id/src-tauri/target/release/bundle/macos/Met-ID.app/Contents/MacOS/Met-ID"
-          FRAMEWORKS_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app/Contents/Frameworks"
-
-          # Add rpath so the binary can find the bundled libs
-          install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP_BIN"
-
-          # Rewrite internal IDs of the bundled libs
-          for dylib in "$FRAMEWORKS_PATH"/*.dylib; do
-            install_name_tool -id "@executable_path/../Frameworks/$(basename "$dylib")" "$dylib"
-          done
-
-          # Fix library references inside the binary
-          for dylib in "$FRAMEWORKS_PATH"/*.dylib; do
-            base=$(basename "$dylib")
-            install_name_tool -change "/opt/homebrew/lib/$base" "@executable_path/../Frameworks/$base" "$APP_BIN" || true
-          done
-
-      - name: ✅ Re-sign bundled RDKit libs (MacOS)
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-        run: |
-          FRAMEWORKS_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app/Contents/Frameworks"
-          find "$FRAMEWORKS_PATH" -name "*.dylib" -exec codesign --force --sign "${APPLE_DEVELOPER_ID}" --options runtime --timestamp {} \;
-
-      - name: ✅ Sign entire MacOS App
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
-        run: |
-          codesign --deep --force --verify --verbose \
-            --sign "${APPLE_DEVELOPER_ID}" \
-            --options runtime \
-            --timestamp \
-            met-id/src-tauri/target/release/bundle/macos/Met-ID.app
-
       - name: Upload Bin
         run: |
           # Add your upload commands here
