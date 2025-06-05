@@ -55,7 +55,6 @@ impl StreamingService for MyStreamingService {
             let messages: Vec<Vec<String>> = get_smiles_from_db(smiles_table);
 
             for message in messages {
-                //println!("mssg: {:?}", message);
                 let message_batch = MessageBatch { messages: message };
 
                 println!("Sending message to client: {:?}", sent_count);
@@ -106,10 +105,7 @@ impl StreamingService for MyStreamingService {
 
                         transaction
                             .execute(
-                                &format!(
-                                    "UPDATE '{}' SET '{}' = ?1 WHERE rowid = ?2",
-                                    table_name, column_name
-                                ),
+                                &format!("UPDATE '{}' SET '{}' = ?1 WHERE rowid = ?2", table_name, column_name),
                                 params![message, new_idx],
                             )
                             .unwrap();

@@ -170,7 +170,7 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
         fg_string = "lipids_functional_groups".to_string();
     }
 
-    let query: String = format!("SELECT (CAST({origin}.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({adducts}) THEN CAST(temp_concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, \
+    let query: String = format!("SELECT (CAST({origin}.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({adducts}) THEN CAST(temp_concat_adducts.deltamass AS REAL) END) AS adjusted_mz, \
                                 {origin}.name, CAST({origin}.mz AS TEXT), temp_concat_adducts.adduct, db_accessions.hmdb, {origin}.smiles, {origin_formula}, temp_concat_adducts.mname FROM {origin} \
                                 INNER JOIN db_accessions ON {origin}.id = db_accessions.id \
                                 INNER JOIN {fg_string} ON {origin}.id = {fg_string}.id \
@@ -194,8 +194,6 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
         .unwrap()
         .filter_map(Result::ok)
         .collect();
-
-    println!("rows: {:?}", rows);
 
     rows.first().map(|first| {
         let mut main_hashmap: HashMap<String, HashMap<String, f64>> = HashMap::new();
