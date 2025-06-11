@@ -40,6 +40,11 @@ Preprint:
 
 https://www.biorxiv.org/content/10.1101/2025.01.24.634674v1
 
+
+Paper:
+
+https://pubs.acs.org/doi/full/10.1021/acs.analchem.5c00633
+
 ## Platforms 
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://www.linux.org/)
 [![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)](https://www.apple.com/se/macos)
