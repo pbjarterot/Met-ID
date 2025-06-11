@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Met-id</title>
     <script type="module" src="/src/typescript/main.ts" defer></script>
-    <script src="./node_modules/d3/dist/d3.min.js"></script>
+    <script type="module" src="./node_modules/d3/dist/d3.min.js"></script>
 
     <script type="text/javascript" src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
   </head>
@@ -35,10 +35,74 @@
           <label for="tab-1" class="tabby-label">MS2</label>
           <div id="ms2-overlay"></div>
           <div id="ms2-popup">
-            <div class="ms2-popup-plot" id="ms2-popup-plot">
+            <div class="ms2-popup-compare-names" id="ms2-popup-compare-names"></div>
+            <div class="ms2-popup-export-button-div">
+              <button class="ms2-popup-export-button" id="ms2-popup-export-button">Export as Image</button>
+              <button class="ms2-popup-export-button" id="ms2-popup-export-csv-button">Export as CSV</button>
+              <div class="ms2-popup-annotated-peaks-div">
+                <p>Number of annotated peaks:</p>
+                <input type="text" id="ms2-popup-top-peaks-input" placeholder="10">
+              </div>
+            </div>
+            <div class="ms2-popup-plot" id="ms2-popup-plot"></div>
+          </div>
+          <div id="ms2-add-to-db-overlay">
+          </div>
+          <div id="ms2-add-to-db-popup">
+            <div class="ms2-popup-title-div">
+              <h1>Add MSMS to DB</h1>
+            </div>
+            <div class="ms2-popup-top-div">
+              <div class="filename-window">
+                <p id="ms2-popup-filename-window-name"></p>
+              </div>
+            </div>
+            <div class="ms2-popup-middle-div">
+              <div class="ms2-add-to-db-div" id="ms2-add-to-db-div">
+                <!--
+                  filled by add_inputs_to_popup in ms2_popup.ts
+                -->
+              </div>
+              <h1>USER MSMS Database</h1>
+              <div class="ms2-popup-spreadsheet-div" id="ms2-popup-spreadsheet-div">
+                <table class="ms2-popup-datatable" id="ms2-popup-datatable">
+                  <thead>
+                    <tr>
+                      <th>Table ID</th>
+                      <th>Name</th>
+                      <th>Identifier</th>
+                      <th>Adduct</th>
+                      <th>CID</th>
+                      <th>Window</th>
+                      <th>TOF</th>
+                      <th>m/z</th>
+                      <th>Matrix</th>
+                      <th>  </th>
+                      <!-- Add more column headers as needed -->
+                    </tr>
+                  </thead>
+                  <tbody id="ms2-popup-tbody">
+                    <!-- Add more rows as needed -->
+                  </tbody>
+                </table>
+                
+              </div>
+            </div>
+            <div class="ms2-popup-bottom-div">
+              <button class="ms2-popup-bottom-div-button" id="ms2-popup-cancel-button">Cancel</button>
+              <button class="ms2-popup-bottom-div-button" id="ms2-popup-continue-button">Continue</button>
+            </div>
+            <!-- Content of the new div -->
+          </div>
+          <div id="ms2-match-overlay"></div>
+          <div id="ms2-match-popup">
+            <div class="ms2-match-options" id="ms2-match-options">
 
             </div>
+            <h1>Cosine Similarity</h1>
+            <span id="ms2-match-popup-continue-button">Continue</span>
           </div>
+
           <div class="tabby-content">
             <div class="ms2-left-sidebar">
               <div class="ms2-logo">
@@ -52,36 +116,42 @@
                       <ion-icon name="arrow-up-circle-outline"></ion-icon>
                     </span>
                   </button>
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-match-button">
+                    <span class="ms2-sidebar-button-text">Match</span>
+                    <span class="ms2-sidebar-button-icon">
+                      <ion-icon name="bulb-outline"></ion-icon>
+                    </span>
+                  </button>
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-add-to-db-button">
+                    <span class="ms2-sidebar-button-text">Add to Database</span>
+                    <span class="ms2-sidebar-button-icon">
+                      <ion-icon name="add-circle-outline"></ion-icon>
+                    </span>
+                  </button>
                 </div>
                 <div class="ms2-bottom-buttons">
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-help-button">
-                    <span class="ms1-sidebar-button-text" id="ms1-help-button-text">Help</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-help-button" onclick="window.open('https://github.com/pbjarterot/Met-ID/discussions', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-help-button-text">Help</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="help-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">About</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/blob/main/ABOUT.md', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-about-button-text">About</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="information-circle-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-view-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID', '_blank')">
-                    <span class="ms1-sidebar-button-text" id="ms1-view-button-text">View Code</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-view-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-view-button-text">View Code</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="code-slash-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/issues', '_blank')">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Report a Bug</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/issues', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-about-button-text">Report a Bug</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="bug-outline"></ion-icon>
-                    </span>
-                  </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Update</span>
-                    <span class="ms1-sidebar-button-icon">
-                      <ion-icon name="arrow-up-circle-outline"></ion-icon>
                     </span>
                   </button>
                 </div>
@@ -101,13 +171,16 @@
                     </div>
                     <div class="ms2-searchbar-row">
                       <div class="ms2-searchbar-name">
-                        <p>Fragment m/z</p>
+                        <p>Product ion m/z</p>
                       </div>
                       <input type="text" class="ms2-searchbar-input" id="msms-searchbar-fragment">
                     </div>
                     <div class="ms2-slidecontainer">
                       <p>± <span id="demo2"></span></p>
-                      <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow2" step="5">
+                      <div class="ms2-sliderdiv">
+                        <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow2" step="5">
+                      </div>
+                      
                     </div>
                     <div class="ms2-searchbar-row">
                       <div class="ms2-searchbar-name">
@@ -117,7 +190,9 @@
                     </div>
                     <div class="ms2-slidecontainer">
                       <p>± <span id="demo3"></span></p>
-                      <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow3" step="10">
+                      <div class="ms2-sliderdiv">
+                        <input type="range" min="5" max="100" value="50" class="slider" id="mzWindow3" step="10">
+                      </div>
                     </div>
                   </div>
                   
@@ -146,7 +221,7 @@
           </div>
         <div class="tabby-tab">
           <input type="radio" id="tab-2" name="tabby-tabs">
-          <label for="tab-2" class="tabby-label">MS1</label>
+          <label  for="tab-2" class="tabby-label">MS1</label>
           <div id="overlay"></div>
           <div id="popup">
             <div class="ms1-popup-top-div">
@@ -235,14 +310,27 @@
                       <ion-icon name="bulb-outline"></ion-icon>
                     </span>
                   </button>
+                  <div class="ms1-sidebar-identify-append">
+                    <span>Append Results</span>
+                    <input type="checkbox" value="append-results" id="ms1-append-results">
+                  </div>
+                  
                   <button class="ms1-sidebar-button" id="ms1-sidebar-export-button">
                     <span class="ms1-sidebar-button-text" id="export-button-text1">Export Analysis file</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="arrow-down-circle-outline"></ion-icon>
                     </span>
                   </button>
+                  <!-- 
                   <button class="ms1-sidebar-button" id="ms1-sidebar-export-button2">
                     <span class="ms1-sidebar-button-text" id="export-button-text2">Export Identification file</span>
+                    <span class="ms1-sidebar-button-icon">
+                      <ion-icon name="arrow-down-circle-outline"></ion-icon>
+                    </span>
+                  </button>
+                  -->
+                  <button class="ms1-sidebar-button" id="ms1-sidebar-export-adjusted">
+                    <span class="ms1-sidebar-button-text" id="export-button-text2">Export Adjusted m/z</span>
                     <span class="ms1-sidebar-button-icon">
                       <ion-icon name="arrow-down-circle-outline"></ion-icon>
                     </span>
@@ -267,34 +355,28 @@
                   </button>
                 </div>
                 <div class="ms1-bottom-buttons">
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-help-button">
-                    <span class="ms1-sidebar-button-text" id="ms1-help-button-text">Help</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-help-button" onclick="window.open('https://github.com/pbjarterot/Met-ID/discussions', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-help-button-text">Help</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="help-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">About</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/blob/main/ABOUT.md', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-about-button-text">About</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="information-circle-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-view-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID', '_blank')">
-                    <span class="ms1-sidebar-button-text" id="ms1-view-button-text">View Code</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-view-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-view-button-text">View Code</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="code-slash-outline"></ion-icon>
                     </span>
                   </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/issues', '_blank')">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Report a Bug</span>
-                    <span class="ms1-sidebar-button-icon">
+                  <button class="ms2-sidebar-button" id="ms2-sidebar-about-button2" onclick="window.open('https://github.com/pbjarterot/Met-ID/issues', '_blank')">
+                    <span class="ms2-sidebar-button-text" id="ms1-about-button-text">Report a Bug</span>
+                    <span class="ms2-sidebar-button-icon">
                       <ion-icon name="bug-outline"></ion-icon>
-                    </span>
-                  </button>
-                  <button class="ms1-sidebar-button" id="ms1-sidebar-about-button2">
-                    <span class="ms1-sidebar-button-text" id="ms1-about-button-text">Update</span>
-                    <span class="ms1-sidebar-button-icon">
-                      <ion-icon name="arrow-up-circle-outline"></ion-icon>
                     </span>
                   </button>
                 </div>
@@ -329,36 +411,6 @@
                       <!--  Appended by fill_options_under_dropdown in dropdown.ts  -->
                     </div>
                   </div>
-                  <!--
-                  <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
-                    <div class="ms1-searchbar-row4">
-                      <p class="ms1-search-lbl">Display Options</p>
-                    </div>
-                    <div class="ms1-searchbar-row3">
-                      <div class="checkbox-label-container">
-                        <p>Show delta mass (Da)</p>
-                        <input type="checkbox" checked="checked">
-                      </div>
-                      
-                      <div class="checkbox-label-container">
-                        <p>Mass deviation (ppm)</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                      
-                      <div class="checkbox-label-container">
-                        <p>Theoretical mass</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                      <div class="checkbox-label-container" id="checkbox-label-container2">
-                        <p>Show only matched</p>
-                        <input type="checkbox" checked="checked">
-                        <span class="checkmark"></span>
-                      </div>
-                    </div>
-                  </div>
-                  -->
                   <div class="ms1-metabolome-div" id="ms1-metabolome-div3">
                     <div class="ms1-searchbar-row">
                         <p class="ms1-search-lbl">Mass Error</p>
@@ -369,26 +421,7 @@
                         
                       </div>
                     </div>
-                    <!--
-                    <button class="ms1-error-button" id="ms1-error-button-suggest">
-                      <span class="ms1-error-button-text">Suggest (RANSAC)</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="bar-chart-outline"></ion-icon>
-                      </span>
-                    </button>
-                    <button class="ms1-error-button" id="ms1-error-button-manual">
-                      <span class="ms1-error-button-text">Manual</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="analytics-outline"></ion-icon>
-                      </span>
-                    </button>
-                    <button class="ms1-error-button" id="ms1-error-button-show-plot">
-                      <span class="ms1-error-button-text">Show Plot</span>
-                      <span class="ms1-error-button-icon">
-                        <ion-icon name="albums-outline"></ion-icon>
-                      </span>
-                    </button>
-                    -->
+
                     <button class="ms1-error-button" id="ms1-error-button-manual">
                       <span class="ms1-error-button-text">Manual</span>
                       <span class="ms1-error-button-icon">
@@ -411,12 +444,13 @@
                     <p id="db_size">0</p>
                   </div>
                 </div>
+                
                 <div class="ms1-searchbar-row2">
                   <div class="ms1-slidecontainer">
-                    <p>Progress <span id="demo"></span></p>
-                    <p>100%</p>
+                    <p id="identification-results-string"></p>
                   </div>
                 </div>
+                
                 </div>
               </div>
               <div class="ms1-results" id="ms1-results">
@@ -439,10 +473,15 @@
 
                           </button>
                         </li>
+                        <li>
+                          <button id="toggle-show-identified">
+                            Show only identified
+                          </button>
+                        </li>
                       </ul>
                     </div>
                     <div class="search">
-                      <input type="text" class="search-input" placeholder="Search..." />
+                      <input type="text" class="search-input" id="ms1-searchbar-input" placeholder="Search..." />
                     </div>
                   </div>
                 
@@ -461,80 +500,10 @@
                           <th>Matched difference (ppm)</th>
                           <th>Matched theoretical mass</th>
                           <th>MSMS available?</th>
+                          <th>Coverage</th>
                         </tr>
                       </thead>
                       <tbody id="ms1-table-body">
-                        <!--
-                        <tr class="data">
-                          <td><input type="checkbox" /></td>
-                          <td class="clickable-cell">400</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell">
-                            Dopamine<br>Dopamine<br>Dopamine
-                          </td>
-                          <td class="clickable-cell">[M+K]+</td>
-                          <td class="clickable-cell">C2H5O2</td>
-                          <td class="clickable-cell">0.005</td>
-                          <td class="clickable-cell">3.0</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell"><span class="available"></span><br><span class="available"></span><br><span class="not-available"></span></td>
-                        </tr>
-                        <tr class="hidden-row">
-                          <td colspan="10">
-                            <div class="row-details">
-                              <div class="ms1-table-molecule">
-                                <div class="im-container">
-                                  <img data-smiles="CCOCC"
-                                      data-smiles-options=" {'width': 200, 'height': 160, 'padding': 0.0 }"  
-                                      data-smiles-theme='dark' />
-                                  <script>
-                                    SmiDrawer.apply();
-                                  </script>
-                                </div>
-                                <div class="im-container2">
-                                  <p class="ms1-molecule-name">Dopamine</p>
-                                </div>
-                                
-                              </div>
-                              <div class="ms1-table-molecule">
-                                <div class="im-container">
-                                  <img data-smiles="CCOCCCCC"
-                                      data-smiles-options="{'width': 200, 'height': 160, 'padding': 0.0 }"  
-                                      data-smiles-theme='dark' />
-                                  <script>
-                                    SmiDrawer.apply();
-                                  </script>
-                                  
-                                </div>
-                                <div class="im-container2">
-                                  <p class="ms1-molecule-name">Dopamine</p>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                  
-                        <tr class="data">
-                          <td>
-                            <input type="checkbox" />
-                          </td>
-                          <td class="clickable-cell">400</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell">L-Dopa</td>
-                          <td class="clickable-cell">[M+H]+</td>
-                          <td class="clickable-cell">C2H5O2</td>
-                          <td class="clickable-cell">0.0005</td>
-                          <td class="clickable-cell">2.0</td>
-                          <td class="clickable-cell">500</td>
-                          <td class="clickable-cell"><span class="available"></span></td>
-                        </tr>   
-                        <tr class="hidden-row">
-                          <td colspan="10">
-                            <div class="row-details">
-                            </div>
-                          </td>
-                        </tr> 
-                        -->                                         
                       </tbody>
                       
                     </table>
@@ -556,7 +525,17 @@
               </div>
             </div>
           </div>
-        </div>      
+        </div>
+        <div class="tabby-tab">
+          <input type="radio" id="tab-3" name="tabby-tabs">
+          <label  for="tab-3" class="tabby-label" id="rightmost-tab">Database</label>
+        
+          <div class="tabby-content">
+            <div class="searchbar" id="db-searchbar-div">
+
+            </div>
+          </div>
+        </div>
       </div>
       <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
       <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>

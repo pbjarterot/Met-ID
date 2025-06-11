@@ -1,49 +1,36 @@
-import { appWindow } from '@tauri-apps/api/window'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import './ms2/ms2_main';
 import './ms1/ms1_main';
-import { get_ctrl_v_data } from './ms1/ms1_popup';
-import { invoke } from '@tauri-apps/api/tauri'
+import './database_tab/db_main.ts';
+import { invoke } from '@tauri-apps/api/core'
+import { listen } from "@tauri-apps/api/event";
+import { new_tgt_matrix } from './dropdown';
+import { confirm } from '@tauri-apps/plugin-dialog';
+const appWindow = getCurrentWebviewWindow()
 
-window.addEventListener("DOMContentLoaded", () => {
+
+
+window.addEventListener("DOMContentLoaded", async () => {
+	invoke("frontend_ready"); // <- notify Rust
 	invoke('close_splashscreen')
 	document.getElementById('titlebar-minimize')!.addEventListener('click', () => appWindow.minimize());
 	document.getElementById('titlebar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
 	document.getElementById('titlebar-close')!.addEventListener('click', () => appWindow.close());
 
 	document.getElementById("tab-2")?.click();
-	//document.getElementById("ms1-sidebar-add-matrix")?.click();
+	new_tgt_matrix()
+
+	console.log("Hello");
+	type Updater = {
+		id: string
+	}
+	listen<Updater>("ask-frontend-bool", async (event) => {
+		console.log("Hello World!");
+		const userResponse = await confirm("Would you like to update Met-ID?", {
+			title: "Update?",
+			kind: "info"
+		  });
+		console.log("userResponse", typeof userResponse, userResponse);
+		invoke("frontend_bool_response", {id: event.payload, value: userResponse});
+	});
 });
-
-
-document.addEventListener("keydown", async function(e) {
-	if (e.ctrlKey && e.key === 'v') {
-		const radioElements = document.querySelectorAll('input[type=radio]');
-		// Initialize a variable to hold the value of the currently selected radio button
-		let selectedValues: boolean[] | null = [];
-
-		// Loop through and find which one is selected
-		radioElements.forEach((radio: Element) => {
-			const radioInput = radio as HTMLInputElement; // Typecast to HTMLInputElement
-			selectedValues!.push(radioInput.checked); // Or radioInput.id if you want the ID of the selected element
-
-		});
-
-		// Now, `selectedValue` holds the value of the currently selected radio button
-
-		console.log(`Currently selected tab is: ${selectedValues[1]}`);
-
-		if (selectedValues[1] === true) {
-			try {
-				const clipboardText = await navigator.clipboard.readText();
-				get_ctrl_v_data(clipboardText);
-				console.log('Pasted content:', clipboardText);
-			  // Now you can send clipboardText to the Tauri backend if needed
-			} catch (err) {
-			  console.error('Could not read from clipboard:', err);
-			}
-		}
-		
-	  }
-});
-
-

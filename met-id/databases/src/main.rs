@@ -1,11 +1,16 @@
 
 mod parse_hmdb;
+mod coverage;
 mod metabolite;
+//mod draw_molecules;
 
-use std::collections::HashMap;
+
+use rusqlite::{ Batch, Connection };
+use std::collections::{ HashMap, HashSet};
 use std::io::{BufReader, BufRead};
 use std::fs::File;
-use rusqlite::{Connection, Result};
+//use std::io::Write;
+
 use pyo3::Python;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
@@ -37,11 +42,9 @@ fn import_tsv2(path: &str) -> HashMap<String, Vec<String>> {
         let line: String = line.expect("Failed to read line");
         let parts: Vec<_> = line.split("\t").collect();
 
-        if parts.len() == 3 {
-
-            my_map.insert(parts[0].to_string(), vec![parts[1].to_string(), parts[2].to_string()]);
+        if parts.len() == 6 {
+            my_map.insert(parts[0].to_string(), vec![parts[1].to_string(), parts[2].to_string(), parts[3].to_string(), parts[4].to_string(), parts[5].to_string()]);
         }
-
     }
     my_map
 }
@@ -54,15 +57,71 @@ fn get_derivs(deriv: &str, fgh: &HashMap<String, String>) -> usize{
     ret
 }
 
-fn get_fgh(input: &str, fgh: &HashMap<String, String>) -> String {
+fn get_fgh(input: &str, fgh: &HashMap<String, String>) -> usize {
     match fgh.get(&input.to_string()) {
-        Some(x) => x.to_string(),
-        None => "0".to_string()
+        Some(x) => x.parse::<usize>().unwrap(),
+        None => 0
     }
 }
 
+fn create_tables(conn: &Connection) -> () {
+    conn.execute("CREATE TABLE metabolites (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        name TEXT, 
+        smiles TEXT, 
+        chemicalformula TEXT, 
+        mz TEXT)", 
+    []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE functional_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        'Phenolic Hydroxyls' INTEGER NOT NULL,  
+        'Aldehydes' INTEGER NOT NULL, 
+        'Carboxylic Acids' INTEGER NOT NULL, 
+        'Primary Amines' INTEGER NOT NULL)",
+        []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE lipids_functional_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        'Phenolic Hydroxyls' INTEGER NOT NULL,  
+        'Aldehydes' INTEGER NOT NULL, 
+        'Carboxylic Acids' INTEGER NOT NULL, 
+        'Primary Amines' INTEGER NOT NULL)",
+        []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE derivatized_by (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            'FMP-10' INTEGER NOT NULL, 
+            AMPP INTEGER NOT NULL)",
+    []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE in_tissue (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csf INTEGER NOT NULL, 
+        urine INTEGER NOT NULL, 
+        serum INTEGER NOT NULL)", 
+    []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE endogeneity (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        endogenous INTEGER NOT NULL, 
+        exogenous INTEGER NOT NULL, 
+        unspecified INTEGER NOT NULL)", 
+    []
+    ).unwrap();
+
+    conn.execute("CREATE TABLE db_accessions (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    hmdb TEXT)", 
+    []
+    ).unwrap();
+
+    ()
+}
+
 fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error + Send>> {
-    let functional_smarts: HashMap<String, String> = import_tsv("database/smarts.tsv");
+    create_tables(conn);
+
+
+    let functional_smarts: HashMap<String, String> = import_tsv("database/smarts2.tsv");
     let metabolites: Vec<metabolite::Metabolite> = parse_hmdb::parse_xml("database/hmdb_metabolites.xml".to_string()).unwrap();
     let csf_metabolites: Vec<String> = parse_hmdb::parse_only_accession(&"database/csf_metabolites.xml".to_string()).unwrap();
     let urine_metabolites: Vec<String> = parse_hmdb::parse_only_accession(&"database/urine_metabolites.xml".to_string()).unwrap();
@@ -71,55 +130,124 @@ fn make_metabolite_db(conn: &Connection) -> Result<(), Box<dyn std::error::Error
     let (vecs, maps): (Vec<Vec<String>>, Vec<HashMap<String, String>>) = metabolites.par_iter()
         .map(|metabolite: &metabolite::Metabolite| {
             let mets: Vec<String> = metabolite.get();
-            let fgh: HashMap<String, String> = metabolite.functional_group(&functional_smarts);
+            let fgh: HashMap<String, String> = metabolite.functional_group(&functional_smarts).unwrap();
             (mets, fgh)
         }).unzip();
 
-    conn.execute(
-        "CREATE TABLE metabolites (accession TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, smiles TEXT NOT NULL, 
-                                        chemicalformula TEXT NOT NULL, mz TEXT NOT NULL, csf TEXT NOT NULL, urine TEXT NOT NULL, serum TEXT NOT NULL,
-                                        endogenous TEXT NOT NULL, exogenous TEXT NOT NULL, unspecified TEXT NOT NULL,
-                                        phenols TEXT NOT NULL, catechols TEXT NOT NULL, 
-                                        carbonyls TEXT NOT NULL, aldehydes TEXT NOT NULL, carboxylicacids TEXT NOT NULL, primaryamines TEXT NOT NULL, 
-                                        triols TEXT NOT NULL, diols TEXT NOT NULL, hydroxyls TEXT NOT NULL,
-                                        fmp integer, dpp integer, tahs integer, ca integer, girardp integer, girardt integer, ampp integer, boronicacid integer )",
-            [],
-    ).unwrap();
+    let csf_metabolites_set: HashSet<_> = csf_metabolites.into_iter().collect();
+    let urine_metabolites_set: HashSet<_> = urine_metabolites.into_iter().collect();
+    let serum_metabolites_set: HashSet<_> = serum_metabolites.into_iter().collect();
 
-    for i in 0..metabolites.len() {
-        let mets: Vec<String> = vecs[i].clone();
-        let fgh: HashMap<String, String> = maps[i].clone();
+    let endogenous_str = "Endogenous".to_string();
+    let exogenous_str = "Exogenous".to_string();
 
-        let in_csf: i32 = if csf_metabolites.contains(&mets[0]) { 1 } else { 0 };
-        let in_urine: i32 = if urine_metabolites.contains(&mets[1]) { 1 } else { 0 };
-        let in_serum: i32 = if serum_metabolites.contains(&mets[2]) { 1 } else { 0 };
-        let endo: i32 = if metabolites[i].endo_exo.contains(&"Endogenous".to_string()) { 1 } else { 0 };
-        let exo: i32 = if metabolites[i].endo_exo.contains(&"Exogenous".to_string()) { 1 } else { 0 };
-        let unspec: i32 = if metabolites[i].endo_exo.len() == 0 { 1 } else { 0 };
+    let metabolites_len = metabolites.len();
 
-        let fmp10: usize = get_derivs(&"phenols", &fgh) + get_derivs(&"primary amines", &fgh);
-        let dpp_tahs_ca: usize = get_derivs(&"primary amines", &fgh);
-        let girard: usize = get_derivs(&"carbonyls", &fgh);
-        let ampp: usize = get_derivs(&"carboxylic acids", &fgh) + get_derivs(&"aldehydes", &fgh);
-        let ba: usize = get_derivs(&"diols", &fgh) + get_derivs(&"catechols", &fgh);
-        let a: [&String; 28] = [&mets[0], &mets[1], &mets[2], &mets[3], &mets[4],
-                                &in_csf.to_string(), &in_urine.to_string(), &in_serum.to_string(), 
-                                &endo.to_string(), &exo.to_string(), &unspec.to_string(),
-                                &get_fgh(&"phenols", &fgh), &get_fgh(&"catechols", &fgh), &get_fgh(&"carbonyls", &fgh), 
-                                &get_fgh(&"aldehydes", &fgh), &get_fgh(&"carboxylic acids", &fgh), &get_fgh(&"primary amines", &fgh), 
-                                &get_fgh(&"triols", &fgh), &get_fgh(&"diols", &fgh), &get_fgh(&"hydroxyls", &fgh),
-                                &fmp10.to_string(), &dpp_tahs_ca.to_string(), &dpp_tahs_ca.to_string(), &dpp_tahs_ca.to_string(), 
-                                &girard.to_string(), &girard.to_string(), &ampp.to_string(), &ba.to_string(),
-                                ];    
-        let mut stmt: rusqlite::Statement = conn.prepare("INSERT INTO metabolites (accession, name, smiles, chemicalformula, mz, csf, urine, serum, endogenous, exogenous, unspecified,
-            phenols, catechols, carbonyls, aldehydes, carboxylicacids, primaryamines, triols, diols, hydroxyls,
-            fmp, dpp, tahs, ca, girardp, girardt, ampp, boronicacid) 
-            VALUES (:accession, :name, :smiles, :chemicalformula, :mz, :csf, :urine, :serum, :endogenous, :exogenous, :unspecified,
-            :phenols, :catechols, :carbonyls, :aldehydes, :carboxylicacids, :primaryamines, :triols, :diols, :hydroxyls,
-            :fmp, :dpp, :tahs, :ca, :girardp, :girardt, :ampp, :boronicacid)").unwrap();
+    // Building the SQL statement dynamically
+    let mut sql = String::from("BEGIN;\n");
 
-        stmt.execute(&a).unwrap();
+    for i in 0..metabolites_len {
+        let mets: &Vec<String> = &vecs[i];
+        let fgh: &HashMap<String, String> = &maps[i];
+
+        let in_csf: i32 = csf_metabolites_set.contains(&mets[0]) as i32;
+        let in_urine: i32 = urine_metabolites_set.contains(&mets[0]) as i32;
+        let in_serum: i32 = serum_metabolites_set.contains(&mets[0]) as i32;
+        let endo: i32 = metabolites[i].endo_exo.contains(&endogenous_str) as i32;
+        let exo: i32 = metabolites[i].endo_exo.contains(&exogenous_str) as i32;
+        let unspec: i32 = metabolites[i].endo_exo.is_empty() as i32;
+        //if endo > 0 {
+        //    println!("{:?}, {:?}, {:?}", endo, exo, unspec);
+        //}
+        
+
+        let fmp10: i32 = (get_derivs(&"Phenolic Hydroxyls", fgh) + get_derivs(&"Primary Amines", fgh)).try_into().unwrap();
+        let ampp: i32 = (get_derivs(&"Carboxylic Acids", fgh) + get_derivs(&"Aldehydes", fgh)).try_into().unwrap();
+        
+        println!("fmp10: {:?}, ampp: {:?}", fmp10, ampp);
+        // Append SQL statements to the string
+        sql.push_str(&format!(
+            "INSERT INTO metabolites (name, smiles, chemicalformula, mz) VALUES (\"{}\", \"{}\", \"{}\", \"{}\");\n",
+            mets[1], mets[2], mets[3], mets[4]
+        ));
+
+        sql.push_str(&format!(
+            "INSERT INTO functional_groups ('Phenolic Hydroxyls', Aldehydes, 'Carboxylic Acids', 'Primary Amines') VALUES ({}, {}, {}, {});\n",
+            get_fgh("Phenolic Hydroxyls", fgh),
+            get_fgh("Aldehydes", fgh),
+            get_fgh("Carboxylic Acids", fgh),
+            get_fgh("Primary Amines", fgh),
+        ));
+
+        sql.push_str(&format!(
+            "INSERT INTO derivatized_by ('FMP-10', AMPP) VALUES ({}, {});\n",
+            fmp10, ampp
+        ));
+
+        sql.push_str(&format!(
+            "INSERT INTO in_tissue (csf, urine, serum) VALUES ({}, {}, {});\n",
+            in_csf, in_urine, in_serum
+        ));
+
+        sql.push_str(&format!(
+            "INSERT INTO endogeneity (endogenous, exogenous, unspecified) VALUES ({}, {}, {});\n",
+            endo, exo, unspec
+        ));
+
+        sql.push_str(&format!(
+            "INSERT INTO db_accessions (hmdb) VALUES ('{}');\n",
+            mets[0]
+        ));
+
     }
+
+    sql.push_str("COMMIT;\n");
+
+
+    // Prepare and execute the batch
+    let mut batch: Batch<'_, '_> = Batch::new(&conn, &sql);
+
+    while let Some(mut stmt) = batch.next().unwrap() {
+        //println!("{:?}\n{:?}", &stmt, &sql);
+        //println!("new batch");
+        stmt.execute([]).unwrap();
+    }
+    println!("done");
+    /* 
+    //batch.execute()?;
+    conn.execute("CREATE INDEX IF NOT EXISTS index_metabolites_name ON metabolites(name)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_metabolites_smiles ON metabolites(smiles)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_metabolites_chemicalformula ON metabolites(chemicalformula)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_metabolites_mz ON metabolites(mz)", []).unwrap();
+
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_phenols ON functional_groups(phenols)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_catechols ON functional_groups(catechols)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_carbonyls ON functional_groups(carbonyls)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_aldehydes ON functional_groups(aldehydes)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_carboxylicacids ON functional_groups(carboxylicacids)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_primaryamines ON functional_groups(primaryamines)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_triols ON functional_groups(triols)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_diols ON functional_groups(diols)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_functional_groups_hydroxyls ON functional_groups(hydroxyls)", []).unwrap();
+
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_fmp ON derivatized_by(fmp)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_dpp ON derivatized_by(dpp)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_tahs ON derivatized_by(tahs)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_ca ON derivatized_by(ca)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_girardp ON derivatized_by(girardp)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_girardt ON derivatized_by(girardt)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_ampp ON derivatized_by(ampp)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_derivatized_by_boronicacid ON derivatized_by(boronicacid)", []).unwrap();
+
+    conn.execute("CREATE INDEX IF NOT EXISTS index_in_tissue_csf ON in_tissue(csf)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_in_tissue_urine ON in_tissue(urine)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_in_tissue_serum ON in_tissue(serum)", []).unwrap();
+
+    conn.execute("CREATE INDEX IF NOT EXISTS index_endogeneity_endogenous ON endogeneity(endogenous)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_endogeneity_exogenous ON endogeneity(exogenous)", []).unwrap();
+    conn.execute("CREATE INDEX IF NOT EXISTS index_endogeneity_unspecified ON endogeneity(unspecified)", []).unwrap();
+    */
+
     Ok(())
 }
 
@@ -130,11 +258,14 @@ fn get_lipid_attr(mol: &pyo3::PyAny, arg: &str) -> String{
     a
 }
 
-fn make_lipid_db(conn: &Connection) -> Result<()> {
+fn make_lipid_db(conn: &Connection) -> Result<(), rusqlite::Error> {
+    println!("doing lipids now");
     conn.execute(
         "CREATE TABLE lipids (name TEXT NOT NULL, mz TEXT NOT NULL, formula TEXT NOT NULL, smiles TEXT NOT NULL)",
          [],
     )?;
+    let functional_smarts: HashMap<String, String> = import_tsv("database/smarts2.tsv");
+    
 
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py: Python| {
@@ -157,8 +288,33 @@ fn make_lipid_db(conn: &Connection) -> Result<()> {
             let a: [&String; 4] = [&name, &mz, &formula, &smiles];
             
             let mut stmt: rusqlite::Statement = conn.prepare("INSERT INTO lipids (name, mz, formula, smiles) 
-                                                                            VALUES (:name, :mz, :formula, :smiles)").unwrap();
+                                                                        VALUES (:name, :mz, :formula, :smiles)").unwrap();
             stmt.execute(&a).unwrap();
+
+            let mut fgh: HashMap<String, String> = HashMap::new();
+
+            for (key, value) in &functional_smarts {
+                let mol = rdkit.getattr("MolFromSmiles").unwrap().call1((smiles.clone(),)).unwrap();
+                if !mol.is_none() {
+                    let func = rdkit.getattr("MolFromSmarts").unwrap().call1((value,)).unwrap();
+                    let a = mol.call_method1("GetSubstructMatches", (func,)).unwrap();
+                    let aa: Vec<Vec<usize>> = a.extract().unwrap();
+                    let tuple_len = aa.len();
+                    fgh.insert(key.clone(), tuple_len.to_string());
+                } else {
+                    println!("Error: {:?}", smiles.clone());
+                    fgh.insert(key.clone(), "0".to_string());
+                }
+            }
+
+            let b: [&usize; 4] = [&get_fgh("Phenolic Hydroxyls", &fgh), &get_fgh("Aldehydes", &fgh), &get_fgh("Carboxylic Acids", &fgh), &get_fgh("Primary Amines", &fgh),];
+
+            //functional_groups_lipids
+            let mut stmt: rusqlite::Statement = conn.prepare(
+                "INSERT INTO lipids_functional_groups ('Phenolic Hydroxyls', Aldehydes, 'Carboxylic Acids', 'Primary Amines') VALUES (:ph, :a, :ca, :pa);",
+            ).unwrap();
+
+            stmt.execute(&b).unwrap();
         
         }
         
@@ -168,30 +324,142 @@ fn make_lipid_db(conn: &Connection) -> Result<()> {
     
 }
 
-fn make_matrix_db(conn: &Connection) -> Result<()> {
-    let matrices: HashMap<String, Vec<String>> = import_tsv2("database/matrix.tsv");
+fn make_adduct_db(conn: &Connection) -> Result<(), rusqlite::Error> {
+    let matrices: HashMap<String, Vec<String>> = import_tsv2("database/adducts.tsv");
+    println!("{:?}", matrices);
     conn.execute(
-        "CREATE TABLE matrices (mname TEXT NOT NULL, formula TEXT NOT NULL, deltamass TEXT NOT NULL)",
+        "CREATE TABLE adducts (adduct TEXT NOT NULL, mname TEXT NOT NULL, numfunctionalgroups INTEGER NOT NULL, formula TEXT NOT NULL, deltamass REAL NOT NULL, maxcoverage INTEGER NOT NULL)",
         [],
     )?;
 
     for (key, value) in matrices {
-        let a: [&String; 3] = [&key, &value[0], &value[1]];    
+        println!("{}, {:?}", key, value);
+        let a: [&String; 6] = [&key, &value[0], &value[1], &value[2], &value[3], &value[4]];    
         let mut stmt: rusqlite::Statement = conn.prepare(
-            "INSERT INTO matrices (mname, formula, deltamass) VALUES (:mname, :formula, :deltamass)").unwrap();
+            "INSERT INTO adducts (adduct, mname, numfunctionalgroups, formula, deltamass, maxcoverage) VALUES (:adduct, :mname, :numfunctionalgroups, :formula, :deltamass, :maxcoverage)").unwrap();
         stmt.execute(&a).unwrap();
     }
 
     Ok(())
 }
 
+fn make_matrices_db(conn: &Connection) -> Result<(), rusqlite::Error> {
+    let file: File = File::open("database/matrices.tsv").expect("Failed to open file");
+    let reader: BufReader<File> = BufReader::new(file);
+
+    let mut my_map: Vec<String> = Vec::new();
+
+    for line in reader.lines() {
+        let line: String = line.expect("Failed to read line");
+        let parts: Vec<_> = line.split("\t").collect();
+        my_map.push(parts[0].to_string());
+    }
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS matrices (matrix TEXT NOT NULL, 'Phenolic Hydroxyls' TEXT NOT NULL, 'Primary Amines' TEXT NOT NULL, Aldehydes TEXT NOT NULL, 'Carboxylic Acids' TEXT NOT NULL)",
+        [],
+    )?;
+
+    for matrix in my_map {
+        if matrix == "FMP-10".to_string() {
+            let a: [&String; 5] = [&matrix, &"1".to_string(), &"1".to_string(), &"0".to_string(), &"0".to_string()];    
+            let mut stmt: rusqlite::Statement = conn.prepare(
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+            stmt.execute(&a).unwrap();
+
+        } else if matrix=="AMPP"{
+            let a: [&String; 5] = [&matrix, &"0".to_string(), &"0".to_string(), &"1".to_string(), &"1".to_string()];    
+            let mut stmt: rusqlite::Statement = conn.prepare(
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+            stmt.execute(&a).unwrap();
+        } else {
+            let a: [&String; 5] = [&matrix, &"0".to_string(), &"0".to_string(), &"0".to_string(), &"0".to_string()];    
+            let mut stmt: rusqlite::Statement = conn.prepare(
+                "INSERT INTO matrices (matrix, 'Phenolic Hydroxyls', 'Primary Amines', Aldehydes, 'Carboxylic Acids') VALUES (:matrix, :phenols, :primary_amines, :aldehydes, :carboxylic_acids)").unwrap();
+            stmt.execute(&a).unwrap();
+        }
+            
+    }
+
+    Ok(())
+}
+
+fn make_functional_group_smarts_table(conn: &Connection) -> Result<(), rusqlite::Error> {
+
+    let functional_smarts: HashMap<String, String> = import_tsv("database/smarts2.tsv");
+    // Create the table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS functional_group_smarts (
+                  name   TEXT NOT NULL,
+                  smarts TEXT NOT NULL
+                  )",
+        [],
+    )?;
+
+    
+    // Insert data
+    for (key, value) in functional_smarts.iter() {
+        let a: [&String; 2] = [&key, &value];
+        let mut stmt = conn.prepare("INSERT OR REPLACE INTO functional_group_smarts (name, smarts) VALUES (?1, ?2)").unwrap();
+        stmt.execute(&a)?;
+    }
+    
+    Ok(())
+}
+
+
+fn drop_columns_except(conn: &Connection, table_name: &str, columns_to_keep: Vec<&str>) -> rusqlite::Result<()> {
+    // Generate comma-separated list of columns to keep
+    let columns_str = columns_to_keep.join(", ");
+
+    // Create a new temporary table
+    let create_tmp_table_sql = format!("CREATE TABLE tmp AS SELECT {} FROM {}", columns_str, table_name);
+    conn.execute(&create_tmp_table_sql, [])?;
+
+    // Drop the original table
+    let drop_original_table_sql = format!("DROP TABLE {}", table_name);
+    conn.execute(&drop_original_table_sql, [])?;
+
+    // Rename the temporary table to the original table name
+    let rename_tmp_table_sql = format!("ALTER TABLE tmp RENAME TO {}", table_name);
+    conn.execute(&rename_tmp_table_sql, [])?;
+
+    Ok(())
+}
+
+
 fn main() -> () {
+    
     let db_path = "db.db";
+
+    //let db_path = ":memory:";
+    
     //remove the database if it already exists
-    std::fs::remove_file(db_path).expect("Database could not be removed");
+    //std::fs::remove_file(db_path).expect("Database could not be removed");
 
     let conn: Connection = Connection::open(db_path).expect("Could not open db");
     make_metabolite_db(&conn).unwrap();
+    //conn.execute("DROP TABLE functional_group_smarts", []).unwrap();
+    //conn.execute("DROP TABLE lipids", []).unwrap();
+    //create_tables(&conn);
+    make_functional_group_smarts_table(&conn).unwrap();
     make_lipid_db(&conn).unwrap();
-    make_matrix_db(&conn).unwrap();
+    //conn.execute("DROP TABLE adducts", []).unwrap();
+    make_adduct_db(&conn).unwrap();
+    //conn.execute("DROP TABLE matrices", []).unwrap();
+    make_matrices_db(&conn).unwrap();
+    //let columns_to_keep = vec!["id", "phenols", "aldehydes", "carboxylicacids", "primaryamines"];
+    //drop_columns_except(&conn, "functional_groups", columns_to_keep).unwrap();
+
+    //conn.execute("DROP TABLE user_metabolites", []).unwrap();
+    //conn.execute("DROP TABLE user_derivatized_by", []).unwrap();
+    //conn.execute("DROP TABLE user_endogeneity", []).unwrap();
+    //conn.execute("DROP TABLE user_in_tissue", []).unwrap();
+    //conn.execute("DROP TABLE user_db_accessions", []).unwrap();
+    //conn.execute("DROP TABLE user_functional_groups", []).unwrap();
+    //conn.execute("DROP TABLE user_matrices", []).unwrap();
+    //conn.execute("DROP TABLE user_adducts", []).unwrap();
+    //conn.execute("DROP TABLE user_functional_group_smarts", []).unwrap();
+    let fg_string: &str = "functional_groups.'Aldehydes'";
+    let matrix: &str = "FMP-10";
+    coverage::coverage_string(&conn, fg_string, matrix);
 }

@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 //import { zoom as d3Zoom, zoomIdentity as d3ZoomIdentity } from 'd3-zoom';
 
 export interface SpectrumPoint {
@@ -12,9 +12,10 @@ export interface SpectrumPoint {
 
 export type SpectrumMap = {[key: string]: SpectrumPoint[]}
 
-export async function draw(index: number, identifier: string, adduct: string) {
-    const fetchData = async (identifier: string, adduct: string): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
-        const result = await invoke<string>('get_msms_spectra', { identifier, adduct });
+
+export async function draw(index: number, identifier: string, adduct: string, cid: string) {
+    const fetchData = async (identifier: string, adduct: string, cid: string): Promise<{ keys: string[], values: SpectrumPoint[][] }> => {
+        const result = await invoke<string>('get_msms_spectra_tauri', { identifier, adduct, cid });
         const resultMap = JSON.parse(result) as SpectrumMap;
 
         const keys: string[] = [];
@@ -31,8 +32,8 @@ export async function draw(index: number, identifier: string, adduct: string) {
 	
 
     const colors = ["red", "green", "blue", "purple", "orange", "yellow"];
-    const {keys: labels, values: dat} = await fetchData(identifier, adduct);
-	const shouldIncludeArray: boolean[] = new Array(labels.length).fill(true);
+    const {keys: labels, values: dat} = await fetchData(identifier, adduct, cid);
+		const shouldIncludeArray: boolean[] = new Array(labels.length).fill(true);
 
     const margin = { top: 40, right: 30, bottom: 30, left: 70 };
     const width = 1550 - margin.left - margin.right;
@@ -143,8 +144,8 @@ export async function draw(index: number, identifier: string, adduct: string) {
 					// Implement the compare functionality here.
 					// You can use the current index "i" to determine which item to compare.
 					
-					let name = await invoke<string>("get_name_from_identifier_msms", {identifier:identifier})
-					console.log(`Comparing item ${name} ${adduct} ${labels[i]}`);
+					let name = await invoke<string>("get_name_from_identifier_msms_tauri", {identifier:identifier})
+					console.log(name)
 
 					// Grab the div using its ID
 					let myDiv: HTMLElement | null = document.getElementById("ms2-to-compare-compounds");
@@ -152,31 +153,64 @@ export async function draw(index: number, identifier: string, adduct: string) {
 					if(myDiv) {
 						let elementDiv: HTMLDivElement = document.createElement("div");
 						elementDiv.className = "ms2-to-compare-button";
-						elementDiv.id = `ms2-to-compare-button-${i}`
-
 						let textSpan: HTMLSpanElement = document.createElement("span");
-						textSpan.textContent = `${name} ${adduct} ${labels[i]}`;
-						textSpan.className = "ms2-to-compare-textspan";
-						let iconSpan: HTMLSpanElement = document.createElement("span");
-						iconSpan.className = "ms2-to-compare-iconspan";
-						iconSpan.id = "ms2-to-compare-iconspan-" + i;
-
-						let icon: HTMLElement = document.createElement("ion-icon");
-						icon.setAttribute("name", "close-outline");
-						iconSpan.appendChild(icon);
-
-						elementDiv.appendChild(textSpan);
-						elementDiv.appendChild(iconSpan);
-
-						myDiv.append(elementDiv);
 
 
-						document.getElementById('ms2-to-compare-iconspan-' + i)!.addEventListener('click', function() {
-							let targetDiv = document.getElementById('ms2-to-compare-button-' + i);
-							if (targetDiv) {
-								targetDiv.parentNode!.removeChild(targetDiv);
-							}
-						});
+						if (name == "User Input") {
+							elementDiv.id = `ms2-to-compare-button-${name}`
+							textSpan.textContent = `${name}`;
+							textSpan.className = "ms2-to-compare-textspan";
+							textSpan.id = `${identifier}&${adduct}&${labels[i]}`;
+
+							let iconSpan: HTMLSpanElement = document.createElement("span");
+							iconSpan.className = "ms2-to-compare-iconspan";
+							iconSpan.id = `ms2-to-compare-iconspan-${name}`;
+
+							let icon: HTMLElement = document.createElement("ion-icon");
+							icon.setAttribute("name", "close-outline");
+							iconSpan.appendChild(icon);
+
+							elementDiv.appendChild(textSpan);
+							elementDiv.appendChild(iconSpan);
+
+							myDiv.append(elementDiv);
+
+
+							document.getElementById(`ms2-to-compare-iconspan-${name}`)!.addEventListener('click', function() {
+								let targetDiv = document.getElementById(`ms2-to-compare-button-${name}`);
+								if (targetDiv) {
+									targetDiv.parentNode!.removeChild(targetDiv);
+								}
+							});
+						} else {
+							elementDiv.id = `ms2-to-compare-button-${name}&${adduct}&${labels[i]}`
+							textSpan.textContent = `${name} ${adduct} ${labels[i]}`;
+							textSpan.className = "ms2-to-compare-textspan";
+							textSpan.id = `${identifier}&${adduct}&${labels[i]}`;
+
+							let iconSpan: HTMLSpanElement = document.createElement("span");
+							iconSpan.className = "ms2-to-compare-iconspan";
+							iconSpan.id = `ms2-to-compare-iconspan-${name}&${adduct}&${labels[i]}`;
+
+							let icon: HTMLElement = document.createElement("ion-icon");
+							icon.setAttribute("name", "close-outline");
+							iconSpan.appendChild(icon);
+
+							elementDiv.appendChild(textSpan);
+							elementDiv.appendChild(iconSpan);
+
+							myDiv.append(elementDiv);
+
+
+							document.getElementById(`ms2-to-compare-iconspan-${name}&${adduct}&${labels[i]}`)!.addEventListener('click', function() {
+								let targetDiv = document.getElementById(`ms2-to-compare-button-${name}&${adduct}&${labels[i]}`);
+								if (targetDiv) {
+									targetDiv.parentNode!.removeChild(targetDiv);
+								}
+							});
+						}
+						
+						
 
 					}
 
@@ -194,12 +228,12 @@ export async function draw(index: number, identifier: string, adduct: string) {
         const transform = event.transform;
         const xNewScale = transform.rescaleX(xScale);
         const filteredData = dat.flatMap((data, index) => {
-			if (shouldIncludeArray[index]) {
-				return data.filter(d => d.x >= xNewScale.domain()[0] && d.x <= xNewScale.domain()[1]);
-			} else {
-				return []; // Exclude this data array
-			}
-		});
+					if (shouldIncludeArray[index]) {
+						return data.filter(d => d.x >= xNewScale.domain()[0] && d.x <= xNewScale.domain()[1]);
+					} else {
+						return []; // Exclude this data array
+					}
+				});
         const yMaxInView = d3.max(filteredData, d => d.y)!;
         const yNewScale = d3.scaleLinear().domain([yMaxInView, 0]).range([0, height]);
 

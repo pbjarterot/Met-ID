@@ -1,0 +1,4 @@
+Primary Amines	[NX3;H2;!$(NC=[!#6]);!$(NC#[!#6])][#6]
+Phenolic Hydroxyls	[OH]c1ccccc1
+Aldehydes	[CX3H1](=O)[#6]
+Carboxylic Acids	[CX3](=O)[OX2H1]

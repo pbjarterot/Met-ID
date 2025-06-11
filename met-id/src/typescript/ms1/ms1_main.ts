@@ -1,11 +1,15 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { get_csv } from './ms1_popup';
-import { identify } from './ms1_sidebar';
-import { fill_dropdown, fill_under_dropdown } from "../dropdown";
+import { identify, get_adjusted_ms1 } from './ms1_sidebar';
+import { fill_dropdown, fill_under_dropdown, new_tgt_matrix } from "../dropdown";
 import "./ms1_mass_error";
 import "./ms1_table";
 import "./ms1_popup";
-import {add_matrix, add_metabolite, add_functional_group} from "./ms1_add_buttons";
+import { addSearchbarListener } from "./ms1_searchbar";
+import { convertTableToCSV } from './ms1_io';
+import { add_metabolite } from './add_buttons/metabolites';
+import { add_matrix } from './add_buttons/matrices';
+import { add_functional_group } from "./add_buttons/functional_groups";
 
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -13,8 +17,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ms1-sidebar-add-matrix")!.addEventListener("click", async () => add_matrix());
     document.getElementById("ms1-sidebar-add-functional-group")!.addEventListener("click", async () => add_functional_group());
 
-    fill_dropdown(["HMDB (All)", "HMDB (Brain)", "HMDB (CSF)", "Lipidmaps"], "metabolome-dropdown");
-    fill_dropdown(["Positive mode", "Negative mode", "FMP-10", "AMPP"], "matrix-dropdown");
+    fill_dropdown(["HMDB (All)", "HMDB (CSF)", "HMDB (Urine)", "HMDB (Serum)", "Lipidmaps"], "metabolome-dropdown");
+    fill_dropdown(Object.keys(await new_tgt_matrix()), "matrix-dropdown")
 
     fill_under_dropdown.metabolites("metabolome-dropdown", "metabolome-checkbox-container")
     fill_under_dropdown.matrices("matrix-dropdown", "matrix-checkbox-container")
@@ -22,6 +26,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("ms1-sidebar-open-file-button")!.addEventListener("click", async () => get_csv());
     document.getElementById("ms1-sidebar-identify-button2")!.addEventListener("click", async () => identify());
+    document.getElementById("ms1-sidebar-export-adjusted")!.addEventListener("click", async () => get_adjusted_ms1());
 
     document.getElementById("matrix-dropdown")!.addEventListener("change", async () => check_options_for_sql_counter());
     document.getElementById("metabolome-dropdown")!.addEventListener("change", async () => check_options_for_sql_counter());
@@ -33,11 +38,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     slider!.oninput = function() {
         output!.innerHTML = (this as HTMLInputElement).value + " ppm";
     }
+
+
+    document.getElementById("ms1-sidebar-export-button")!.addEventListener("click", () => {
+        convertTableToCSV("ms1-datatable");
+    })
+
+    addSearchbarListener();
 })
-
-
-
-
 
 async function check_options_for_sql_counter() {
     fill_under_dropdown.metabolites("metabolome-dropdown", "metabolome-checkbox-container")
@@ -50,7 +58,7 @@ async function check_options_for_sql_counter() {
     let met_type: string[] = check_checkboxes("ms1-metabolome-div1");
     let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
 
-    let count: number = await invoke("sql_counter", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
+    let count: number = await invoke("sql_counter_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts});
     let db_size = document.getElementById("db_size");
     
     if (db_size !== null) {

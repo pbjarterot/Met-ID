@@ -1,6 +1,6 @@
 import { fill_dropdown } from '../dropdown';
-import { invoke } from '@tauri-apps/api';
-import { open } from '@tauri-apps/api/dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import { createTableRowHTML } from './ms1_table';
 
 let deleted_ms1_rows: number[] = [];
@@ -30,7 +30,6 @@ async function data(result: string, result_type: string) {
             }
             
         }   
-        console.log(file_contents);
         add_filename_to_top_of_popup(result)
         add_to_popup_table(file_contents)
         addPopupDropdownElements();
@@ -244,7 +243,6 @@ function removeItemsByIndices(arr: number[], indicesToRemove: number[]): number[
 }
 
 async function read_csv(result: string| string[] | null, deleted_rows: number[], delimiter: string) {
-    console.log("read_csv was used");
     const table_body = document.getElementById("ms1-table-body");
     table_body!.innerHTML = "";
     const selectedColumn = parseInt(((document.getElementById("ms1-popup-mz-column-dropdown") as HTMLSelectElement).value as unknown as string).replace("Column ", "")) -1 ;
@@ -259,7 +257,6 @@ async function read_csv(result: string| string[] | null, deleted_rows: number[],
 
     
     const parsed_csv3: number[] = removeItemsByIndices(parsed_csv2, deleted_rows)
-    console.log(parsed_csv3);
 
 
     let allRowsHTML = '';
@@ -267,7 +264,6 @@ async function read_csv(result: string| string[] | null, deleted_rows: number[],
     for (let i = 0; i < parsed_csv3.length; i++) {
         allRowsHTML += createTableRowHTML(parsed_csv3[i]);
     }
-    //console.log(allRowsHTML);
     // Append all rows in one go
     table_body!.insertAdjacentHTML('beforeend', allRowsHTML);
 }

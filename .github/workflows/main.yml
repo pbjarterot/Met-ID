@@ -1,5 +1,4 @@
 name: 'publish'
-
 on:
   push:
     branches:
@@ -12,63 +11,116 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-20-04] #[macos-latest, ubuntu-20.04, windows-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
-      
       - name: setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
-
+          node-version: 18
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-20.04'
+      - name: install dependencies (Linux)
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y webkit2gtk-4.1 javascriptcoregtk-4.1 libsoup-3.0 glib-2.0 gobject-2.0 gio-2.0 libglib2.0-dev pkg-config libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler
 
-      - name: Install PyOxidizer
-        run: |
-            cargo install pyoxidizer
-        working-directory: met-id
+          npm install @types/jquery --save-dev
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'  # Specify the Python version
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install grpcio
+          pip install grpcio_tools
+          pip install protobuf
+          pip install rdkit
 
-      - name: Main Build with PyOxidizer
+      - name: Install proto
         run: |
-          # Define PyOxidizer target based on current platform
-          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            pyoxidizer build --target-triple x86_64-pc-windows-msvc
-            mv build/x86_64-pc-windows-msvc/debug/met-id_python/met-id_python.exe ./bin/met-id_python-x86_64-pc-windows-msvc.exe
-          elif [ "${{ matrix.platform }}" == "ubuntu-latest" ]; then
-            pyoxidizer build --target-triple aarch64-unknown-linux-gnu
-            mv ./build/aarch64-unknown-linux-gnu/debug/met-id_python/met-id_python bin/met-id_python-aarch64-unknown-linux-gnu
-          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            pyoxidizer build --target-triple x86_64-apple-darwin
-            mv ./build/x86_64-apple-darwin/debug/met-id_python/met-id_python bin/met-id_python-x86_64-apple-darwin
-          fi
-        working-directory: met-id/src-tauri
-      - name: List binaries directory
+          python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
+        working-directory: met-id/src-tauri/src
+
+      - name: Use Pyinstaller (Windows)
+        if: matrix.platform == 'windows-latest'
         run: |
-          ls -lR 
-      # Note: The following step needs to be properly defined, and steps should not be nested.
+          ./make_executables.ps1
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: pwsh
+
+      - name: Use Pyinstaller (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+      - name: Use Pyinstaller (Linux)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          chmod +x make_linux_executables.sh
+          ./make_linux_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+
+      - name: Install rdkit (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: brew install rdkit
+
+      - name: Import Apple Certificate (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import apple_certificate.p12 -k build.keychain -P "${APPLE_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+      - name: Bundle RDKit into App (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
+          FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
+          mkdir -p "$FRAMEWORKS_PATH"
+          
+          # Copy all required RDKit dylibs
+          cp $(brew --prefix rdkit)/lib/libRDKit*.dylib "$FRAMEWORKS_PATH"
       - name: Upload Bin
         run: |
           # Add your upload commands here
 
-      - name: install frontend dependencies
+      - name: Install Frontend Dependencies
         run: npm install # change this to npm or pnpm depending on which one you use
         working-directory: met-id
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: app-v__VERSION__
-          releaseName: 'App v__VERSION__'
+          tagName: Met-ID-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'Met-ID v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
+          projectPath: ./met-id
+          releaseDraft: false
           prerelease: false
