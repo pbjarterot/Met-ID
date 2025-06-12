@@ -98,6 +98,27 @@ jobs:
           
           # Copy all required RDKit dylibs
           cp $(brew --prefix rdkit)/lib/libRDKit*.dylib "$FRAMEWORKS_PATH"
+
+      - name: Sign PyInstaller Binaries (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
+          DIST_PATH="$APP_PATH/Contents/Resources/pyinstaller/dist"
+
+          echo "Signing binaries in $DIST_PATH"
+          for binary in "$DIST_PATH"/*; do
+            if [[ -x "$binary" ]]; then
+              echo "Signing $binary"
+              codesign --sign "$APPLE_SIGNING_IDENTITY" \
+                       --options runtime \
+                       --timestamp \
+                       --force \
+                       "$binary"
+            fi
+          done
+          
       - name: Upload Bin
         run: |
           # Add your upload commands here
