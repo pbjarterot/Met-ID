@@ -56,13 +56,13 @@ jobs:
         working-directory: met-id/src-tauri/pyinstaller
         shell: pwsh
 
-     # - name: Use Pyinstaller (MacOS)
-     #   if: matrix.platform == 'macos-latest'
-     #   run: |
-     #     chmod +x make_macos_executables.sh
-     #     ./make_macos_executables.sh
-     #   working-directory: met-id/src-tauri/pyinstaller
-     #   shell: bash
+      - name: Use Pyinstaller (MacOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
 
       - name: Use Pyinstaller (Linux)
         if: matrix.platform == 'ubuntu-latest'
