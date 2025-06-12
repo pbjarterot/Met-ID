@@ -119,6 +119,19 @@ jobs:
                        "$binary"
             fi
           done
+      - name: Re-sign Entire App Bundle (MacOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
+      
+          codesign --sign "$APPLE_SIGNING_IDENTITY" \
+                   --timestamp \
+                   --options runtime \
+                   --deep \
+                   --force \
+                   "$APP_PATH"
           
       - name: Upload Bin
         run: |
