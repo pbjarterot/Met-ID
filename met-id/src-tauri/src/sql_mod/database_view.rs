@@ -29,6 +29,7 @@ pub struct ParsedDBData {
     smiles: String,
     formula: String,
     map: HashMap<String, HashMap<String, f64>>,
+    functional_groups: HashMap<String, i64>
 }
 
 fn get_matrix_functional_groups(
@@ -43,7 +44,7 @@ fn get_matrix_functional_groups(
 
     // Step 2: Separate the matrix name column (first) and functional group columns
     let (matrix_name_col, functional_group_cols) = columns.split_first().expect("No columns found");
-
+    
     // Step 3: Build CASE expressions for each FG column
     let case_expr = functional_group_cols
         .iter()
@@ -74,9 +75,34 @@ fn get_matrix_functional_groups(
         let (name, groups) = row?;
         map.insert(name, groups);
     }
+
+
+
+
+    // Step 4: Final SQL query
+    let sql = format!(
+        "SELECT \"{name_col}\" AS matrix_name, ({cases}) AS active_functional_groups FROM user_matrices;",
+        name_col = matrix_name_col,
+        cases = case_expr
+    );
+
+
+    let mut stmt = conn.prepare(&sql)?;
+
+    // Step 5: Collect results into a HashMap
+    let rows = stmt.query_map([], |row| {
+        let matrix_name: String = row.get("matrix_name")?;
+        let raw_groups: String = row.get("active_functional_groups")?;
+        Ok((matrix_name, raw_groups.trim_end_matches(',').to_string()))
+    })?;
+
+    for row in rows {
+        let (name, groups) = row?;
+        map.insert(name, groups);
+    }
+
     map.remove("Positive Mode");
     map.remove("Negative Mode");
-
     Ok(map)
 }
 
@@ -148,9 +174,36 @@ fn adducts_string(
     Ok(adducts_string)
 }
 
+
+fn functional_group_by_met_id(index: usize, fg_string: &String) -> HashMap<String, i64> {
+    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
+
+    let mut stmt = conn.prepare(&format!("SELECT * FROM {fg_string} WHERE rowid = ?1")).unwrap();
+    let column_names: Vec<String> = stmt
+        .column_names()
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    let mut rows = stmt.query([index]).unwrap();
+
+    if let Some(row) = rows.next().unwrap() {
+        let mut map = HashMap::new();
+
+        for (i, name) in column_names.iter().enumerate() {
+            // Try to get the column value as a string
+            let value: i64 = row.get(i).unwrap_or_default();
+
+            map.insert(name.to_string(), value);
+        }
+
+        map
+    } else {
+        HashMap::new()
+    }
+}
+
 pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
-    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
-        get_connection().unwrap();
+    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
 
     //get all unique matrix names and their adducts and numfunctionalgroups
     let matrix_to_groups: HashMap<String, String> = get_matrix_functional_groups(&conn).unwrap();
@@ -170,7 +223,14 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
         fg_string = "lipids_functional_groups".to_string();
     }
 
+<<<<<<< Updated upstream
     let query: String = format!("SELECT (CAST({origin}.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({adducts}) THEN CAST(temp_concat_adducts.deltamass AS REAL) ELSE 0 END) AS adjusted_mz, \
+=======
+    let metabolite_functional_groups: HashMap<String, i64> = functional_group_by_met_id(index, &fg_string);
+    println!("metabolite_functional_groups: {:?}", metabolite_functional_groups);
+
+    let query: String = format!("SELECT (CAST({origin}.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({adducts}) THEN CAST(temp_concat_adducts.deltamass AS REAL) END) AS adjusted_mz, \
+>>>>>>> Stashed changes
                                 {origin}.name, CAST({origin}.mz AS TEXT), temp_concat_adducts.adduct, db_accessions.hmdb, {origin}.smiles, {origin_formula}, temp_concat_adducts.mname FROM {origin} \
                                 INNER JOIN db_accessions ON {origin}.id = db_accessions.id \
                                 INNER JOIN {fg_string} ON {origin}.id = {fg_string}.id \
@@ -217,6 +277,7 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
             smiles: first.smiles.clone(),
             formula: first.chemicalformula.clone(),
             map: main_hashmap,
+            functional_groups: metabolite_functional_groups
         }
     })
 }

@@ -118,34 +118,48 @@ export interface ParsedDBData {
   smiles: string;
   formula: string;
   map: Record<string, Record<string, number>>;
+  functional_groups: Record<string, number>;
 }
 
-async function add_data_to_small_results_card(index: number, origin){
-  let d: ParsedDBData = await invoke("db_data_tauri", {index, origin})
-  if (origin == "lipids") {
-	d.db_accession = "";
-  }
-  let temp  = ` <div class="db-molecule-information-top">
-                  <div class="db-molecule-information">
-                    <div class="db-molecule-name">${d.name}</div>
-                    <div class="db-molecule-info-smaller" id="db-molecule-formula">${d.formula}</div>
-                    <div class="db-molecule-info-smaller" id="db-molecule-mass">${d.mz}</div>
-                    <div class="db-molecule-info-smaller" id="db-molecule-id">${d.db_accession}</div>
-                    <div class="db-molecule-matrices">`
-  
-  for (const key in d.map) {
-    if (d.map.hasOwnProperty(key)) {
-      temp += adduct_div(key, d.map[key])
-    }
-  }
-  //adduct_div("AMPP", adductmap['AMPP'])}
-  temp +=  `</div>
-            </div>
-            <div class="mol-im-container" id="mol-im-container">
-            <img data-smiles="${d.smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
-            </div>
-          </div>`            
-  return temp
+async function add_data_to_small_results_card(index: number, origin: string){
+	let d: ParsedDBData = await invoke("db_data_tauri", {index, origin})
+	console.log(d);
+	if (origin == "lipids") {
+		d.db_accession = "";
+	}
+	let temp  = `<div class="db-molecule-information-top">
+				<div class="db-molecule-information">
+				<div class="db-molecule-name">${d.name}</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-formula">${d.formula}</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-mass">${d.mz}</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-id">${d.db_accession}</div>
+				<div class="db-molecule-matrices">`
+
+	for (const key in d.map) {
+		if (d.map.hasOwnProperty(key)) {
+			temp += adduct_div(key, d.map[key])
+		}
+	}
+	let functional_group_temp = ""
+
+	for (const key in d.functional_groups) {
+		if (d.functional_groups.hasOwnProperty(key) && key != "id" && d.functional_groups[key] != 0) {
+			functional_group_temp += `<div>${key} = ${d.functional_groups[key]}</div>`
+		}
+	}
+	console.log("funcional groups: ", functional_group_temp);
+
+
+	temp +=  `</div>
+			</div>
+			<div class="mol-im-container" id="mol-im-container">
+				<img data-smiles="${d.smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
+				${functional_group_temp}
+			</div>
+			
+
+			</div>`            
+	return temp
 }
 
 function adduct_div(name: string, a: Record<string, number>) {
