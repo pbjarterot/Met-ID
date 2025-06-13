@@ -1,6 +1,6 @@
 [package]
 name = "Met-ID"
-version = "0.5.7"
+version = "0.5.8"
 description = "A Tauri App"
 authors = ["you"]
 license = "CC BY-NC"
@@ -37,7 +37,7 @@ ndarray = "0.16.1"
 argmin = "0.10.0"
 # pyo3 = {version= "0.19", features= ["extension-module"] }
 byteorder = "1.4.3"
-chemcore = "0.4"
+#chemcore = "0.4"
 rayon = "1.7.0"
 log = "0.4.27"
 dirs = "6.0.0"

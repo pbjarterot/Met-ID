@@ -1,4 +1,3 @@
-use crate::add_to_db::functional_group_server::functional_group_server;
 use crate::database_setup::get_connection;
 use crate::sql_mod::table::check_if_table_exists;
 
@@ -11,11 +10,12 @@ use super::get_table_column_names;
 
 //functional_groups adder for MacOS
 #[cfg(target_os = "macos")]
-fn functional_group_target(
+pub fn functional_group_target(
     progress_sender: std::sync::mpsc::Sender<f32>,
     smarts: String,
     table: String,
     name: String,
+    smiles_table: String
 ) -> Result<()> {
     use crate::add_to_db::functional_group_macos::functional_group_macos;
     functional_group_macos(progress_sender, smarts, table, name.clone(), smiles_table)
@@ -30,6 +30,7 @@ pub fn functional_group_target(
     name: String,
     smiles_table: String,
 ) -> Result<()> {
+    use crate::add_to_db::functional_group_server::functional_group_server;
     functional_group_server(progress_sender, smarts, table, name.clone(), smiles_table).unwrap();
     Ok(())
 }
@@ -43,6 +44,7 @@ pub fn add_fg_to_db(
 ) -> () {
     check_if_table_exists("functional_group_smarts", "user_functional_group_smarts").unwrap();
     check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
+    check_if_table_exists("lipids_functional_groups", "user_lipids_functional_groups").unwrap();
     check_if_table_exists("matrices", "user_matrices").unwrap();
     //let conn2: r2d2::PooledConnection<SqliteConnectionManager> = POOL.get().unwrap();
 
@@ -69,13 +71,39 @@ pub fn add_fg_to_db(
         [],
     )
     .unwrap();
+    conn.execute(
+        &format!(
+            "ALTER TABLE lipids_functional_groups ADD COLUMN '{}' INTEGER",
+            name
+        ),
+        [],
+    )
+    .unwrap();
+
+    conn.execute(
+        &format!(
+            "ALTER TABLE user_lipids_functional_groups ADD COLUMN '{}' INTEGER",
+            name
+        ),
+        [],
+    )
+    .unwrap();
 
     functional_group_target(
-        progress_sender,
+        progress_sender.clone(),
         smarts.clone(),
         "functional_groups".to_string(),
         name.clone(),
         "metabolites".to_string(),
+    )
+    .unwrap();
+
+    functional_group_target(
+        progress_sender,
+        smarts.clone(),
+        "lipids_functional_groups".to_string(),
+        name.clone(),
+        "lipids".to_string(),
     )
     .unwrap();
 
@@ -91,16 +119,17 @@ pub fn add_fg_to_db(
     )
     .unwrap();
     //if any matrix is pressed, update derivatized_by and user_matrices
-    update_matrix_table_with_functional_group("matrices", &name, &matrices);
-    update_matrix_table_with_functional_group("user_matrices", &name, &matrices);
+    update_matrix_table_with_functional_group("matrices", &name, &matrices).unwrap();
+    update_matrix_table_with_functional_group("user_matrices", &name, &matrices).unwrap();
 }
 
 fn update_matrix_table_with_functional_group(
     table_name: &str,
     name: &str,
     matrices: &HashMap<String, bool>,
-) {
+) -> Result<()> {
     let mut conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
+
     conn.execute(
         &format!("ALTER TABLE {} ADD COLUMN '{}' TEXT", table_name, name),
         [],
@@ -116,6 +145,7 @@ fn update_matrix_table_with_functional_group(
         .unwrap();
     }
     tx.commit().unwrap();
+    Ok(())
 }
 
 pub fn get_matrices_fgs(
@@ -177,6 +207,10 @@ pub fn fill_user_functional_groups(
 
     conn.execute(&sql, values.as_slice()).unwrap();
 }
+
+
+
+
 
 pub fn get_smiles_from_db(table: String) -> Vec<Vec<String>> {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();

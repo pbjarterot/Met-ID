@@ -7,6 +7,7 @@ pub fn functional_group_macos(
     smarts: String,
     table_name: String,
     column_name: String,
+    smiles_table: String,
 ) -> Result<()> {
     use rusqlite::params;
     use super::functional_group::get_smiles_from_db;
@@ -18,7 +19,7 @@ pub fn functional_group_macos(
     let transaction = conn.transaction().unwrap();
 
     //retrieves smiles in batches of 1000
-    let smiles: Vec<Vec<String>> = get_smiles_from_db(/*Maybe add argument to set batch size */);
+    let smiles: Vec<Vec<String>> = get_smiles_from_db(smiles_table);
     let smarts_mol: ROMol = RWMol::from_smarts(&smarts).unwrap().to_ro_mol();
     let params: SubstructMatchParameters = SubstructMatchParameters::new();
 

@@ -3,6 +3,8 @@ use crate::database_setup::get_connection;
 use rusqlite::Result;
 use std::collections::HashMap;
 
+use super::table::check_if_table_exists;
+
 pub fn check_latest_database() -> Result<()> {
     let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
         get_connection().unwrap();
@@ -90,8 +92,7 @@ fn change_metabolite_column_type(
 }
 
 fn table_exists(conn: &rusqlite::Connection, table_name: &str) -> rusqlite::Result<bool> {
-    let mut stmt =
-        conn.prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1")?;
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?1")?;
     let count: i64 = stmt.query_row([table_name], |row| row.get(0))?;
     Ok(count > 0)
 }
@@ -170,7 +171,7 @@ fn add_missing_columns(
     for (col_name, col_type) in from_columns {
         if !to_columns.contains(&col_name) {
             let alter_sql = format!(
-                "ALTER TABLE {} ADD COLUMN {} {}",
+                "ALTER TABLE {} ADD COLUMN '{}' {}",
                 to_table, col_name, col_type
             );
             altered_columns.push(col_name);
@@ -200,6 +201,7 @@ fn get_smarts_for_names(
     if names.is_empty() {
         return Ok(HashMap::new());
     }
+    check_if_table_exists("functional_group_smarts", "user_functional_group_smarts").unwrap();
 
     let csv_quoted = names
         .iter()
