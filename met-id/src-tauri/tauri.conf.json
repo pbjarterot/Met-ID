@@ -30,6 +30,9 @@
   "version": "0.5.8",
   "identifier": "com.farmbio.metid",
   "plugins": {
+    "shell": {
+      "open": true
+    },
     "updater": {
       "windows": {
         "installMode": "passive"
@@ -46,7 +49,7 @@
         "fullscreen": false,
         "resizable": true,
         "title": "met-id",
-        "width": 1900,
+        "width": 1500,
         "height": 1000,
         "decorations": false,
         "useHttpsScheme": true

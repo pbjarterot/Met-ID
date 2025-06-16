@@ -22,6 +22,7 @@
     "puppeteer": "24.1.0",
     "regression": "^2.0.1",
     "smiles-drawer": "^2.1.7",
+    "tar-fs": "^3.0.9",
     "tauri-plugin-sql-api": "github:tauri-apps/tauri-plugin-sql"
   },
   "devDependencies": {

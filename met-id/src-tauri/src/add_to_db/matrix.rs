@@ -17,8 +17,7 @@ pub fn add_matrix_to_db_rust(
     checkboxes: HashMap<String, bool>,
     adducts: Vec<String>,
 ) -> () {
-    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
-        get_connection().unwrap();
+    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
     check_if_table_exists("matrices", "user_matrices").unwrap();
     check_if_table_exists("adducts", "user_adducts").unwrap();
 
