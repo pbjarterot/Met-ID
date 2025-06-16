@@ -145,7 +145,7 @@ pub fn check_temp_tables() {
                 "CREATE TEMP TABLE temp_concat_lipid_functional_groups AS
                 SELECT * FROM lipids_functional_groups 
                 UNION ALL
-                SELECT * FROM user_functional_groups",
+                SELECT * FROM user_lipids_functional_groups",
                 [],
             )
             .unwrap();

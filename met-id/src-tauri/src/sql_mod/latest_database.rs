@@ -69,7 +69,7 @@ fn change_metabolite_column_type(
             id INTEGER PRIMARY KEY,
             name TEXT,
             mz REAL,
-            formula TEXT,
+            chemicalformula TEXT,
             smiles TEXT
         )",
         [],
@@ -77,8 +77,8 @@ fn change_metabolite_column_type(
 
     // Step 2: Copy data from the old table to the new table
     conn.execute(
-        "INSERT INTO new_metabolites (name, mz, formula, smiles)
-        SELECT name, mz, formula, smiles FROM metabolites",
+        "INSERT INTO new_metabolites (name, mz, chemicalformula, smiles)
+        SELECT name, mz, chemicalformula, smiles FROM metabolites",
         [],
     )?;
 
@@ -236,35 +236,29 @@ fn get_smarts_for_names(
 fn lipid_functional_groups_table(
     conn: &r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>,
 ) -> Result<()> {
-    if table_exists(conn, "lipids_functional_groups").unwrap() {
-        if has_same_column_count(conn, "lipids_functional_groups", "functional_groups").unwrap() {
+    if table_exists(conn, "lipids_functional_groups")? {
+        if has_same_column_count(conn, "lipids_functional_groups", "functional_groups")? {
             let missing_columns: Vec<String> =
-                columns_with_empty_values(conn, "lipids_functional_groups").unwrap();
+                columns_with_empty_values(conn, "lipids_functional_groups")?;
             let missing_smarts: HashMap<String, String> =
-                get_smarts_for_names(conn, &missing_columns).unwrap();
+                get_smarts_for_names(conn, &missing_columns)?;
             if !missing_columns.is_empty() {
-                complete_lipids_functional_groups(missing_smarts).unwrap();
+                complete_lipids_functional_groups(missing_smarts)?;
             } else {
                 return Ok(());
             }
         } else {
-            let missing_columns: Vec<String> =
-                add_missing_columns(conn, "functional_groups", "lipids_functional_groups").unwrap();
-            let missing_smarts: HashMap<String, String> =
-                get_smarts_for_names(conn, &missing_columns).unwrap();
-            complete_lipids_functional_groups(missing_smarts).unwrap();
+            let missing_columns: Vec<String> = add_missing_columns(conn, "functional_groups", "lipids_functional_groups")?;
+            let missing_smarts: HashMap<String, String> = get_smarts_for_names(conn, &missing_columns)?;
+            complete_lipids_functional_groups(missing_smarts)?;
         }
     } else {
-        conn.execute(
-            "CREATE TABLE lipids_functional_groups AS SELECT * FROM functional_groups WHERE 0",
-            [],
-        )
-        .unwrap();
-        conn.execute("INSERT INTO lipids_functional_groups (id) SELECT row_number FROM (SELECT ROW_NUMBER() OVER () AS row_number FROM lipids)", []).unwrap();
-        let missing_columns: Vec<String> = get_columns(conn, "lipids_functional_groups").unwrap();
+        conn.execute("CREATE TABLE lipids_functional_groups AS SELECT * FROM functional_groups WHERE 0", []).unwrap();
+        conn.execute("INSERT INTO lipids_functional_groups (id) SELECT row_number FROM (SELECT ROW_NUMBER() OVER () AS row_number FROM lipids)", [])?;
+        let missing_columns: Vec<String> = get_columns(conn, "lipids_functional_groups")?;
         let missing_smarts: HashMap<String, String> =
-            get_smarts_for_names(conn, &missing_columns).unwrap();
-        complete_lipids_functional_groups(missing_smarts).unwrap();
+            get_smarts_for_names(conn, &missing_columns)?;
+        complete_lipids_functional_groups(missing_smarts)?;
     }
     Ok(())
 }
