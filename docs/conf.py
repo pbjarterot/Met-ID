@@ -4,7 +4,7 @@ import os
 import sys
 
 # Make the project and Python API importable for autodoc.
-project_root = os.path.abspath("../..")
+project_root = os.path.abspath("..")
 python_api_path = os.path.join(project_root, "python_api")
 
 sys.path.insert(0, project_root)
