@@ -192,7 +192,7 @@ jobs:
             protobuf-compiler
 
       - name: Build server binary
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin metid-server
+        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 
       - name: Copy server into Python package (Linux/macOS)
         if: runner.os != 'Windows'
@@ -284,7 +284,7 @@ jobs:
           ./make_linux_executables.sh
 
       - name: Build server binary
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin metid-server
+        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 
       - name: Assemble R server bundle (Windows)
         if: runner.os == 'Windows'
