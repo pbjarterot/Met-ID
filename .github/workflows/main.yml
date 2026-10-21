@@ -51,12 +51,7 @@ jobs:
       - name: Install proto
         working-directory: met-id/src-tauri/src
         run: |
-          python -m grpc_tools.protoc \
-            -I add_to_db \
-            --python_out=. \
-            --pyi_out=. \
-            --grpc_python_out=. \
-            protos/streaming.proto
+          python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
 
       - name: Set up Conda for native RDKit
         if: runner.os == 'macOS'
@@ -72,12 +67,19 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash -el {0}
         run: |
-          conda install --yes -c conda-forge "rdkit=2024.09.6"
+          set -euo pipefail
 
-          # Make the activated environment available to later action steps.
+          conda install --yes -c conda-forge \
+            "rdkit=2024.09.6" \
+            "librdkit-dev=2024.09.6"
+
           echo "CONDA_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
 
-          test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
+          if [[ ! -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h" ]]; then
+            echo "RDKit C++ headers are missing from $CONDA_PREFIX"
+            exit 1
+          fi
+
           python -c "import rdkit; print('RDKit:', rdkit.__version__)"
 
       - name: Stage RDKit dylibs and configure Tauri bundling
@@ -155,7 +157,7 @@ jobs:
         shell: bash
         run: |
           echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
-          
+
       - name: Check native RDKit environment
         if: runner.os == 'macOS'
         shell: bash
