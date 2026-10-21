@@ -18,3 +18,7 @@ Cargo.lock
 
 *.db
 .Rproj.user
+Met_ID.egg-info
+__pycache__
+build/
+vendor/
