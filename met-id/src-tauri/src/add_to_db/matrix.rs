@@ -39,7 +39,7 @@ pub fn add_matrix_to_db_rust(
     for i in 0..array_length {
         conn.execute(
             "INSERT INTO user_adducts (adduct, mname, numfunctionalgroups, formula, deltamass, maxcoverage) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![adducts[i].name, name, adducts[i].derivs, "".to_string(), adducts[i].mz, array_length],
+            params![adducts[i].name, name, adducts[i].derivs, "".to_string(), adducts[i].mz, array_length as i64],
         ).unwrap();
     }
 

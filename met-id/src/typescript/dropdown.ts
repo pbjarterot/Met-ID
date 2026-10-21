@@ -62,6 +62,7 @@ export const fill_under_dropdown = {
             
             myElement!.innerHTML += renderedTemplate2;
         }
+        
         for (let i = 0; i < target_metabolome[option_selected].length; i++) {
             document.getElementById(metabolome_values[option_selected][i])?.addEventListener("change", async () => {
                     

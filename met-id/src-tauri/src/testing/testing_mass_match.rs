@@ -9,7 +9,7 @@ fn testing_y_calculations() {
     };
     let x: f64 = 300.0;
 
-    assert_eq!(calculate_y(&coeffs, x), Some(300.0));
+    assert_eq!(calculate_y(&coeffs, &x), Some(300.0));
 
     let coeffs: EquationCoefficients = EquationCoefficients {
         a: 0.0,
@@ -18,7 +18,7 @@ fn testing_y_calculations() {
     };
     let x: f64 = 300.0;
 
-    assert_eq!(calculate_y(&coeffs, x), Some(299.9997));
+    assert_eq!(calculate_y(&coeffs, &x), Some(299.9997));
 }
 
 #[test]

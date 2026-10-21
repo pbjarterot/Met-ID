@@ -550,10 +550,7 @@ pub fn match_msms_to_ui(
     match index_to_remove {
         Some(index) => {
             let user_spectrum: (Vec<f64>, Vec<i64>) = datas[index].clone();
-            let start = Instant::now();
             cossim = ms2_matcher(&user_spectrum, &datas.clone(), binsize, threshold);
-            let duration = start.elapsed();
-            println!("Time elapsed in ms2 matcher is: {:?}", duration);
         }
         None => {
             cossim = Vec::new();
@@ -716,7 +713,7 @@ pub fn show_user_msms_db() -> Vec<Vec<String>> {
     return_data
 }
 
-pub fn remove_row_from_msms_user_db(rowid: usize) -> usize {
+pub fn remove_row_from_msms_user_db(rowid: i64) -> usize {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> =
         get_msms_connection("get_msms").unwrap();
     let sql = "DELETE FROM user_MSMS WHERE id = ?1";

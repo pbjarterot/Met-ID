@@ -5,9 +5,9 @@ import { invoke } from "@tauri-apps/api/core";
 
 let FunctionalGroupListener: ((e: MouseEvent) => void) | null = null;
 let FunctionalGroupRefreshListener: ((e: MouseEvent) => void) | null = null;
+let CloseSlideinListenerFg: ((e: MouseEvent) => void) | null = null;
 
-
-
+let CloseSlideinButton: HTMLButtonElement | null = null;
 let SubmitFgElement: HTMLButtonElement | null = null;
 let FgRefreshElement: HTMLSpanElement | null = null;
 
@@ -84,6 +84,13 @@ function renderProgressBar(el: HTMLElement): void {
 
 
 export function createAndAttachFg() {
+	CloseSlideinListenerFg = async () => {
+		change_slidein("fg");
+	};
+
+	if (CloseSlideinButton && CloseSlideinListenerFg) {
+		CloseSlideinButton.addEventListener("click", CloseSlideinListenerFg);
+	}
 	FunctionalGroupListener = async () => {
 		let name = document.getElementById("add-name-to-db") as HTMLInputElement;
 		let smarts = document.getElementById("add-smarts-to-db") as HTMLInputElement;
@@ -160,12 +167,16 @@ export function destroyAndDetachFg() {
 		FgRefreshElement!.removeEventListener("click", FunctionalGroupRefreshListener);
 		FunctionalGroupRefreshListener = null;
 	}
+	if (CloseSlideinListenerFg && CloseSlideinButton) {
+        CloseSlideinButton.removeEventListener("click", CloseSlideinListenerFg);
+        CloseSlideinListenerFg = null;
+    }
 }
 
 
 
 export async function add_functional_group() {
-	change_slidein();
+	change_slidein("fg");
 	slideInDiv!.innerHTML = "";
 	slideInDiv!.innerHTML = await addToHTML("add-fg-to-db", "Functional Group", [["Name", "add-name-to-db"], ["SMARTS", "add-smarts-to-db"]]);
 	make_progressbar();
@@ -173,6 +184,7 @@ export async function add_functional_group() {
 	if (slideInDiv?.classList.contains('slide-in--active')) {
 		SubmitFgElement = document.getElementById("add-fg-to-db") as HTMLButtonElement;
 		FgRefreshElement = document.getElementById("ms1-slidein-table-h1-refresh-fg") as HTMLSpanElement;
+		CloseSlideinButton = document.getElementById("slide-in-closebutton") as HTMLButtonElement;
 		createAndAttach("fg");
 		update_user_fgs();
 	}

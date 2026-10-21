@@ -14,12 +14,20 @@ struct DBData {
     smiles: String,
     chemicalformula: String,
     mname: String,
+    ccs: Option<f64>
 }
 
 struct DBNamesIDs {
     origin: String,
     name: String,
-    id: usize,
+    chemicalformula: String,
+    id: i64,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AdductValues {
+    pub adjusted_mz: f64,
+    pub ccs: Option<f64>,
 }
 #[derive(Serialize, Debug)]
 pub struct ParsedDBData {
@@ -28,7 +36,7 @@ pub struct ParsedDBData {
     db_accession: String,
     smiles: String,
     formula: String,
-    map: HashMap<String, HashMap<String, f64>>,
+    map: HashMap<String, HashMap<String, AdductValues>>,
     functional_groups: HashMap<String, i64>
 }
 
@@ -75,9 +83,6 @@ fn get_matrix_functional_groups(
         let (name, groups) = row?;
         map.insert(name, groups);
     }
-
-
-
 
     // Step 4: Final SQL query
     let sql = format!(
@@ -141,10 +146,10 @@ fn adducts_string(
         }
     }
 
-    let tx: rusqlite::Transaction<'_> = conn2.transaction().unwrap();
-    tx.execute("DROP TABLE IF EXISTS temp_concat_adducts", [])
-        .unwrap();
-    tx.execute("CREATE TEMP TABLE temp_concat_adducts AS SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts", []).unwrap();
+    //let tx: rusqlite::Transaction<'_> = conn2.transaction().unwrap();
+    //tx.execute("DROP TABLE IF EXISTS temp_concat_adducts", [])
+    //    .unwrap();
+    //tx.execute("CREATE TEMP TABLE temp_concat_adducts AS SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts", []).unwrap();
 
     let sql = format!(
         "
@@ -174,8 +179,7 @@ fn adducts_string(
     Ok(adducts_string)
 }
 
-
-fn functional_group_by_met_id(index: usize, fg_string: &String) -> HashMap<String, i64> {
+fn functional_group_by_met_id(index: i64, fg_string: &String) -> HashMap<String, i64> {
     let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
 
     let mut stmt = conn.prepare(&format!("SELECT * FROM {fg_string} WHERE rowid = ?1")).unwrap();
@@ -202,41 +206,66 @@ fn functional_group_by_met_id(index: usize, fg_string: &String) -> HashMap<Strin
     }
 }
 
+
+
 pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
-    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = get_connection().unwrap();
 
-    //get all unique matrix names and their adducts and numfunctionalgroups
-    let matrix_to_groups: HashMap<String, String> = get_matrix_functional_groups(&conn).unwrap();
-    let adducts: String = adducts_string(&conn, matrix_to_groups, index, &origin).unwrap();
-    let origin_formula: String;
+    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
+        get_connection().unwrap();
 
-    if origin == "metabolites".to_string() {
-        origin_formula = "metabolites.chemicalformula".to_string();
-    } else {
-        origin_formula = "lipids.formula".to_string();
-    }
+    let matrix_to_groups = get_matrix_functional_groups(&conn).unwrap();
+    let adducts = adducts_string(&conn, matrix_to_groups, index, &origin).unwrap();
 
-    let fg_string: String;
-    if origin == "metabolites".to_string() {
-        fg_string = "functional_groups".to_string();
-    } else {
-        fg_string = "lipids_functional_groups".to_string();
-    }
+    let (origin_formula, fg_string, ccs_join) =
+        if origin == "metabolites" {
+            (
+                "metabolites.chemicalformula",
+                "functional_groups",
+                "LEFT JOIN ccs_predictions AS cp
+                    ON cp.metabolite_id = metabolites.id
+                   AND cp.adduct = t.adduct",
+            )
+        } else {
+            (
+                "lipids.formula",
+                "lipids_functional_groups",
+                "LEFT JOIN ccs_predictions AS cp ON 1 = 0",
+            )
+        };
 
+    let metabolite_functional_groups =
+        functional_group_by_met_id(index.try_into().unwrap(), &fg_string.to_string());
 
-    let metabolite_functional_groups: HashMap<String, i64> = functional_group_by_met_id(index, &fg_string);
-    println!("metabolite_functional_groups: {:?}", metabolite_functional_groups);
+    let index_i64 = i64::try_from(index).ok()?;
 
-    let query: String = format!("SELECT (CAST({origin}.mz AS REAL) + CASE WHEN temp_concat_adducts.adduct IN ({adducts}) THEN CAST(temp_concat_adducts.deltamass AS REAL) END) AS adjusted_mz, \
-                                {origin}.name, CAST({origin}.mz AS TEXT), temp_concat_adducts.adduct, db_accessions.hmdb, {origin}.smiles, {origin_formula}, temp_concat_adducts.mname FROM {origin} \
-                                INNER JOIN db_accessions ON {origin}.id = db_accessions.id \
-                                INNER JOIN {fg_string} ON {origin}.id = {fg_string}.id \
-                                JOIN temp_concat_adducts ON 1=1 \
-                                WHERE {origin}.id = {index} ORDER BY adjusted_mz");
+    let query = format!(
+        "SELECT
+            CAST({origin}.mz AS REAL) +
+                CAST(t.deltamass AS REAL) AS adjusted_mz,
+            {origin}.name,
+            CAST({origin}.mz AS TEXT),
+            t.adduct,
+            db_accessions.hmdb,
+            {origin}.smiles,
+            {origin_formula},
+            t.mname,
+            cp.ccs
+         FROM {origin}
+         INNER JOIN db_accessions
+            ON {origin}.id = db_accessions.id
+         INNER JOIN {fg_string}
+            ON {origin}.id = {fg_string}.id
+         JOIN temp_concat_adducts AS t
+            ON t.adduct IN ({adducts})
+         {ccs_join}
+         WHERE {origin}.id = ?1
+         ORDER BY adjusted_mz"
+    );
 
-    let mut stmt: rusqlite::Statement = conn.prepare(&query).expect("Query cannot be run");
+    let mut stmt = conn.prepare_cached(&query).ok()?;
+
     let rows: Vec<DBData> = stmt
-        .query_map([], |row| {
+        .query_map([index_i64], |row| {
             Ok(DBData {
                 adjusted_mz: row.get(0).unwrap_or_default(),
                 name: row.get(1).unwrap_or_default(),
@@ -246,16 +275,18 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
                 smiles: row.get(5).unwrap_or_default(),
                 chemicalformula: row.get(6).unwrap_or_default(),
                 mname: row.get(7).unwrap_or_default(),
+                ccs: row.get::<_, Option<f64>>(8).unwrap_or(None),
             })
         })
-        .unwrap()
+        .ok()?
         .filter_map(Result::ok)
         .collect();
 
     rows.first().map(|first| {
-        let mut main_hashmap: HashMap<String, HashMap<String, f64>> = HashMap::new();
+        let mut main_hashmap: HashMap<String, HashMap<String, AdductValues>> =
+            HashMap::new();
 
-        for row in rows.iter().skip(1) {
+        for row in &rows {
             if row.adjusted_mz == 0.0 {
                 continue;
             }
@@ -263,8 +294,15 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
             main_hashmap
                 .entry(row.mname.clone())
                 .or_default()
-                .insert(row.adduct.clone(), row.adjusted_mz);
+                .insert(
+                    row.adduct.clone(),
+                    AdductValues {
+                        adjusted_mz: row.adjusted_mz,
+                        ccs: row.ccs,
+                    },
+                );
         }
+
         ParsedDBData {
             name: first.name.clone(),
             mz: first.mz.clone(),
@@ -272,53 +310,62 @@ pub fn get_db_data(index: usize, origin: String) -> Option<ParsedDBData> {
             smiles: first.smiles.clone(),
             formula: first.chemicalformula.clone(),
             map: main_hashmap,
-            functional_groups: metabolite_functional_groups
+            functional_groups: metabolite_functional_groups,
         }
     })
 }
 
-pub fn db_ids_and_names(inputvalue: String) -> Vec<(String, (String, usize), i64)> {
+pub fn db_ids_and_names(inputvalue: String) -> Vec<(String, String, (String, usize), i64)> {
     let conn = get_connection().unwrap();
     let mut stmt: rusqlite::Statement = conn
         .prepare(
-            "SELECT 'metabolites', name, id FROM metabolites WHERE name LIKE ?1  \
-                        UNION ALL \
-                        SELECT 'lipids', name, id FROM lipids WHERE name LIKE ?1 LIMIT 20",
+            "SELECT 'metabolites', name, chemicalformula, id FROM metabolites WHERE ((name LIKE ?1) OR (chemicalformula LIKE ?1)) \
+                    UNION ALL \
+                    SELECT 'lipids', name, formula, id FROM lipids WHERE name LIKE ?1 \
+                    LIMIT 20",
         )
         .expect("Query cannot be run");
+
     let db_iter = stmt
         .query_map([format!("%{}%", inputvalue)], |row: &rusqlite::Row<'_>| {
             Ok(DBNamesIDs {
                 origin: row.get(0).unwrap_or("".to_string()),
                 name: row.get(1).unwrap_or("".to_string()),
-                id: row.get(2).unwrap_or(0),
+                chemicalformula: row.get(2).unwrap_or("".to_string()),
+                id: row.get(3).unwrap_or(0),
             })
         })
         .unwrap();
-    let mut map: HashMap<String, (String, usize)> = HashMap::new();
+
+    let mut map: HashMap<(String, String), (String, usize)> = HashMap::new();
 
     let matcher = ClangdMatcher::default();
 
     for (_, item) in db_iter.enumerate() {
         let row: DBNamesIDs = item.unwrap();
-        map.insert(row.name, (row.origin, row.id));
+        map.insert((row.name, row.chemicalformula), (row.origin, row.id.try_into().unwrap()));
     }
 
-    // Filter and rank names based on fuzzy match score
-    let mut filtered_names: Vec<(String, (String, usize), i64)> = map
+    let mut filtered_names: Vec<(String, String, (String, usize), i64)> = map
         .iter()
-        .filter_map(|(name, id)| {
-            matcher
-                .fuzzy_match(name, &inputvalue)
-                .map(|score| (name.clone(), id.clone(), score))
+        .filter_map(|((name, chemicalformula), id)| {
+            let s1 = matcher.fuzzy_match(name, &inputvalue);
+            let s2 = matcher.fuzzy_match(chemicalformula, &inputvalue);
+
+            match (s1, s2) {
+                (Some(a), Some(b)) => Some((name.clone(), chemicalformula.clone(), id.clone(), a.max(b))),
+                (Some(a), None) => Some((name.clone(), chemicalformula.clone(), id.clone(), a)),
+                (None, Some(b)) => Some((name.clone(), chemicalformula.clone(), id.clone(), b)),
+                (None, None) => None,
+            }
         })
         .collect();
 
     // Sort first by fuzzy match score (descending), then by length, then alphabetically
     filtered_names.sort_by(|a, b| {
-        b.2.cmp(&a.2)
-            .then_with(|| a.0.len().cmp(&b.0.len()))
-            .then_with(|| a.0.cmp(&b.0))
+        b.3.cmp(&a.3)                   // fuzzy score (largest first)
+            .then_with(|| a.0.len().cmp(&b.0.len())) // shorter names first
+            .then_with(|| a.0.cmp(&b.0))             // alphabetical
     });
 
     filtered_names

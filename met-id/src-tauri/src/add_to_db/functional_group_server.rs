@@ -57,7 +57,6 @@ impl StreamingService for MyStreamingService {
             for message in messages {
                 let message_batch = MessageBatch { messages: message };
 
-                println!("Sending message to client: {:?}", sent_count);
                 info!("Sending message to client: {:?}", sent_count);
                 sent_count = sent_count + 1;
                 progress_sender
@@ -77,7 +76,6 @@ impl StreamingService for MyStreamingService {
                 messages: vec!["stop".to_string()],
             };
 
-            println!("Sending stop message to client: {:?}", stop_message);
             info!("Sending stop message to client: {:?}", stop_message);
             if let Err(e) = tx.send(Ok(stop_message)).await {
                 eprintln!("Failed to send stop message: {}", e);
@@ -87,10 +85,8 @@ impl StreamingService for MyStreamingService {
 
             // Step 3: Wait for client's stop response
             while let Ok(Some(batch)) = stream.message().await {
-                //println!("Received batch from client: {:?}", batch.messages);
 
                 if batch.messages.contains(&"stop".to_string()) {
-                    println!("Received stop confirmation from client. Shutting down...");
                     info!("Received stop confirmation from client. Shutting down...");
                     let mut shutdown_tx = shutdown_tx.lock().await;
                     if let Some(tx) = shutdown_tx.take() {
@@ -101,7 +97,7 @@ impl StreamingService for MyStreamingService {
                     let transaction = conn.transaction().unwrap();
 
                     for (idx, message) in batch.messages[0].split(", ").enumerate() {
-                        let new_idx: usize = (received_count * 1_000) + idx + 1;
+                        let new_idx: i64 = ((received_count * 1_000) + idx + 1) as i64;
 
                         transaction
                             .execute(
@@ -111,7 +107,6 @@ impl StreamingService for MyStreamingService {
                             .unwrap();
 
                         if idx == 0 {
-                            println!("message: {:?}, idx: {:?}", message, new_idx);
                             info!("message: {:?}, idx: {:?}", message, new_idx);
                         }
                     }
@@ -122,8 +117,6 @@ impl StreamingService for MyStreamingService {
                     .unwrap();
                 received_count = received_count + 1;
             }
-            println!("sent: {:?}, received: {:?}", sent_count, received_count);
-            println!("Stream handling completed.");
             info!("sent: {:?}, received: {:?}", sent_count, received_count);
             info!("Stream handling completed.");
         });
@@ -149,16 +142,11 @@ pub async fn functional_group_server(
         progress_sender: progress_sender.clone(),
         smiles_table: smiles_table.clone()
     };
-    println!(
-        "table_name: {:?}, column_name: {:?}, smarts: {:?}",
-        table_name, column_name, smarts
-    );
     info!(
         "Table name: {:?}, column name: {:?}",
         table_name, column_name
     );
 
-    println!("Server listening on {}", addr);
     info!("Server listening on {}", addr);
     let sidecar_arguments: Vec<String> = vec![smarts];
 
@@ -177,7 +165,6 @@ pub async fn functional_group_server(
         })
         .await?;
 
-    println!("Server has shut down gracefully.");
     info!("Server has shut down gracefully.");
     Ok(())
 }

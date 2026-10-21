@@ -16,18 +16,32 @@ export async function identify() {
     let adducts: string[] = check_checkboxes("ms1-metabolome-div2");
 
     let mass_error_input: string = (document.getElementById("ms1-error-input-text") as HTMLInputElement)!.value as string;
-    let massWindow: string = (document.getElementById("mzWindow") as HTMLInputElement)!.value as string;
+    let massWindow: number = parseFloat((document.getElementById("mzWindow") as HTMLInputElement).value);
     let input_masses: string[] = get_ms1_input_peaks();
+    let input_ccs: string[] = get_ms1_input_ccs();
+
+    let useIonMobility = (document.getElementById("toggle-ion-mobility") as HTMLInputElement | null)?.checked ?? false;
 
     let append: boolean = (document.getElementById("ms1-append-results") as HTMLInputElement)!.checked;
-    console.log(append);
+    console.log(massWindow, typeof massWindow);
     let startTime = performance.now();
 
-    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {met: met_selected, mat: matrix_selected, typ: met_type, adducts:adducts, massError: mass_error_input, masses: input_masses, mzwindow: massWindow});
+    let ms1_results_data: Array<Array<Record<string, string>>> = await invoke("sql_handler_tauri", {
+        met: met_selected, 
+        mat: matrix_selected, 
+        typ: met_type, 
+        adducts:adducts, 
+        massError: mass_error_input, 
+        masses: input_masses, 
+        ccss: input_ccs, 
+        mzwindow: massWindow,
+        ionMobility: useIonMobility
+    });
 
     let endTime = performance.now();
     let timeTaken = endTime - startTime;
     console.log(`Time taken: ${timeTaken} milliseconds`)
+    console.log(ms1_results_data)
     fill_ms1_results(ms1_results_data, append);
 
     count_identified_percent();
@@ -38,18 +52,30 @@ function count_identified_percent() {
     const rows = table.querySelectorAll('tr');
     var numRows: number = 0;
     var numIdentified: number = 0;
+    var num_q0_05: number = 0;
+    var num_q0_1: number = 0;
     rows.forEach((row) => {
         if (row.className === "data") {
             numRows += 1;
             const cells = row.querySelectorAll('td, th');
-            if (cells.length > 0 && cells[3].textContent != "" ) {
+            if (cells.length > 0 && cells[4].textContent != "" ) {
                 numIdentified += 1
+            }
+            if (cells.length > 0 && cells[13].textContent !="") {
+                let qval = parseFloat(cells[13].textContent!.split('<br>')[0])
+                if (qval < 0.1) {
+                    num_q0_1 += 1;
+                    if (qval < 0.05) {
+                        num_q0_05 += 1;
+                    }
+                } 
             }
         }
         
     });
     let id_res_string = document.getElementById("identification-results-string") as HTMLParagraphElement;
-    id_res_string.textContent = `Out of the ${String(numRows)} m/z features,\n ${numIdentified} (${Math.round((numIdentified/numRows)*1000)/10}%) have been identfied`;
+    id_res_string.textContent = `Out of the ${String(numRows)} m/z features,\n ${numIdentified} (${Math.round((numIdentified/numRows)*1000)/10}%) have been identfied.\n
+    ${num_q0_05} q<0.05, ${num_q0_1} q<0.1`;
     console.log(numRows, numIdentified, numIdentified/numRows)
 }
 
@@ -103,6 +129,46 @@ function get_ms1_input_peaks() {
     return columnValues
 }
 
+/*
+function get_ms1_input_ccs() {
+    // Get a reference to the table element
+    const table = document.getElementById("ms1-datatable") as HTMLTableElement;
+
+    // Get a reference to the cells in the first column
+    const cells = table.querySelectorAll("td:nth-child(4)");
+    console.log(cells);
+
+    // Loop through the cells and extract their values
+    const columnValues = [] as string[];
+    for (let i = 0; i < cells.length; i++) {
+        const myVariable: string = parse_cell_text(cells[i]);
+        if (myVariable !== null) {
+            columnValues.push(myVariable);
+        }
+    }
+    console.log(columnValues);
+    return columnValues
+}
+*/
+
+function parseFirstCellValue(cell: HTMLTableCellElement): string {
+    return (cell.innerHTML.split(/<br\s*\/?>/i)[0] ?? "")
+        .replace(/<[^>]*>/g, "")
+        .trim();
+}
+
+function get_ms1_input_ccs(): string[] {
+    const tbody = document.getElementById("ms1-table-body");
+    if (!tbody) return [];
+
+    return Array.from(tbody.querySelectorAll<HTMLTableRowElement>(
+        "tr:not(.hidden-row)"
+    )).map(row => {
+        const cell = row.cells[3];
+        return cell ? parseFirstCellValue(cell) : "";
+    });
+}
+
 function scientific_format(input_string: string) {
     const number = parseFloat(input_string);
     const scientificNotation = number.toExponential(5);
@@ -113,7 +179,7 @@ function scientific_format(input_string: string) {
     }
 }
 
-function formNumber(numberString: string): string {
+export function formNumber(numberString: string): string {
     const number = parseFloat(numberString);
     const formattedNumber = number.toFixed(6);
     if (isNaN(number)) {
@@ -130,16 +196,10 @@ function removeExistingRows(tbody: HTMLTableSectionElement) {
     }
 }
 
-function createDataCells(data: string) {
-    const td = document.createElement("td");
-    td.className = "clickable-cell";
-    td.innerHTML = data;
-    return td;
-}
 
 async function renderImagesAsync(idx: number): Promise<HTMLElement> {
     const image_area = document.createElement("td");
-    image_area.setAttribute("colspan", "11");
+    image_area.setAttribute("colspan", "15");
     console.log(imageData[idx])
 
     const row_details = document.createElement("div");
@@ -242,19 +302,23 @@ async function fill_ms1_results(ms1_results_data: Array<Array<Record<string, str
 
 }
 
-function AppendTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles: string[]; names_for_img?: string[]; formula: any; coverage: any; hmdb: any}, index: number) {
+function AppendTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; ccs: any, names: any; adduct: any; dMass: any; tCCS: any, ccsPPM: any, tMass: any; dPPM: any; ms2: any; smiles: string[]; names_for_img?: string[]; formula: any; coverage: any; hmdb: any, exist_q:any, posterior: any}, index: number) {
     const dataCells = [
         dataRows.checkbox,
         dataRows.oMass,
         dataRows.aMass,
+        dataRows.ccs,
         dataRows.names,
         dataRows.adduct,
         dataRows.formula,
-        dataRows.dMass,
+        dataRows.tCCS,
         dataRows.dPPM,
         dataRows.tMass,
+        dataRows.ccsPPM,
         dataRows.ms2,
-        dataRows.coverage
+        dataRows.coverage,
+        dataRows.exist_q,
+        dataRows.posterior
     ];
     // Get the table row by ID
     const row = document.getElementById("data-" + index) as HTMLTableRowElement;
@@ -289,6 +353,42 @@ function AppendTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: 
 
 
 function processDataGroup(resultGroup: Record<string, string>[]) {
+    /*
+    const sorted = [...resultGroup].sort(
+        (a, b) =>
+        (parseFloat(b.posterior) || -Infinity) - (parseFloat(a.posterior) || -Infinity)
+    );
+    */
+    const sorted = [...resultGroup].sort(
+        (a, b) =>
+            (parseFloat(b.posterior) || -Infinity) -
+            (parseFloat(a.posterior) || -Infinity)
+    );
+    /*
+    const useIonMobility =
+        (document.getElementById("toggle-ion-mobility") as HTMLInputElement | null)
+            ?.checked ?? false;
+
+    //let resultsToUse = sorted;
+    */
+    /*
+    if (!useIonMobility) {
+        const seenNames = new Set<string>();
+        resultsToUse = sorted.filter(result => {
+            const name = String(result.names ?? "").trim().toLowerCase();
+
+            if (!name) return true;
+            if (seenNames.has(name)) return false;
+
+            seenNames.add(name);
+            return true;
+        });
+
+    }
+    */
+    console.log(sorted)
+    console.log(resultGroup)
+
     let checkbox: string[] = []
     let oMass: string[] = [];
     let aMass: string[] = [];
@@ -300,10 +400,15 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
     let ms2: string[] = [];
     let smiles: string[] = [];
     let formula: string[] = [];
-    let hmdb: string[] = []
-    let coverage: string[] = []
+    let hmdb: string[] = [];
+    let coverage: string[] = [];
+    let ccs: string[] = [];
+    let tCCS: string[] = [];
+    let ccsPPM: string[] = [];
+    let exist_q: string[] = [];
+    let posterior: string[] = [];
 
-    for (const result of resultGroup) {
+    for (const result of sorted) {
         checkbox.push('<input type="checkbox" /></td>');
         oMass.push(formNumber(result.oMass));
         aMass.push(formNumber(result.aMass));
@@ -317,6 +422,11 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
         formula.push(result.formula);
         hmdb.push(result.accession);
         coverage.push(`${result.coverage} / ${result.possible_derivs}`);
+        ccs.push(formNumber(result.ccs));
+        tCCS.push(formNumber(result.tCCS));
+        ccsPPM.push(formNumber(result.ccsPPM));
+        exist_q.push(formNumber(result.exist_q));
+        posterior.push(formNumber(result.posterior));
     }
 
     return {
@@ -332,7 +442,12 @@ function processDataGroup(resultGroup: Record<string, string>[]) {
         smiles,
         formula,
         hmdb,
-        coverage
+        coverage,
+        ccs, 
+        tCCS, 
+        ccsPPM, 
+        exist_q,
+        posterior
     };
 }
 
@@ -351,7 +466,27 @@ function adjustedProcessDataGroup(resultGroup: Record<string, string>[]) {
     };
 }
 
-function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles?: string[]; names_for_img?: string[]; formula: any; coverage: any}, index: number) {
+const ionMobilityColumnIndexes = new Set([3, 7, 10, 13, 14]);
+
+function createDataCells(
+    data: string,
+    columnIndex: number
+): HTMLTableCellElement {
+    const td = document.createElement("td");
+
+    td.className = "clickable-cell";
+    td.innerHTML = data;
+
+    if (ionMobilityColumnIndexes.has(columnIndex)) {
+        td.classList.add("ion-mobility-column");
+    }
+
+    return td;
+}
+
+function createTopRow(dataRows: { 
+    checkbox: any; oMass: any; aMass: any; names: any; adduct: any; dMass: any; tMass: any; dPPM: any; ms2: any; smiles?: string[]; names_for_img?: string[]; formula: any; coverage: any, ccs: any, tCCS: any, ccsPPM: any, exist_q: any, posterior: any
+}, index: number) {
     const row = document.createElement("tr");
     row.className = "data";
     row.id = "data-" + index;
@@ -360,18 +495,28 @@ function createTopRow(dataRows: { checkbox: any; oMass: any; aMass: any; names: 
         dataRows.checkbox,
         dataRows.oMass,
         dataRows.aMass,
+        dataRows.ccs,
         dataRows.names,
         dataRows.adduct,
         dataRows.formula,
-        dataRows.dMass,
+        dataRows.tCCS,
         dataRows.dPPM,
         dataRows.tMass,
+        dataRows.ccsPPM,
         dataRows.ms2,
-        dataRows.coverage
+        dataRows.coverage,
+        dataRows.exist_q,
+        dataRows.posterior
     ];
-    for (const cellData of dataCells) {
-        row.appendChild(createDataCells(cellData.join("<br>")));
-    }
+    //console.log(dataCells);
+    dataCells.forEach((cellData, columnIndex) => {
+        row.appendChild(
+            createDataCells(
+                cellData.join("<br>"),
+                columnIndex
+            )
+        );
+    });
     //console.log(row);
     return row;
     

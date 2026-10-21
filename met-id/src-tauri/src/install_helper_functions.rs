@@ -43,11 +43,23 @@ pub fn ensure_database_in_appdata(_app: &App, resource_name: &str) -> std::path:
 }
 
 pub fn create_pool_from_app_path(
-    _app: &App,
     resource_path: PathBuf,
 ) -> Pool<SqliteConnectionManager> {
     info!("looking in: {:?}", resource_path);
-    println!("looking in: {:?}", resource_path);
     let manager = SqliteConnectionManager::file(resource_path);
     Pool::new(manager).expect("Failed to create pool.")
+}
+
+use dirs;
+
+pub fn ensure_database_in_appdata_headless(file_name: &str) -> PathBuf {
+    // This maps to %APPDATA% on Windows
+    let base_dir = dirs::config_dir()
+        .unwrap_or_else(|| std::env::current_dir().expect("Failed to get current dir"));
+
+    let app_dir = base_dir.join("com.farmbio.metid").join("met-id").join("DBs");
+
+    let db_path = app_dir.join(file_name);
+
+    db_path
 }

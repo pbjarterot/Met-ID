@@ -1,0 +1,18 @@
+Package: metidR
+Title: R Client for the Met-ID API
+Version: 0.1.0
+Authors@R: person(
+    "Met-ID", "Developers",
+    email = "patrik.bjarterot@uu.se",
+    role = c("aut", "cre")
+)
+Description: Starts the Met-ID local server and provides R functions for
+    metabolite identification, database queries, imzML reading, and CCS
+    prediction.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports:
+    httr,
+    jsonlite,
+    processx
+RoxygenNote: 7.3.2

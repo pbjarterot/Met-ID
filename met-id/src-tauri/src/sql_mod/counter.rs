@@ -12,7 +12,6 @@ pub fn sql_counter(met: String, matrix: String, typ: Vec<String>, adducts: Vec<S
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
 
     let query_str: String = build_count_query(met, matrix, typ, adducts);
-    println!("{:?}", query_str);
     let count: i64 = match conn.query_row(
         &query_str[..],
         rusqlite::params![],
@@ -20,7 +19,7 @@ pub fn sql_counter(met: String, matrix: String, typ: Vec<String>, adducts: Vec<S
     ) {
         Ok(num) => num,
         Err(e) => {
-            println!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
             0 as i64
         }
     };

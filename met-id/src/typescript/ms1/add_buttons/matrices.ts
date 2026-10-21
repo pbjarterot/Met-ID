@@ -15,7 +15,9 @@ import { fill_dropdown, fill_under_dropdown, new_tgt_matrix } from "../../dropdo
 
 let MatrixListener: ((e: MouseEvent) => void) | null = null;
 let MatrixRefreshListener: ((e: MouseEvent) => void) | null = null;
+let CloseSlideinListenerMatrices: ((e: MouseEvent) => void) | null = null;
 
+let CloseSlideinButton: HTMLButtonElement | null = null;
 let SubmitMatrixElement: HTMLButtonElement | null = null;
 let MatrixRefreshElement: HTMLSpanElement | null = null;
 
@@ -36,12 +38,23 @@ export function destroyAndDetachMatrix() {
 		MatrixRefreshElement!.removeEventListener("click", MatrixRefreshListener);
 		MatrixRefreshListener = null;
 	}
+	if (CloseSlideinListenerMatrices && CloseSlideinButton) {
+        CloseSlideinButton.removeEventListener("click", CloseSlideinListenerMatrices);
+        CloseSlideinListenerMatrices = null;
+    }
 }
 
 
 
 
 export function createAndAttachMatrices() {
+	CloseSlideinListenerMatrices = async () => {
+		change_slidein("mat");
+	};
+
+	if (CloseSlideinButton && CloseSlideinListenerMatrices) {
+		CloseSlideinButton.addEventListener("click", CloseSlideinListenerMatrices);
+	}
 	MatrixListener = async () => {
 		let name = document.getElementById("add-name-to-db") as HTMLInputElement;
 
@@ -91,7 +104,7 @@ export function createAndAttachMatrices() {
 
 
 export async function add_matrix() {
-	change_slidein();
+	change_slidein("mat");
 	slideInDiv!.innerHTML = "";
 	slideInDiv!.innerHTML = await addToHTML("add-matrix-to-db", "Matrix",[["Name", "add-name-to-db"]]);
 	const button = document.querySelector('.btn-grid');
@@ -100,52 +113,51 @@ export async function add_matrix() {
 	let divCounter = 0;
 
 	button?.addEventListener('click', () => {
-	divCounter++;
-	// Create new div
-	const newDiv = document.createElement('div');
-	newDiv.className = 'grid grid-4';
+		console.log(button)
+		divCounter++;
+		// Create new div
+		const newDiv = document.createElement('div');
+		newDiv.className = 'grid grid-4';
 
-	// Add input fields to the div
-	const input1 = document.createElement('input');
-	input1.type = 'text';
-	input1.placeholder = 'Adduct Name';
-	input1.required = true
-	input1.id = `add-adduct-name-${divCounter}`
-	newDiv.appendChild(input1);
+		// Add input fields to the div
+		const input1 = document.createElement('input');
+		input1.type = 'text';
+		input1.placeholder = 'Adduct Name';
+		input1.required = true
+		input1.id = `add-adduct-name-${divCounter}`
+		newDiv.appendChild(input1);
 
-	const input2 = document.createElement('input');
-	input2.type = 'text';
-	input2.placeholder = 'Δm/z';
-	input2.required = true;
-	input2.id = `add-adduct-delta-mz-${divCounter}`
-	newDiv.appendChild(input2);
+		const input2 = document.createElement('input');
+		input2.type = 'text';
+		input2.placeholder = 'Δm/z';
+		input2.required = true;
+		input2.id = `add-adduct-delta-mz-${divCounter}`
+		newDiv.appendChild(input2);
 
-	const input3 = document.createElement('input');
-	input3.type = 'text';
-	input3.placeholder = 'No of derivs';
-	input3.required = true;
-	input3.id = `add-fg-${divCounter}`
-	newDiv.appendChild(input3);
+		const input3 = document.createElement('input');
+		input3.type = 'text';
+		input3.placeholder = 'No of derivs';
+		input3.required = true;
+		input3.id = `add-fg-${divCounter}`
+		newDiv.appendChild(input3);
 
-	// Add the reset button
-	const resetButton = document.createElement('button');
-	resetButton.type = 'reset';
-	const spanBack = document.createElement('span');
-	spanBack.className = 'back';
-	const img = document.createElement('img');
-	img.src = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/eraser-icon.svg';
-	spanBack.appendChild(img);
-	resetButton.appendChild(spanBack);
-	newDiv.appendChild(resetButton);
+		// Add the reset button
+		const resetButton = document.createElement('button');
+		resetButton.type = 'reset';
+		const spanBack = document.createElement('span');
+		spanBack.className = 'back';
+		const img = document.createElement('img');
+		img.src = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/eraser-icon.svg';
+		spanBack.appendChild(img);
+		resetButton.appendChild(spanBack);
+		newDiv.appendChild(resetButton);
 
-	resetButton.addEventListener('click', function() {
-		newDiv.remove();
-	});
+		resetButton.addEventListener('click', function() {
+			newDiv.remove();
+		});
 
-
-
-	// Append new div to container
-	container?.appendChild(newDiv);
+		// Append new div to container
+		container?.appendChild(newDiv);
 	});
 
 	document.getElementById('getValues')?.addEventListener('click', function() {
@@ -162,6 +174,7 @@ export async function add_matrix() {
 	if (slideInDiv?.classList.contains('slide-in--active')) {
 		SubmitMatrixElement = document.getElementById("add-matrix-to-db") as HTMLButtonElement;
 		MatrixRefreshElement = document.getElementById("ms1-slidein-table-h1-refresh-matrix") as HTMLSpanElement;
+		CloseSlideinButton = document.getElementById("slide-in-closebutton") as HTMLButtonElement;
 		createAndAttach("matrix");
 		update_user_matrices();
 	}

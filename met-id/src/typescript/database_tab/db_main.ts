@@ -27,26 +27,28 @@ async function generate_results_cards(inputvalue: string) {
   div!.innerHTML = "";
   if (!div) return; // Early exit if the div is not found
 
-  let namelist2: [string, [string, number], number] = await invoke("db_ids_and_names_tauri", {inputvalue});
+  let namelist2: [string, string, [string, number], number] = await invoke("db_ids_and_names_tauri", {inputvalue});
+  console.log(namelist2);
 
   for (let i = 0; i < namelist2.length; i++) {
     const tempDiv = document.createElement('div');
-    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], false);
+    const L = await generate_db_small_results_card2(namelist2[i][0], namelist2[i][1], Number(namelist2[i][2][1]), namelist2[i][2][0], false);
     tempDiv.innerHTML = `${L}`;
     tempDiv.classList.add("db-small-results-card")
-    tempDiv.id = "db-small-results-card-" + namelist2[i][1][1];
+    tempDiv.id = "db-small-results-card-" + namelist2[i][2][1];
     div!.appendChild(tempDiv);
 
     function attachClickListener() {
-        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[i][1][1]);
+        console.log('db-small-results-card-top-' + namelist2[i][2][1]);
+        const childElement = document.getElementById('db-small-results-card-top-' + namelist2[i][2][1]);
         if (childElement) {
             childElement.addEventListener("click", async () => {
                 if (tempDiv.classList.contains("db-open")) {
-                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], false);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], namelist2[i][1], Number(namelist2[i][2][1]), namelist2[i][2][0], false);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.remove("db-open");
                 } else {
-                    const L = await generate_db_small_results_card2(namelist2[i][0], Number(namelist2[i][1][1]), namelist2[i][1][0], true);
+                    const L = await generate_db_small_results_card2(namelist2[i][0], namelist2[i][1], Number(namelist2[i][2][1]), namelist2[i][2][0], true);
                     tempDiv.innerHTML = `${L}`;
                     tempDiv.classList.add("db-open");
                 }
@@ -93,12 +95,12 @@ export function renderDBHTML() {
   
 }
 
-export async function generate_db_small_results_card2(name: string, index: number, origin: string, open_: boolean) {
+export async function generate_db_small_results_card2(name: string, chemicalformula: string, index: number, origin: string, open_: boolean) {
 
 	let template = `<div class="db-small-results-card-top" id="db-small-results-card-top-${index}">
                     <div class="db-small-results-card-textbox">
                     	<div class="db-small-results-card-name">
-                		<label class="db-small-results-card-name">${name}</label>
+                		<label class="db-small-results-card-name">${name} - ${chemicalformula}</label>
                     	</div>
 					</div>
                 	</div>
@@ -117,7 +119,7 @@ export interface ParsedDBData {
   db_accession: string;
   smiles: string;
   formula: string;
-  map: Record<string, Record<string, number>>;
+  map: Record<string, Record<string, number[]>>;
   functional_groups: Record<string, number>;
 }
 
@@ -130,12 +132,13 @@ async function add_data_to_small_results_card(index: number, origin: string){
 	let temp  = `<div class="db-molecule-information-top">
 				<div class="db-molecule-information">
 				<div class="db-molecule-name">${d.name}</div>
-				<div class="db-molecule-info-smaller" id="db-molecule-formula">${d.formula}</div>
-				<div class="db-molecule-info-smaller" id="db-molecule-mass">${d.mz}</div>
-				<div class="db-molecule-info-smaller" id="db-molecule-id">${d.db_accession}</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-formula">Chemical formula: ${d.formula}</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-mass">Monoisotopic Mass: ${d.mz}Da</div>
+				<div class="db-molecule-info-smaller" id="db-molecule-id">HMDB ID: ${d.db_accession}</div>
 				<div class="db-molecule-matrices">`
 
 	for (const key in d.map) {
+    console.log("key", key, d.map[key])
 		if (d.map.hasOwnProperty(key)) {
 			temp += adduct_div(key, d.map[key])
 		}
@@ -144,7 +147,12 @@ async function add_data_to_small_results_card(index: number, origin: string){
 
 	for (const key in d.functional_groups) {
 		if (d.functional_groups.hasOwnProperty(key) && key != "id" && d.functional_groups[key] != 0) {
-			functional_group_temp += `<div>${key} = ${d.functional_groups[key]}</div>`
+			functional_group_temp += `
+      <div class="db-functional-group-div">
+        <div class="db-functional-group-name">${key}:</div> 
+        <div class="db-functional-group-amount">${d.functional_groups[key]}</div>
+      </div>
+      `
 		}
 	}
 	console.log("funcional groups: ", functional_group_temp);
@@ -153,8 +161,12 @@ async function add_data_to_small_results_card(index: number, origin: string){
 	temp +=  `</div>
 			</div>
 			<div class="mol-im-container" id="mol-im-container">
-				<img data-smiles="${d.smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
-				${functional_group_temp}
+        <div class="mol-im-container-im">
+				  <img data-smiles="${d.smiles}" data-smiles-options="{'width': 600, 'height': 500, 'padding': 0.0}" data-smiles-theme='dark' />
+        </div>
+        <div class="mol-im-container-fgs">
+				  ${functional_group_temp}
+        </div>
 			</div>
 			
 
@@ -162,7 +174,7 @@ async function add_data_to_small_results_card(index: number, origin: string){
 	return temp
 }
 
-function adduct_div(name: string, a: Record<string, number>) {
+function adduct_div(name: string, a: Record<string, number[]>) {
   a = sortRecordByValues(a);
   let template = `<div class="db-adduct-div">	
                         <div class="db-adduct-div-name">
@@ -170,8 +182,9 @@ function adduct_div(name: string, a: Record<string, number>) {
                         </div>
                         <div class="db-adduct-div-matrix-div">`
   for (const key in a) {
+    console.log("KEEEEEY", key, a[key], a[key]["adjusted_mz"], a[key]["ccs"])
     if (a.hasOwnProperty(key)) {
-      template += adduct_card(key, a[key])
+      template += adduct_card(key, a[key]["adjusted_mz"], a[key]["ccs"])
     }
   }
   template +=  `</div>
@@ -179,12 +192,13 @@ function adduct_div(name: string, a: Record<string, number>) {
   return template
 }
 
-function adduct_card(adduct: string, mass: number) {
+function adduct_card(adduct: string, mass: number, ccs: number) {
 	let template = `
 	<div class="adduct-card">
 		<div class="adduct-card-container">
 			<h4><b>${adduct}</b></h4>
-			<p>${roundToSignificantFigures(mass, 10)}</p>
+			<p>m/z: ${roundToSignificantFigures(mass, 8)}</p>
+      <p>CCS: ${roundToSignificantFigures(ccs, 8)}</p>
 		</div>
 	</div>
 	`
@@ -200,18 +214,30 @@ function roundToSignificantFigures(num: number, sigFigs: number): number {
   return Math.round(num * scale) / scale;
 }
 
-function sortRecordByValues(record: Record<string, number>): Record<string, number> {
-  // Convert record to an array of [key, value] tuples
-  const entries = Object.entries(record);
+function sortRecordByValues(
+    record: Record<string, number[]>
+): Record<string, number[]> {
+    const entries = Object.entries(record);
 
-  // Sort entries based on the value
-  entries.sort((a, b) => a[1] - b[1]);
+    entries.sort(([, a], [, b]) => {
+        const length = Math.min(a.length, b.length);
 
-  // Convert the sorted array back to a record
-  return entries.reduce((sortedRecord, [key, value]) => {
-      sortedRecord[key] = value;
-      return sortedRecord;
-  }, {} as Record<string, number>);
+        for (let i = 0; i < length; i++) {
+            if (a[i] !== b[i]) {
+                return a[i] - b[i];
+            }
+        }
+
+        return a.length - b.length;
+    });
+
+    return entries.reduce<Record<string, number[]>>(
+        (sortedRecord, [key, value]) => {
+            sortedRecord[key] = value;
+            return sortedRecord;
+        },
+        {}
+    );
 }
 
 async function renderImageAsync(): Promise<HTMLElement> {

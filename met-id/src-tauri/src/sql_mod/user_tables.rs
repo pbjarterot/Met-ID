@@ -6,11 +6,25 @@ use crate::database_setup::get_connection;
 use super::table::check_if_table_exists;
 
 struct MS1UserMetabolitesRow {
-    id: usize,
+    id: i64,
     name: String,
     smiles: String,
     formula: String,
     mz: String,
+}
+
+pub fn check_user_tables() -> Result<()> {
+    check_if_table_exists("metabolites", "user_metabolites").unwrap();
+    check_if_table_exists("matrices", "user_matrices").unwrap();
+    check_if_table_exists("derivatized_by", "user_derivatized_by").unwrap();
+    check_if_table_exists("endogeneity", "user_endogeneity").unwrap();
+    check_if_table_exists("in_tissue", "user_in_tissue").unwrap();
+    check_if_table_exists("db_accessions", "user_db_accessions").unwrap();
+    check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
+    check_if_table_exists("lipids_functional_groups", "user_lipids_functional_groups").unwrap();
+
+
+    Ok(())
 }
 
 pub fn update_user_metabolites() -> Vec<Vec<String>> {
@@ -68,7 +82,7 @@ pub fn remove_row_from_user_metabolites(rowid: usize) -> usize {
 }
 
 struct MS1UserMatricesRow {
-    id: usize,
+    id: i64,
     name: String,
 }
 
@@ -126,7 +140,7 @@ pub fn remove_row_from_user_matrices(rowid: usize) -> usize {
     let sql: String = format!("DELETE FROM user_adducts WHERE mname = '{}'", matrix_name);
     match conn.execute(&sql[..], params![]) {
         Ok(_) => println!("Columns from {:?} have been deleted", matrix_name),
-        Err(e) => println!("Column could not be deleted: {}", e),
+        Err(e) => eprintln!("Column could not be deleted: {}", e),
     };
 
     remove_row_from_table(rowid, "user_matrices");
@@ -135,7 +149,7 @@ pub fn remove_row_from_user_matrices(rowid: usize) -> usize {
 }
 
 struct MS1UserFgsRow {
-    id: usize,
+    id: i64,
     name: String,
     smarts: String,
 }
@@ -174,13 +188,12 @@ pub fn update_user_fgs() -> Vec<Vec<String>> {
         names.insert(index, row.name);
         smarts.insert(index, row.smarts);
     }
-    println!("{:?}", smarts);
 
     let return_data: Vec<Vec<String>> = vec![ids, names, smarts];
     return_data
 }
 
-pub fn remove_user_fgs(rowid: usize, column_to_remove: &str) -> usize {
+pub fn remove_user_fgs(rowid: i64, column_to_remove: &str) -> usize {
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();
     let sql: &str = "DELETE FROM user_functional_group_smarts WHERE id = ?1";
     conn.execute(sql, params![rowid]).unwrap();

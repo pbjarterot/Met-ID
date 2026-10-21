@@ -11,6 +11,7 @@
 @import url('ms1/ms1-popup.css');
 @import url('ms1/ms1-slidein.css');
 @import url('database_tab/database_styles.css');
+@import url('ccs_tab/ccs_styles.css');
 
 
 
@@ -29,6 +30,8 @@
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-text-size-adjust: 100%;
 	border-radius: 20px;
+	--titlebar-width: 300px;
+	--topbar-height: 25px;
 }
 
 .titlebar {
@@ -42,7 +45,7 @@
 	right: 0;
 	color: white;
 	z-index: 99999;
-	width: calc(100vw - 905px);
+	width: calc(100% - 1005px);
 }
 
 .titlebar-button {
@@ -55,7 +58,7 @@
 }
 
 .titlebar-button:hover {
-	background: #47edf5;
+	background: #555555;
 }
 
 .container {

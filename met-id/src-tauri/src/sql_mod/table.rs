@@ -3,6 +3,7 @@ use rusqlite::{params, Result};
 
 use crate::database_setup::{get_connection, get_msms_connection};
 
+
 pub fn check_if_table_exists(source_table: &str, new_table: &str) -> Result<()> {
     extern crate rusqlite;
     let conn: r2d2::PooledConnection<SqliteConnectionManager> = get_connection().unwrap();

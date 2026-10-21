@@ -16,7 +16,7 @@ struct Adduct {
     adduct: String,
 }
 
-fn get_adducts(matrix: String) -> Vec<String> {
+fn get_adducts(matrix: &String) -> Vec<String> {
     let conn = get_connection().unwrap();
     let adduct_query = format!("WITH temp_concat_adducts AS (SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts) SELECT adduct FROM temp_concat_adducts WHERE mname IN ('{}')", matrix);
     let mut stmt = conn
@@ -48,165 +48,72 @@ fn get_fgs(fgs: &Vec<String>) -> Vec<String> {
     new_vec
 }
 
-fn parse_fgs(fgs: &Vec<String>) -> String {
-    let mut res_string = "".to_string();
-    for i in 0..fgs.len() - 1 {
-        res_string += &format!("'{}', ", fgs[i]);
-    }
-    res_string += &format!("'{}'", fgs[fgs.len() - 1]);
-
-    res_string
+fn parse_fgs(fgs: &[String]) -> String {
+    fgs.iter().map(|s| format!("'{}'", s)).collect::<Vec<_>>().join(", ")
 }
 
 fn table_exists(tx: &rusqlite::Transaction<'_>) -> Result<usize> {
     tx.execute("SELECT COUNT(*) FROM temp_concat_adducts", [])
 }
 
-pub fn check_temp_tables() {
-    let mut conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
-        get_connection().unwrap();
+use std::error::Error;
 
-    check_if_table_exists("metabolites", "user_metabolites").unwrap();
-    check_if_table_exists("derivatized_by", "user_derivatized_by").unwrap();
-    check_if_table_exists("endogeneity", "user_endogeneity").unwrap();
-    check_if_table_exists("in_tissue", "user_in_tissue").unwrap();
-    check_if_table_exists("db_accessions", "user_db_accessions").unwrap();
-    check_if_table_exists("functional_groups", "user_functional_groups").unwrap();
-    check_if_table_exists("adducts", "user_adducts").unwrap();
+pub fn create_concat_views() -> Result<(), Box<dyn Error>> {
+    let conn = get_connection()?;
 
-    let tx: rusqlite::Transaction<'_> = conn.transaction().unwrap();
-    match table_exists(&tx) {
-        Ok(_) => (),
-        Err(rusqlite::Error::ExecuteReturnedResults) => (),
-        Err(_) => {
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_adducts AS
-                SELECT * FROM adducts
-                UNION ALL
-                SELECT * FROM user_adducts",
-                [],
-            )
-            .unwrap();
+    conn.execute_batch(
+        r#"
+        CREATE VIEW IF NOT EXISTS temp_concat_adducts AS
+            SELECT * FROM adducts
+            UNION ALL
+            SELECT * FROM user_adducts;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_db_accessions AS
-                SELECT * FROM db_accessions
-                UNION ALL
-                SELECT * FROM user_db_accessions",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_db_accessions AS
+            SELECT * FROM db_accessions
+            UNION ALL
+            SELECT * FROM user_db_accessions;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_metabolites AS
-                SELECT * FROM metabolites
-                UNION ALL
-                SELECT * FROM user_metabolites",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_metabolites AS
+            SELECT * FROM metabolites
+            UNION ALL
+            SELECT * FROM user_metabolites;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_lipids AS
-                SELECT * FROM lipids 
-                UNION ALL 
-                SELECT * FROM user_metabolites",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_lipids AS
+            SELECT * FROM lipids
+            UNION ALL
+            SELECT * FROM user_metabolites;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_derivatized_by AS
-                SELECT * FROM derivatized_by
-                UNION ALL
-                SELECT * FROM user_derivatized_by",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_derivatized_by AS
+            SELECT * FROM derivatized_by
+            UNION ALL
+            SELECT * FROM user_derivatized_by;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_endogeneity AS
-                SELECT * FROM endogeneity
-                UNION ALL
-                SELECT * FROM user_endogeneity",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_endogeneity AS
+            SELECT * FROM endogeneity
+            UNION ALL
+            SELECT * FROM user_endogeneity;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_functional_groups AS
-                SELECT * FROM functional_groups
-                UNION ALL
-                SELECT * FROM user_functional_groups",
-                [],
-            )
-            .unwrap();
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_lipid_functional_groups AS
-                SELECT * FROM lipids_functional_groups 
-                UNION ALL
-                SELECT * FROM user_lipids_functional_groups",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_functional_groups AS
+            SELECT * FROM functional_groups
+            UNION ALL
+            SELECT * FROM user_functional_groups;
 
-            tx.execute(
-                "CREATE TEMP TABLE temp_concat_in_tissue AS
-                SELECT * FROM in_tissue
-                UNION ALL
-                SELECT * FROM user_in_tissue",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_lipid_functional_groups AS
+            SELECT * FROM lipids_functional_groups
+            UNION ALL
+            SELECT * FROM user_lipids_functional_groups;
 
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_db_accessions_id ON temp_concat_db_accessions(id)",
-                [],
-            )
-            .unwrap();
+        CREATE VIEW IF NOT EXISTS temp_concat_in_tissue AS
+            SELECT * FROM in_tissue
+            UNION ALL
+            SELECT * FROM user_in_tissue;
+        "#,
+    )?;
 
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_metabolites_id ON temp_concat_metabolites(id)",
-                [],
-            )
-            .unwrap();
-
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_lipids_id ON temp_concat_lipids(id)",
-                [],
-            )
-            .unwrap();
-
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_derivatized_by_id ON temp_concat_derivatized_by(id)",
-                [],
-            )
-            .unwrap();
-
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_endogeneity_id ON temp_concat_endogeneity(id)",
-                [],
-            )
-            .unwrap();
-            tx.execute("CREATE INDEX idx_temp_concat_endogeneity_criteria ON temp_concat_endogeneity(endogenous, exogenous, unspecified)", []).unwrap();
-
-            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_id ON temp_concat_functional_groups(id)", []).unwrap();
-            tx.execute("CREATE INDEX idx_temp_concat_lipid_functional_groups_id ON temp_concat_lipid_functional_groups(id)", []).unwrap();
-
-            tx.execute("CREATE INDEX idx_temp_concat_functional_groups_criteria ON temp_concat_functional_groups('Phenolic Hydroxyls', 'Primary Amines')", []).unwrap();
-
-            tx.execute(
-                "CREATE INDEX idx_temp_concat_in_tissue_id ON temp_concat_in_tissue(id)",
-                [],
-            )
-            .unwrap();
-
-            tx.commit().unwrap();
-        }
-    }
+    Ok(())
 }
 
-pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String {
+pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, ion_mobility: bool) -> String {
     check_if_table_exists("adducts", "user_adducts").unwrap();
     let tissue_map: HashMap<&str, &str> = hashmap! {
         "HMDB (CSF)" => "csf",
@@ -214,10 +121,8 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         "HMDB (Serum)" => "serum",
     };
 
-    check_temp_tables();
-
     let mut query: String = String::new();
-    let fg_or_adduct: String = get_adducts(args.matrix.clone()).join(", ");
+    let fg_or_adduct: String = get_adducts(&args.matrix).join(", ");
 
     let conventional_matrix: bool =
         args.matrix == "Positive Mode".to_string() || args.matrix == "Negative Mode".to_string();
@@ -226,21 +131,16 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
     let met_type_string: String = build_query_with_table(&args.met_type, &endo_table).unwrap();
 
     let tissue_string: String = match tissue_map.get(&args.metabolome[..]) {
-        Some(x) => {
-            format!("AND (in_tissue.'{}' >0 )", x)
-        }
+        Some(x) => format!("AND (in_tissue.'{}' >0 )", x),
         None => "".to_string(),
     };
 
-    let cross_join_args;
-    if !conventional_matrix {
-        cross_join_args =
-            build_select_query(&get_adducts(args.matrix.clone())).unwrap_or("".to_string());
+    let cross_join_args = if !conventional_matrix {
+        build_select_query(&get_adducts(&args.matrix)).unwrap_or("".to_string())
     } else {
-        cross_join_args = build_select_query(&get_fgs(&args.adducts)).unwrap_or("".to_string());
+        build_select_query(&get_fgs(&args.adducts)).unwrap_or("".to_string())
     };
 
-    println!("\n\n\n{:?}\n\n\n", cross_join_args);
     let mut db_string: String = "".to_string();
 
     if args.metabolome.starts_with("HMDB") {
@@ -253,30 +153,52 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
         true => {
             query += "SELECT COUNT(*) FROM";
         }
-        false => match (args.metabolome.starts_with("HMDB"), conventional_matrix) {
-            (true, false) => {
+        false => match (args.metabolome.starts_with("HMDB"), conventional_matrix, ion_mobility) {
+            (true, false, true) => {
                 //HMDB & Derivatizing matrix
                 query += &format!(
                     "SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, \
-                    temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, {coverage_string} FROM temp_concat_metabolites ",
+                    ccs_predictions.smiles, temp_concat_metabolites.chemicalformula, {coverage_string}, ccs_predictions.ccs FROM temp_concat_metabolites ",
                     fg_or_adduct = fg_or_adduct,
                     coverage_string = &coverage_string(&build_condition_query3(&args.adducts, "").unwrap(), &args.matrix)
                 );
             }
-            (true, true) => {
+            (true, true, true) => {
                 //HMDB & Pos neg mode
                 query += &format!(
                     "SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, \
-                    temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, {num_adducts} FROM temp_concat_metabolites ",
+                    ccs_predictions.smiles, temp_concat_metabolites.chemicalformula, {num_adducts}, ccs_predictions.ccs FROM temp_concat_metabolites ",
                     fg_or_adduct = parse_fgs(&args.adducts),
                     num_adducts = args.adducts.len()
                 );
             }
-            (false, false) => {
+            (true, false, false) => {
+                //HMDB & Derivatizing matrix
+                query += &format!(
+                    "SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
+                    THEN temp_concat_adducts.deltamass ELSE 0 END) \
+                    AS adjusted_mz, temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, \
+                    temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, {coverage_string}, 0.0 AS ccs FROM temp_concat_metabolites ",
+                    fg_or_adduct = fg_or_adduct,
+                    coverage_string = &coverage_string(&build_condition_query3(&args.adducts, "").unwrap(), &args.matrix)
+                );
+            }
+            (true, true, false) => {
+                //HMDB & Pos neg mode
+                query += &format!(
+                    "SELECT DISTINCT (temp_concat_metabolites.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
+                    THEN temp_concat_adducts.deltamass ELSE 0 END) \
+                    AS adjusted_mz, temp_concat_metabolites.name, temp_concat_adducts.adduct, temp_concat_db_accessions.hmdb, \
+                    temp_concat_metabolites.smiles, temp_concat_metabolites.chemicalformula, {num_adducts}, 0.0 AS ccs FROM temp_concat_metabolites ",
+                    fg_or_adduct = parse_fgs(&args.adducts),
+                    num_adducts = args.adducts.len()
+                );
+            }
+            (false, false, true) => {
                 //lipidmaps & Derivatizing matrix
                 query += &format!(
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
@@ -287,7 +209,18 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                     num_adducts = &coverage_string(&build_condition_query3(&args.adducts, "_lipid").unwrap(), &args.matrix)
                     );
             }
-            (false, true) => {
+            (false, false, false) => {
+                //lipidmaps & Derivatizing matrix
+                query += &format!(
+                    "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
+                    THEN temp_concat_adducts.deltamass ELSE 0 END) \
+                    AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    fg_or_adduct = fg_or_adduct,
+                    num_adducts = &coverage_string(&build_condition_query3(&args.adducts, "_lipid").unwrap(), &args.matrix)
+                    );
+            }
+            (false, true, true) => {
                 //lipidmaps & pos neg mode
                 query += &format!(
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
@@ -298,11 +231,55 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                     num_adducts = args.adducts.len()
                 );
             }
+            (false, true, false) => {
+                //lipidmaps & pos neg mode
+                query += &format!(
+                    "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
+                    THEN temp_concat_adducts.deltamass ELSE 0 END) \
+                    AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    fg_or_adduct = parse_fgs(&args.adducts),
+                    num_adducts = args.adducts.len()
+                );
+            }
+            
         },
     }
 
-    match (args.metabolome.starts_with("HMDB"), conventional_matrix) {
-        (true, false) => {
+    match (args.metabolome.starts_with("HMDB"), conventional_matrix, ion_mobility) {
+        (true, false, true) => {
+            query += &format!("INNER JOIN temp_concat_db_accessions ON temp_concat_metabolites.id = temp_concat_db_accessions.id \
+                                INNER JOIN temp_concat_endogeneity ON temp_concat_metabolites.id = temp_concat_endogeneity.id \
+                                INNER JOIN temp_concat_functional_groups ON temp_concat_metabolites.id = temp_concat_functional_groups.id \
+                                INNER JOIN temp_concat_derivatized_by ON temp_concat_metabolites.id = temp_concat_derivatized_by.id \
+                                INNER JOIN temp_concat_in_tissue ON temp_concat_metabolites.id = temp_concat_in_tissue.id \
+                                INNER JOIN ccs_predictions ON temp_concat_metabolites.id = ccs_predictions.metabolite_id \
+                                CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
+                                LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
+                                WHERE (temp_concat_adducts.adduct = ccs_predictions.adduct) AND temp_concat_adducts.numfunctionalgroups <= {b} AND adjusted_mz < {max} AND adjusted_mz > {min} {db_string}", 
+                                a = &cross_join_args,
+                                b = &build_condition_query3(&args.adducts, "").unwrap(), 
+                                max = &max_mz.to_string(), 
+                                min = &min_mz.to_string(), 
+                                db_string = db_string
+                                );
+        }
+        (true, true, true) => {
+            query += &format!("INNER JOIN temp_concat_db_accessions ON temp_concat_metabolites.id = temp_concat_db_accessions.id \
+                                INNER JOIN temp_concat_endogeneity ON temp_concat_metabolites.id = temp_concat_endogeneity.id \
+                                INNER JOIN temp_concat_in_tissue ON temp_concat_metabolites.id = temp_concat_in_tissue.id \
+                                INNER JOIN ccs_predictions ON temp_concat_metabolites.id = ccs_predictions.metabolite_id \
+                                CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
+                                LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
+                                AND ({met_type_string}) WHERE ({met_type}) AND (temp_concat_adducts.adduct = ccs_predictions.adduct) AND temp_concat_metabolites.mz + temp_concat_adducts.deltamass < {max} AND temp_concat_metabolites.mz + temp_concat_adducts.deltamass > {min} {tissue}",
+                                a = cross_join_args,
+                                max = &max_mz.to_string(),
+                                min = &min_mz.to_string(),
+                                met_type = met_type_string,
+                                tissue = tissue_string
+                            );
+        }
+        (true, false, false) => {
             query += &format!("INNER JOIN temp_concat_db_accessions ON temp_concat_metabolites.id = temp_concat_db_accessions.id \
                                 INNER JOIN temp_concat_endogeneity ON temp_concat_metabolites.id = temp_concat_endogeneity.id \
                                 INNER JOIN temp_concat_functional_groups ON temp_concat_metabolites.id = temp_concat_functional_groups.id \
@@ -318,7 +295,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                                 db_string = db_string
                                 );
         }
-        (true, true) => {
+        (true, true, false) => {
             query += &format!("INNER JOIN temp_concat_db_accessions ON temp_concat_metabolites.id = temp_concat_db_accessions.id \
                                 INNER JOIN temp_concat_endogeneity ON temp_concat_metabolites.id = temp_concat_endogeneity.id \
                                 INNER JOIN temp_concat_in_tissue ON temp_concat_metabolites.id = temp_concat_in_tissue.id \
@@ -332,7 +309,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                                 tissue = tissue_string
                             );
         }
-        (false, false) => {
+        (false, false, true) => {
             query += &format!("INNER JOIN temp_concat_lipid_functional_groups ON temp_concat_lipids.id = temp_concat_lipid_functional_groups.id \
                             CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
                             LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
@@ -341,7 +318,24 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool) -> String
                             max = &max_mz.to_string(),
                             min = &min_mz.to_string());
         }
-        (false, true) => {
+        (false, true, true) => {
+            query += &format!("CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
+                                LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
+                                WHERE temp_concat_lipids.mz + temp_concat_adducts.deltamass < {max} AND temp_concat_lipids.mz + temp_concat_adducts.deltamass > {min}", 
+                                a = cross_join_args,
+                                max = &max_mz.to_string(),
+                                min = &min_mz.to_string());
+        }
+        (false, false, false) => {
+            query += &format!("INNER JOIN temp_concat_lipid_functional_groups ON temp_concat_lipids.id = temp_concat_lipid_functional_groups.id \
+                            CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
+                            LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
+                            WHERE temp_concat_lipids.mz + temp_concat_adducts.deltamass < {max} AND temp_concat_lipids.mz + temp_concat_adducts.deltamass > {min}",
+                            a = cross_join_args,
+                            max = &max_mz.to_string(),
+                            min = &min_mz.to_string());
+        }
+        (false, true, false) => {
             query += &format!("CROSS JOIN ({a}) AS m LEFT JOIN temp_concat_adducts ON m.mname = temp_concat_adducts.adduct \
                                 LEFT JOIN user_adducts ON m.mname = temp_concat_adducts.adduct \
                                 WHERE temp_concat_lipids.mz + temp_concat_adducts.deltamass < {max} AND temp_concat_lipids.mz + temp_concat_adducts.deltamass > {min}", 
@@ -501,7 +495,7 @@ pub fn coverage_string(fg_string: &str, matrix: &str) -> String {
                     cov_vec.push(cov);
                 }
             }
-            Err(e) => println!("Error with the code: {}", e),
+            Err(e) => eprintln!("Error with the code: {}", e),
         }
     }
     let max_index: usize = match fg_vec
@@ -548,9 +542,7 @@ pub fn build_count_query(
     };
 
     let tissue_string: String = match tissue_map.get(&met[..]) {
-        Some(x) => {
-            format!("AND (in_tissue.'{}' > 0)", x)
-        }
+        Some(x) => format!("AND (in_tissue.'{}' > 0)", x),
         None => "".to_string(),
     };
 

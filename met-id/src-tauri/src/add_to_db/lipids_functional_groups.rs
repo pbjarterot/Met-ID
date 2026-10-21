@@ -1,11 +1,12 @@
 use rusqlite::Result;
 use std::collections::HashMap;
 use std::sync::mpsc;
+use log::info;
 
 use crate::add_to_db::functional_group::functional_group_target;
 
 pub fn complete_lipids_functional_groups(map: HashMap<String, String>) -> Result<()> {
-    println!("---------------------- Updating ---------------------------");
+    info!("---------------------- Updating ---------------------------");
     let (tx, _rx) = mpsc::channel();
     for (name, smart) in map.iter() {
         functional_group_target(
@@ -17,7 +18,7 @@ pub fn complete_lipids_functional_groups(map: HashMap<String, String>) -> Result
         )
         .unwrap();
     }
-    println!("---------------------- Updating ---------------------------");
+    info!("---------------------- Updating ---------------------------");
     Ok(())
 }
 

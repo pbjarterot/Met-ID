@@ -2,91 +2,180 @@ use crate::add_to_db::lipids_functional_groups::complete_lipids_functional_group
 use crate::database_setup::get_connection;
 use rusqlite::Result;
 use std::collections::HashMap;
+use log::info;
 
 use super::table::check_if_table_exists;
 
 pub fn check_latest_database() -> Result<()> {
-    let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
+    let mut conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
         get_connection().unwrap();
-    match change_lipidmaps_column_type(&conn) {
-        Ok(_) => println!("lipid table updated"),
-        Err(e) => println!("lipid table up to date: {:?}", e),
+    match change_lipidmaps_column_type(&mut conn) {
+        Ok(_) => info!("lipid table updated"),
+        Err(e) => eprintln!("lipid table up to date: {:?}", e),
     };
-    match change_metabolite_column_type(&conn) {
-        Ok(_) => println!("metabolite table updated"),
-        Err(e) => println!("metabolite table up to date: {:?}", e),
+    match change_metabolite_column_type(&mut conn) {
+        Ok(_) => info!("metabolite table updated"),
+        Err(e) => eprintln!("metabolite table up to date: {:?}", e),
     };
 
     match lipid_functional_groups_table(&conn) {
-        Ok(_) => println!("lipid functional groups updated"),
-        Err(e) => println!("lipid functional groups up to date: {:?}", e),
+        Ok(_) => info!("lipid functional groups updated"),
+        Err(e) => eprintln!("lipid functional groups up to date: {:?}", e),
     }
 
     Ok(())
 }
 
-fn change_lipidmaps_column_type(
-    conn: &r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>,
-) -> Result<()> {
-    // Step 1: Create a new table with the updated column type
+use rusqlite::OptionalExtension;
 
-    //conn.execute("CREATE INDEX id")
-    conn.execute(
-        "CREATE TABLE new_lipids (
+fn change_lipidmaps_column_type(
+    conn: &mut r2d2::PooledConnection<
+        r2d2_sqlite::SqliteConnectionManager,
+    >,
+) -> Result<()> {
+    let mz_type: Option<String> = conn
+        .query_row(
+            "SELECT type
+             FROM pragma_table_info('lipids')
+             WHERE name = 'mz'",
+            [],
+            |row| row.get(0),
+        )
+        .optional()?;
+
+    match mz_type {
+        Some(column_type)
+            if column_type.trim().eq_ignore_ascii_case("REAL") =>
+        {
+            info!("lipids.mz is already REAL");
+            return Ok(());
+        }
+        Some(column_type) => {
+            info!(
+                "Changing lipids.mz from {} to REAL",
+                column_type
+            );
+        }
+        None => {
+            return Err(rusqlite::Error::InvalidColumnName(
+                "lipids.mz".to_string(),
+            ));
+        }
+    }
+
+    let transaction = conn.transaction()?;
+
+    transaction.execute_batch(
+        r#"
+        DROP TABLE IF EXISTS new_lipids2;
+
+        CREATE TABLE new_lipids2 (
             id INTEGER PRIMARY KEY,
             name TEXT,
             mz REAL,
             formula TEXT,
             smiles TEXT
-        )",
-        [],
+        );
+
+        INSERT INTO new_lipids2 (
+            id,
+            name,
+            mz,
+            formula,
+            smiles
+        )
+        SELECT
+            id,
+            name,
+            mz,
+            formula,
+            smiles
+        FROM lipids;
+
+        DROP TABLE lipids;
+
+        ALTER TABLE new_lipids2
+        RENAME TO lipids;
+        "#,
     )?;
 
-    // Step 2: Copy data from the old table to the new table
-    conn.execute(
-        "INSERT INTO new_lipids (name, mz, formula, smiles)
-        SELECT name, mz, formula, smiles FROM lipids",
-        [],
-    )?;
-
-    // Step 3: Drop the old table
-    conn.execute("DROP TABLE lipids", [])?;
-
-    // Step 4: Rename the new table to the old name
-    conn.execute("ALTER TABLE new_lipids RENAME TO lipids", [])?;
+    transaction.commit()?;
 
     Ok(())
 }
 
 fn change_metabolite_column_type(
-    conn: &r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>,
+    conn: &mut r2d2::PooledConnection<
+        r2d2_sqlite::SqliteConnectionManager,
+    >,
 ) -> Result<()> {
-    // Step 1: Create a new table with the updated column type
+    let mz_type: Option<String> = conn
+        .query_row(
+            "SELECT type
+             FROM pragma_table_info('metabolites')
+             WHERE name = 'mz'",
+            [],
+            |row| row.get(0),
+        )
+        .optional()?;
 
-    //conn.execute("CREATE INDEX id")
-    conn.execute(
-        "CREATE TABLE new_metabolites (
+    match mz_type {
+        Some(column_type)
+            if column_type.trim().eq_ignore_ascii_case("REAL") =>
+        {
+            info!("metabolites.mz is already REAL");
+            return Ok(());
+        }
+        Some(column_type) => {
+            info!(
+                "Changing metabolites.mz from {} to REAL",
+                column_type
+            );
+        }
+        None => {
+            return Err(rusqlite::Error::InvalidColumnName(
+                "metabolites.mz".to_string(),
+            ));
+        }
+    }
+
+    let transaction = conn.transaction()?;
+
+    transaction.execute_batch(
+        r#"
+        DROP TABLE IF EXISTS new_metabolites;
+
+        CREATE TABLE new_metabolites (
             id INTEGER PRIMARY KEY,
             name TEXT,
             mz REAL,
             chemicalformula TEXT,
             smiles TEXT
-        )",
-        [],
+        );
+
+        INSERT INTO new_metabolites (
+            id,
+            name,
+            mz,
+            chemicalformula,
+            smiles
+        )
+        SELECT
+            id,
+            name,
+            mz,
+            chemicalformula,
+            smiles
+        FROM metabolites;
+
+        DROP TABLE metabolites;
+
+        ALTER TABLE new_metabolites
+        RENAME TO metabolites;
+        "#,
     )?;
 
-    // Step 2: Copy data from the old table to the new table
-    conn.execute(
-        "INSERT INTO new_metabolites (name, mz, chemicalformula, smiles)
-        SELECT name, mz, chemicalformula, smiles FROM metabolites",
-        [],
-    )?;
-
-    // Step 3: Drop the old table
-    conn.execute("DROP TABLE metabolites", [])?;
-
-    // Step 4: Rename the new table to the old name
-    conn.execute("ALTER TABLE new_metabolites RENAME TO metabolites", [])?;
+    transaction.commit()?;
 
     Ok(())
 }

@@ -7,10 +7,10 @@ mod matrices;
 mod msms;
 mod mtx_dropdown;
 mod query;
-mod sql_handler;
+pub mod sql_handler;
 pub mod table;
 mod tissues;
-mod user_tables;
+pub mod user_tables;
 
 use self::counter::sql_counter;
 use self::database_view::{db_ids_and_names, get_db_data};
@@ -50,6 +50,8 @@ pub struct MS1DbRow {
     smiles: String,
     formula: String,
     possible_derivs: i32,
+    ccs: f64,
+
 }
 #[allow(dead_code)]
 impl MS1DbRow {
@@ -63,6 +65,7 @@ impl MS1DbRow {
             smiles: row.get(4)?,
             formula: row.get(5)?,
             possible_derivs: row.get(6)?,
+            ccs: row.get(7)?,
         })
     }
 }
@@ -82,7 +85,7 @@ pub struct MS2DbRow {
 
 #[derive(Debug)]
 pub struct MS2DbRow2 {
-    id: usize,
+    id: i64,
     name: String,
     identifier: String,
     adduct: String,
@@ -112,11 +115,13 @@ pub fn sql_handler_tauri(
     mat: String,
     typ: Vec<String>,
     adducts: Vec<String>,
-    _mass_error: String,
+    mass_error: String,
     masses: Vec<String>,
-    mzwindow: String,
-) -> Vec<Vec<HashMap<String, String>>> {
-    sql_handler(met, mat, typ, adducts, _mass_error, masses, mzwindow)
+    ccss: Vec<String>,
+    mzwindow: f64,
+    ion_mobility: bool
+) -> Vec<Vec<HashMap<&'static str, String>>> {
+    sql_handler(met, mat, typ, adducts, mass_error, masses, ccss, mzwindow, ion_mobility)
 }
 
 #[tauri::command]
@@ -204,7 +209,7 @@ pub fn show_user_msms_db_tauri() -> Vec<Vec<String>> {
 }
 
 #[tauri::command]
-pub fn remove_row_from_msms_user_db_tauri(rowid: usize) -> usize {
+pub fn remove_row_from_msms_user_db_tauri(rowid: i64) -> usize {
     remove_row_from_msms_user_db(rowid)
 }
 
@@ -234,7 +239,7 @@ pub fn update_user_fgs_tauri() -> Vec<Vec<String>> {
 }
 
 #[tauri::command]
-pub fn remove_from_user_fgs_tauri(rowid: usize, toremove: &str) -> usize {
+pub fn remove_from_user_fgs_tauri(rowid: i64, toremove: &str) -> usize {
     remove_user_fgs(rowid, toremove)
 }
 
@@ -249,7 +254,7 @@ pub fn db_data_tauri(index: usize, origin: String) -> ParsedDBData {
 }
 
 #[tauri::command]
-pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, (String, usize), i64)> {
+pub fn db_ids_and_names_tauri(inputvalue: String) -> Vec<(String, String, (String, usize), i64)> {
     db_ids_and_names(inputvalue)
 }
 

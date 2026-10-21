@@ -11,23 +11,7 @@
     <script type="text/javascript" src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
   </head>
   <body>
-    <div data-tauri-drag-region class="titlebar">
-      <div class="titlebar-button" id="titlebar-minimize">
-        <img
-          src="https://api.iconify.design/mdi:window-minimize.svg"
-          alt="minimize"
-        />
-      </div>
-      <div class="titlebar-button" id="titlebar-maximize">
-        <img
-          src="https://api.iconify.design/mdi:window-maximize.svg"
-          alt="maximize"
-        />
-      </div>
-      <div class="titlebar-button" id="titlebar-close">
-        <img src="https://api.iconify.design/mdi:close.svg" alt="close" />
-      </div>
-    </div>
+    
     <div class="container">    
       <div class="tabs">
         <div class="tabby-tab">
@@ -103,7 +87,7 @@
             <span id="ms2-match-popup-continue-button">Continue</span>
           </div>
 
-          <div class="tabby-content">
+          <div class="tabby-content" id="tabby-content-ms2">
             <div class="ms2-left-sidebar">
               <div class="ms2-logo">
                 <h1 class="ms2-logo-text">Met-id</h1>
@@ -229,7 +213,42 @@
                 <p id="ms1-popup-filename-window-name"></p>
               </div>
             </div>
-            <div class="ms1-popup-middle-div">
+            <div class="ms1-popup-csv-controls" id="ms1-popup-csv-controls">
+              <div class="ms1-popup-options-div">
+                <div class="ms1-popup-options-horizontal-div">
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <span>Delimiter</span>
+                    <input type="text" class="ms1-popup-delimiter-input" id="ms1-popup-delimiter-input">
+                  </div>
+                  <div class="ms1-popup-options-vertical-div-row3" id="ms1-popup-change-delimiter-button">
+                    <p> Update with new delimiter</p>
+                    <!-- button for updating -->
+                  </div>
+                  <!--
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>m/z Column</p>
+                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-mz-column-dropdown">
+
+                      </select>
+                  </div>
+                  
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>Contains ion mobility data</p>
+                    <input type="checkbox">
+                  </div>
+                  
+                  <div class="ms1-popup-options-vertical-div-row">
+                    <p>Ion Mobility Column</p>
+                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-ccs-column-dropdown">
+                      </select>
+                  </div>
+                  -->
+                  <div class="ms1-popup-options-vertical-div-row2" id="ms1-popup-transpose-button">
+                    <p>Transpose</p>
+                    <!-- button for transposing -->
+                  </div> 
+                </div>
+              </div>
               <div class="ms1-popup-spreadsheet-div">
                 <table class="popup-datatable" id="ms1-popup-datatable">
                   <thead>
@@ -250,39 +269,35 @@
                   </tbody>
                 </table>
               </div>
-              <div class="ms1-popup-options-div">
-                <div class="ms1-popup-options-vertical-div">
-                  <div class="ms1-popup-options-vertical-div-row">
-                    <p>Delimiter</p>
-                    <input type="text" class="ms1-popup-delimiter-input" id="ms1-popup-delimiter-input">
-                  </div>
-                  <div class="ms1-popup-options-vertical-div-row3" id="ms1-popup-change-delimiter-button">
-                    <p> Update with new delimiter</p>
-                    <!-- button for updating -->
-                  </div>
-                  <div class="ms1-popup-options-vertical-div-row">
-                    <p>m/z Column</p>
-                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-mz-column-dropdown">
-                        <!--  Appended by fill_dropdown in   -->
-                      </select>
-                  </div>
-                  <!--
-                  <div class="ms1-popup-options-vertical-div-row">
-                    <p>Contains ion mobility data</p>
-                    <input type="checkbox">
-                  </div>
-                  
-                  <div class="ms1-popup-options-vertical-div-row">
-                    <p>Ion Mobility Column</p>
-                      <select name="two" class="ms1-popup-dropdown-select" id="ms1-popup-ccs-column-dropdown">
-                      </select>
-                  </div>
-                  -->
-                  <div class="ms1-popup-options-vertical-div-row2" id="ms1-popup-transpose-button">
-                    <p>Transpose</p>
-                    <!-- button for transposing -->
-                  </div> 
+              
+            
+            </div>
+            <div class="ms1-popup-imzml-controls" id="ms1-popup-imzml-controls">
+              <div class="imzml-peak-options">
+                <label for="imzml-peak-count">Number of peaks</label>
+                <input id="imzml-peak-count" type="number" min="1" step="1" value="1000">
+
+                <label for="imzml-tolerance-ppm">Tolerance (ppm)</label>
+                <input id="imzml-tolerance-ppm" type="number" min="0" step="0.1" value="10">
+                <div id="imzml-peak-output" class="imzml-peak-output" aria-live="polite">
+                  <span id="imzml-plot-loading" class="imzml-small-spinner" hidden
+                        aria-label="Updating plot"></span>
+
+                  <span class="imzml-peak-legend">
+                    <span class="imzml-peak-legend-mark" aria-hidden="true"></span>
+                    Picked peak tolerance window
+                  </span>
                 </div>
+              </div>
+
+              <div id="ms1-imzml-chart-container">
+                
+
+                <svg id="ms1-imzml-spectrum"></svg>
+              </div>
+              <div id="ms1-popup-loading" class="ms1-popup-loading" hidden>
+                <span class="ms1-spinner" aria-hidden="true"></span>
+                <span role="status">Loading data…</span>
               </div>
             </div>
             <div class="ms1-popup-bottom-div">
@@ -291,7 +306,7 @@
             </div>
             <!-- Content of the new div -->
           </div>
-          <div class="tabby-content">
+          <div class="tabby-content" id="tabby-content-ms1">
             <div class="ms1-left-sidebar">
               <div class="ms1-logo">
                 <h1 class="ms1-logo-text">Met-id</h1>
@@ -423,7 +438,7 @@
                     </div>
 
                     <button class="ms1-error-button" id="ms1-error-button-manual">
-                      <span class="ms1-error-button-text">Manual</span>
+                      <span class="ms1-error-button-text">Recalibration</span>
                       <span class="ms1-error-button-icon">
                         <ion-icon name="analytics-outline"></ion-icon>
                       </span>
@@ -458,27 +473,30 @@
                   <!-- ======= Header tools ======= -->
                   <div class="header-tools">
                     <div class="tools">
-                      <ul>
-                        <li id="add-to-ms1-table-li">
-                          <input type="text" id="add-to-ms1-table-input" placeholder="Add m/z"></input>
-                        </li>
-                        <li>
-                          <button id="append-to-ms1-table">
-                            <ion-icon name="add-circle-outline"></ion-icon>
-                          </button>
-                        </li>
-                        <li>
-                          <button id="ms1-table-delete-row">
-                            <ion-icon name="trash-outline"></ion-icon>
+                      <div class="ion-mobility-switch-div">
+                        <span class="ion-mobility-switch-label">Use ion mobility</span>
+                        <input class="use-ion-mobility-switch" type="checkbox" id="toggle-ion-mobility" checked></input>
+                      </div>
+                    
+                    
+                      <input type="text" id="add-to-ms1-table-input" placeholder="Add m/z"></input>
+                      <input type="text" id="add-ccs-to-ms1-table-input" placeholder="Add CCS"></input>
 
-                          </button>
-                        </li>
-                        <li>
-                          <button id="toggle-show-identified">
-                            Show only identified
-                          </button>
-                        </li>
-                      </ul>
+                      <button id="append-to-ms1-table">
+                        <ion-icon name="add-circle-outline"></ion-icon>
+                      </button>
+                      <button id="ms1-table-delete-row">
+                        <ion-icon name="trash-outline"></ion-icon>
+
+                      </button>
+                      <button id="toggle-show-identified">
+                        Show only identified
+                      </button>
+                      <!--
+                        <button id="toggle-show-significant">
+                          Show only H1 q-value &lt; 0.05 
+                        </button>
+                      -->
                     </div>
                     <div class="search">
                       <input type="text" class="search-input" id="ms1-searchbar-input" placeholder="Search..." />
@@ -493,14 +511,18 @@
                           <th><input type="checkbox" id="ms1-table-head-check"/></th>
                           <th>Observed m/z</th>
                           <th>Adjusted m/z</th>
+                          <th class="ion-mobility-column">CCS</th>
                           <th>Matched name</th>
                           <th>Adduct</th>
                           <th>Formula</th>
-                          <th>Matched delta mass (Da)</th>
-                          <th>Matched difference (ppm)</th>
+                          <th class="ion-mobility-column">Matched CCS (Å)</th>
+                          <th>Matched m/z difference (ppm)</th>
                           <th>Matched theoretical mass</th>
+                          <th class="ion-mobility-column">Matched CCS difference</th>
                           <th>MSMS available?</th>
                           <th>Coverage</th>
+                          <th class="ion-mobility-column">H1 q-value</th>
+                          <th class="ion-mobility-column">Posterior Probability</th>
                         </tr>
                       </thead>
                       <tbody id="ms1-table-body">
@@ -511,29 +533,199 @@
                 </div>
               </div>
             
-              <div class="slide-in" id="add-to-db-slidein">
+              
+
+              <div class="slide-in-bottom" id="slide-in-bottom">
+                <div class="resize-handle" draggable="true"></div>
+                <div class="slide-in-bottom-content" id="slide-in-bottom-content"></div>
+              </div>
+            </div>
+            <div class="slide-in" id="add-to-db-slidein">
+              <div class="slide-in-close-button"></div>
+              <div class="slide-resizer"></div>
               <!--
                 filled by ms1_add_buttons.ts
               -->          
               </div>
+          </div>
+        </div>
+        <div class="tabby-tab">
+          <input type="radio" id="tab-3" name="tabby-tabs">
+          <label for="tab-3" class="tabby-label">Database</label>  
+          <div class="tabby-content" id="tabby-content-db">
+            <div class="searchbar" id="db-searchbar-div">
 
-              <div class="slide-in-bottom" id="slide-in-bottom">
-                <div class="resize-handle" draggable="true"></div>
-                <div class="slide-in-bottom-content" id="slide-in-bottom-content">
+            </div>
+          </div>
+        </div>
+        <div class="tabby-tab">
+          <input type="radio" id="tab-4" name="tabby-tabs">
+          <label for="tab-4" class="tabby-label" id="rightmost-tab">CCS Prediction</label>
+          <div id="ccs-overlay"></div>
+          <div id="ccs-popup">
+            <div class="ccs-popup-top-div">
+              <div class="filename-window">
+                <p id="ccs-popup-filename-window-name"></p>
+              </div>
+            </div>
+            <div class="ccs-popup-middle-div">
+              <div class="ccs-popup-options-div">
+                <div class="ccs-popup-options-vertical-div">
+                  <div class="ccs-popup-options-vertical-div-row">
+                    <span>Delimiter</span>
+                    <input type="text" class="ccs-popup-delimiter-input" id="ccs-popup-delimiter-input" placeholder=",">
+                  </div>
+                  <div class="ccs-popup-options-vertical-div-row3" id="ccs-popup-change-delimiter-button">
+                    <p> Update with new delimiter</p>
+                    <!-- button for updating -->
+                  </div>
+                  <div class="ccs-popup-options-vertical-div-row2" id="ccs-popup-transpose-button">
+                    <p>Transpose</p>
+                    <!-- button for transposing -->
+                  </div> 
+                </div>
+              </div>
+              <div class="ccs-popup-spreadsheet-div">
+                <table class="popup-datatable" id="ccs-popup-datatable">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Column 1</th>
+                      <th>Column 2</th>
+                      <th>Column 3</th>
+                      <th>Column 4</th>
+                      <th>Column 5</th>
+                      <th>Column 6</th>
+                      <th>Column 7</th>
+                      <!-- Add more column headers as needed -->
+                    </tr>
+                  </thead>
+                  <tbody id="ccs-popup-tbody">
+                    <!-- Add more rows as needed -->
+                  </tbody>
+                </table>
+              </div>
+              
+            </div>
+            <div class="ccs-popup-bottom-div">
+              <button class="ccs-popup-bottom-div-button" id="ccs-popup-cancel-button">Cancel</button>
+              <button class="ccs-popup-bottom-div-button" id="ccs-popup-continue-button">Continue</button>
+            </div>
+            <!-- Content of the new div -->
+          </div>
+          <div class="tabby-content" id="tabby-content-ccs">
+            <div class="ccs-smiles-input" id="ccs-smiles-input">
+              <div class="ccs-prediction-content">
+                <div class="ccs-prediction-input-content">
+                  <div class="ccs-prediction-content-single-mol">
+                      <span class='single-molecule-label'>Single molecule</span>
+                      <div class="single-ccs-input">
+                          <input type='text' id='ccs-input' class='ccs-smiles-input' placeholder='Input SMILES...'>
+                          <select class='dropdown-dark dropdown-select' id='dropdown-adducts'></select>
+                          <button class="predict-single-smiles-button" id="predict-single-smiles-button">Predict</button>
+                      </div>
+                  </div>
+                  <div class="ccs-prediction-content-multimol">
+                    <span class='single-molecule-label'>Multiple molecules from file</span>
+                    <div>
+                      <button class="open-ccs-file-button" id="open-ccs-file-button">Open file</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="ccs-prediction-table-div">
+                  <div class="ccs-prediction-table-over">
+                    <div class="ccs-table-heading-left">
+                        <span class="predicted-label">Predicted</span>
 
+                        <div class="ccs-table-search">
+                            <ion-icon name="search-outline"></ion-icon>
+
+                            <input
+                                type="search"
+                                id="ccs-table-search"
+                                placeholder="Search results..."
+                                aria-label="Search CCS predictions"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                        </div>
+                    </div>
+                    <div class="ccs-table-actions">
+                      <span class="preview-label">Preview structures</span>
+                      <input class="preview-switch" type="checkbox" id="toggle-ccs-column" checked>
+                      <span class="clear-table-label">Clear Table</span>
+                      <button
+                        type="button"
+                        id="clear-ccs-table-button"
+                        class="clear-ccs-table-button"
+                        aria-label="Clear prediction table"
+                        title="Clear prediction table"
+                    >
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                    </div>
+                    
+                  </div>
+                    <div class="prediction-table-container">
+                        <div class="datatable-container-scrollable">
+                            <table class="ccs-prediction-table" id="ccs-prediction-table">
+                                <thead>    
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Smiles</th>
+                                        <th>Adduct</th>
+                                        <th>m/z</th>
+                                        <th>Predicted CCS</th>
+                                        <th class="preview-image-cell">Preview</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ccs-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="from-bottom">
+                    <span class="progress-span">Progress</span>
+                    <progress id="ccs-prediction-progress-bar" value="50" max="100">75%</progress>
+                    <span id="ccs-progress-text">0 / 0 (0%)</span>
+                    <span id="ccs-elapsed-time">Elapsed: 00:00</span>
+                    <button
+                        type="button"
+                        id="pause-ccs-prediction-button"
+                        class="ccs-prediction-control-button"
+                        aria-label="Pause CCS prediction"
+                        title="Pause CCS prediction"
+                        disabled
+                    >
+                        <ion-icon name="pause-circle-outline"></ion-icon>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="cancel-ccs-prediction-button"
+                        class="ccs-prediction-control-button cancel"
+                        aria-label="Cancel CCS prediction"
+                        title="Cancel CCS prediction"
+                        disabled
+                    >
+                        <ion-icon name="stop-circle-outline"></ion-icon>
+                    </button>
+                    <button class="save-ccs-prediction-button" id="save-ccs-prediction-button">Save as csv</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="tabby-tab">
-          <input type="radio" id="tab-3" name="tabby-tabs">
-          <label  for="tab-3" class="tabby-label" id="rightmost-tab">Database</label>
-        
-          <div class="tabby-content">
-            <div class="searchbar" id="db-searchbar-div">
-
-            </div>
+        <div data-tauri-drag-region class="titlebar">
+          <div class="titlebar-button" id="titlebar-minimize">
+            <img src="https://api.iconify.design/mdi/window-minimize.svg" alt="Minimize">
+          </div>
+          <div class="titlebar-button" id="titlebar-maximize">
+            <img src="https://api.iconify.design/mdi/window-maximize.svg" alt="Maximize">
+          </div>
+          <div class="titlebar-button" id="titlebar-close">
+            <img src="https://api.iconify.design/mdi/close.svg" alt="Close">
           </div>
         </div>
       </div>

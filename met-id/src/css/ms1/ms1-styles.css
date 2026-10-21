@@ -10,7 +10,7 @@
 	border-radius: 8px;
 	overflow: hidden;
 	font-family: "Quicksand", sans-serif;
-	font-size: 16px;
+	font-size: 15px;
 	font-weight: 500;
 	cursor: pointer;
     margin: 0px 5px 8px 0px;
@@ -79,33 +79,35 @@
 
 .ms1-searchbar-row {
     text-align: center;
-    height: 34%;
-    width: 100%;
+    width: 98%;
+    margin-left: 1%;
+    margin-top: 10px;
+    
 }
 
-.ms1-searchbar-row > p{
+.ms1-searchbar-row > p {
     width: 100%;
-    height: 20px;
+    height: 25px;
+    font-size: 20px;
 }
 
 .ms1-searchbar-row2 {
-    height: 25%;
+    height: 30%;
     width: 99%;
     margin: 12px 0px;
 }
 
 .ms1-searchbar-row3 {
-    height: 60%;
     width: 90%;
     margin: 5% 0%;
     margin-left: 5%;
-
+    overflow-y: auto;
 }
 
 .ms1-searchbar-row2 input{
-      width: 80%;
+      width: 90%;
       padding: 3px;
-      margin-left: 40px;
+      margin-left: 5%;
 }
 
 .ms1-searchbar-row2 label{
@@ -115,11 +117,15 @@
 }
 
 .ms1-searchbar {
-      height: 230px;
-      left: 270px;
-      right: 0.5vw;
-      position: absolute;
-      border-radius: 10px;
+    height: 100%;
+    left: 0px;
+    right: 0px;
+    position: relative;
+    border-radius: 10px;
+    width: 99%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-right: 20px;
 
 }
    
@@ -138,44 +144,47 @@
 .ms1-metabolome-div {
     background-color: #929292;
     border-radius: 10px;
-    height: 90%;
-    min-width: 220px;
+    height: 100%;
+    width: 100%;
+    min-width: 180px;
     max-width: 250px;
-    width: 80%;
-    padding: 10px;
-    margin: 10px 1px;
+    margin-top: 10px;
 }
 
 .ms1-searchbar-left {
     background-color: #4b4b4b;
-    width: 70%;
+    width: 100%;
     height: 100%;
     min-height: 180px;
     color:white;
     float: left;
     display: grid;
-    grid-template-columns: 35% 35% 25%;
-    max-width: 800px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-column-gap: 10px;
+
   
 }
 
 .ms1-searchbar-right {
     background-color: #4b4b4b;
-    width: 30%;
-    height: 100%;
+    width: 100%;
+    max-width: 500px;
+    height: 98%;
     color:white;
     float: right;
+    padding-left: 10px;
   
 }
 
 .ms1-left-sidebar {
     background-color: #4b4b4b;
-    width: 200px;
+    width: 250px;
     height: 100%;
     float: left;
     padding: 0%;
     margin: 0%;
     min-width: 150px;
+    position:relative;
 }
 
 .ms1-logo {
@@ -232,13 +241,9 @@
     margin: 5px;
     text-align: center;
     padding: 4px;
+    margin-top:10px;
 }
 
-.ms1-error-input-container {
-    display: grid;
-    grid-template-rows: repeat(3, 1fr);
-    gap: 10px
-}
 
 .ms1-error-input{
     grid-row: span 3;
@@ -253,7 +258,7 @@
 .ms1-error-button {
     display: flex;
     height: 33px;
-    width: 100%;
+    width: 96%;
     padding: 0;
     background: #747474;
     border: none;
@@ -264,7 +269,7 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    margin: 0px 5px 5px 0px;
+    margin: 2% 5px 5px 2%;
     text-align: center;
 }
 
@@ -299,14 +304,16 @@
 }
 
 .ms1-results {
-    background-color: #929292;
-    left: 270px;
-    right: 0.5vw;
-    top: 250px;
+    left: 0px;
+    right: 10px;
+    top: 15px;
     bottom: 30px;
-    position: absolute;
-    border-radius: 20px;
-
+    position: relative;
+    border-radius: 5px;
+    min-height: 0px;
+    overflow: hidden;
+    height: auto;
+    width: 99.7%;
 }
 
 .datatable-container {
@@ -315,10 +322,18 @@
 
 .ms1-body-main {
     background-color: #4b4b4b;
-    height: auto;
-    width: auto;
-    float: right;
-
+    position: relative;
+    width: calc(100% - 10px);
+    height: 100%;
+    left: 8px;
+    top: 0px;
+    right:0px;
+    display: grid;
+    
+    grid-template-rows: 250px minmax(0, 0.95fr);
+    min-height: 0;
+    overflow: hidden;
+    
 }
 
 .ms1-top-sidebar-buttons {
@@ -330,8 +345,35 @@
 .ms1-bottom-buttons {
     position: absolute;
     width: 250px;
-
     bottom: 25px;
-
 }
 
+#tabby-content-ms1 {
+    align-items: center;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    
+    
+}
+
+#tabby-content-ms1.slide-open {
+    align-items: center;
+    display: grid;
+    grid-template-columns: 250px 1fr 410px;
+    
+}
+
+.slide-in--active #tabby-content-ms1 {
+  right: 520px;
+  width: auto;
+  grid-template-columns: 250px 1fr 520px;
+}
+
+#tabby-content-ms1.slide-open .ms1-body-main {
+  right: 520px;
+  width: auto;
+}
+
+#tabby-content-ms1.slide-open .slide-in {
+  right: 0;
+}

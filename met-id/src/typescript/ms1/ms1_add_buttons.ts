@@ -9,6 +9,7 @@ export let cancellationToken: CancellationToken = { isCancelled: false };
 
 export const slideInDiv = document.getElementById('add-to-db-slidein');
 
+export let CloseSlideinListener: ((e: MouseEvent) => void) | null = null;
 
 
 export async function add_to_db_rust(name: string, smilesSmartsMz: string, metType: string, endoExoOrOther:object, inTissue:object, adducts:string[]) {
@@ -26,12 +27,22 @@ export async function add_to_db_rust(name: string, smilesSmartsMz: string, metTy
 	return added_to_db;
 }
 
-export function change_slidein() {
+export function change_slidein(tab: string) {
     if (slideInDiv!.classList.value === "slide-in") {
         slideInDiv!.classList.add('slide-in--active');
-    } else if (slideInDiv!.classList.value === "slide-in slide-in--active"){
+		slideInDiv!.classList.add(tab);
+		document.getElementById("tabby-content-ms1")?.classList.add("slide-open");
+	}
+	else if (slideInDiv!.classList.value.includes(tab)) {
+		console.log(slideInDiv!.classList.value.split(" ")[2])
         slideInDiv!.classList.remove('slide-in--active');
+		slideInDiv!.classList.remove(tab);
 		destroyAndDetach();
+		document.getElementById("tabby-content-ms1")?.classList.remove("slide-open");
+
+    } else if (slideInDiv!.classList.value.split(" ")[2] != tab){
+		slideInDiv!.classList.remove(slideInDiv!.classList.value.split(" ")[2]);
+		slideInDiv!.classList.add(tab);
     }
 }
 
@@ -48,6 +59,7 @@ export function remove_warning_message() {
 }
 
 export const createAndAttach = async (which_button: string) => {
+	
 	if (which_button === "matrix") {
 		createAndAttachMatrices();
 	}
@@ -96,8 +108,13 @@ export async function addToHTML(submit_id: string, add_term: string, inputs: str
 	}
 	
 	let innerHTML = `
+	
 	<div class="add-to-database">
+		
 		<div class="add-to-database-top">
+		<div class="slide-in-closebutton">
+			<button id="slide-in-closebutton">X</button>
+		</div>
 			<h1>Add ${add_term}</h1>
 			<li>
 				<div class="grid grid-1">

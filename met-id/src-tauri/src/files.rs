@@ -14,6 +14,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::mem::size_of;
 use std::path::Path;
 use std::str::FromStr;
+use imzml::{ImzMLReader, ImzML};
 
 #[derive(Debug)]
 enum Delim {
@@ -140,7 +141,7 @@ pub fn parse_ms1_csv(path: String) -> Vec<f64> {
         }
         Err(err) => {
             // Failed to parse the file
-            println!("Error: {}", err);
+            eprintln!("Error: {}", err);
         }
     }
     mzs
@@ -169,28 +170,21 @@ pub fn read_ms1_ctrlv(
     res_rows
 }
 
+
 fn process_csv_data(
     reader: &mut csv::Reader<File>,
-    delimiter: String,
 ) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
     let mut res_rows = Vec::new();
 
     for result in reader.records() {
         match result {
-            Ok(line) => {
-                let rec: csv::StringRecord = line;
-                if let Some(record_str) = rec.get(0) {
-                    let res: Vec<String> = record_str
-                        .split(&delimiter.to_string())
-                        .map(|s| s.to_string())
-                        .collect();
-                    res_rows.push(res);
-                } else {
-                    eprintln!("Warning: Empty record found.");
-                }
+            Ok(record) => {
+                res_rows.push(
+                    record.iter().map(String::from).collect()
+                );
             }
             Err(err) => {
-                eprintln!("Warning: Error reading CSV line - Skipping: {}", err);
+                eprintln!("Warning: skipping CSV row: {err}");
             }
         }
     }
@@ -198,27 +192,140 @@ fn process_csv_data(
     Ok(res_rows)
 }
 
+fn process_csv_data_ccs(
+    reader: &mut csv::Reader<File>,
+    n: usize,
+) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
+    let mut res_rows = Vec::with_capacity(n);
+
+    for result in reader.records().take(n) {
+        match result {
+            Ok(record) => {
+                let row = record
+                    .iter()
+                    .map(String::from)
+                    .collect::<Vec<String>>();
+
+                res_rows.push(row);
+            }
+            Err(err) => {
+                eprintln!("Warning: Error reading CSV row—skipping: {}", err);
+            }
+        }
+    }
+
+    Ok(res_rows)
+}
+
+
+#[tauri::command]
+pub fn read_ms1_imzml(
+    path: String,
+    n: usize,
+    tolerance_ppm: f64,
+) -> Vec<Vec<f64>> {
+    let parser = ImzMLReader::from_path(path).unwrap();
+
+
+    let imzml: ImzML<_> = parser.into();
+
+    // This uses the first spectrum (pixel) in the imzML file.
+    let spectrum = imzml.spectrum(0).unwrap();
+
+    let mzs: Vec<f64> = spectrum
+        .mz_array()
+        .unwrap()
+        .as_f64()
+        .unwrap();
+
+    let intensities: Vec<f64> = spectrum
+        .intensity_array()
+        .unwrap()
+        .as_f64()
+        .unwrap();
+
+    let mut peaks: Vec<(f64, f64)> = mzs
+        .into_iter()
+        .zip(intensities)
+        .filter(|(mz, intensity)| mz.is_finite() && intensity.is_finite())
+        .collect();
+
+    // Process the tallest peaks first so the strongest peak is kept
+    // when nearby peaks are treated as duplicates.
+    peaks.sort_by(|a, b| b.1.total_cmp(&a.1));
+
+    let tolerance_ppm = if tolerance_ppm.is_finite() {
+        tolerance_ppm.max(0.0)
+    } else {
+        0.0
+    };
+
+    let mut selected: Vec<(f64, f64)> = Vec::with_capacity(n.min(peaks.len()));
+
+    for peak in peaks {
+        let is_duplicate = selected.iter().any(|(selected_mz, _)| {
+            let average_mz = (peak.0.abs() + selected_mz.abs()) / 2.0;
+            let ppm_difference = if average_mz > 0.0 {
+                ((peak.0 - selected_mz).abs() / average_mz) * 1_000_000.0
+            } else {
+                0.0
+            };
+
+            ppm_difference <= tolerance_ppm
+        });
+
+        if !is_duplicate {
+            selected.push(peak);
+
+            if selected.len() >= n {
+                break;
+            }
+        }
+    }
+
+    // Return the selected peaks in ascending m/z order for plotting.
+    selected.sort_by(|a, b| a.0.total_cmp(&b.0));
+
+    selected
+        .into_iter()
+        .map(|(mz, intensity)| vec![mz, intensity])
+        .collect()
+}
+
+
 #[tauri::command]
 pub fn read_ms1_csv(
     path: String,
+    typeofcsv: String,
+    n: usize,
     delimiter: String,
     transpose: bool,
     _deletedrows: Vec<usize>,
 ) -> Vec<Vec<String>> {
-    // Open the file
     let file: File = File::open(path).unwrap();
 
-    // Create a CSV reader from the file
-    let mut reader: csv::Reader<File> = ReaderBuilder::new().has_headers(false).from_reader(file);
-    //let res_rows: Vec<Vec<String>> = Vec::new();
+    let mut reader: csv::Reader<File> = ReaderBuilder::new().delimiter(delimiter.as_bytes()[0]).has_headers(false).from_reader(file);
 
-    let mut res_rows: Vec<Vec<String>> = match process_csv_data(&mut reader, delimiter) {
-        Ok(a) => a,
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            return Vec::new(); // or handle the error in some other way
+    let mut res_rows: Vec<Vec<String>> = 
+        if typeofcsv == "ms1" {
+            match process_csv_data(&mut reader) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    return Vec::new(); // or handle the error in some other way
+                }
+            }
         }
-    };
+        else {
+            match process_csv_data_ccs(&mut reader, n) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    return Vec::new(); // or handle the error in some other way
+                }
+            }
+        };
+    
 
     // Transpose the dataset if `transpose` is true
     if transpose {
@@ -300,7 +407,7 @@ fn read_characters(file_path: &str, start: u64, end: u64) -> io::Result<String> 
     file.read_exact(&mut buffer)?;
 
     // Convert the bytes to a String
-    let content = String::from_utf8(buffer).expect("Invalid UTF-8 sequence");
+    let content = String::from_utf8(buffer.to_vec()).expect("Invalid UTF-8 sequence");
 
     Ok(content)
 }
@@ -504,4 +611,74 @@ pub fn read_mzml_for_msms2(path: String) -> (Vec<f64>, Vec<f64>) {
     let top_ten_thou_mz: Vec<f64> = extract_top_10(&mz_data, &top_ten_thou_indices);
 
     (top_ten_thou_mz, top_ten_thou_intensity)
+}
+
+
+use tauri_plugin_dialog::DialogExt;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CcsCsvRow {
+    name: String,
+    smiles: String,
+    adduct: String,
+    mz: String,
+    predicted_ccs: String,
+}
+
+#[tauri::command]
+pub async fn save_ccs_predictions(
+    app: tauri::AppHandle,
+    rows: Vec<CcsCsvRow>,
+) -> Result<Option<String>, String> {
+    if rows.is_empty() {
+        return Err("There are no CCS predictions to save.".to_string());
+    }
+
+    // None means the user cancelled the dialog.
+    let Some(file_path) = app
+        .dialog()
+        .file()
+        .set_title("Save CCS predictions")
+        .set_file_name("ccs_predictions.csv")
+        .add_filter("CSV file", &["csv"])
+        .blocking_save_file()
+    else {
+        return Ok(None);
+    };
+
+    let mut path = file_path
+        .into_path()
+        .map_err(|error| format!("Could not resolve the selected path: {error}"))?;
+
+    // Ensure the output has a CSV extension.
+    if path.extension().is_none() {
+        path.set_extension("csv");
+    }
+
+    let mut writer = csv::WriterBuilder::new()
+        .from_path(&path)
+        .map_err(|error| format!("Could not create CSV file: {error}"))?;
+
+    writer
+        .write_record(["Name", "SMILES", "Adduct", "m/z", "Predicted CCS"])
+        .map_err(|error| format!("Could not write CSV headings: {error}"))?;
+
+    for row in rows {
+        writer
+            .write_record([
+                row.name,
+                row.smiles,
+                row.adduct,
+                row.mz,
+                row.predicted_ccs,
+            ])
+            .map_err(|error| format!("Could not write CSV row: {error}"))?;
+    }
+
+    writer
+        .flush()
+        .map_err(|error| format!("Could not finish writing CSV: {error}"))?;
+
+    Ok(Some(path.to_string_lossy().into_owned()))
 }
