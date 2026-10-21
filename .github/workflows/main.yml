@@ -210,6 +210,44 @@ jobs:
             fi
             chmod +x "$path"
           done
+      - name: Build PyInstaller binaries (macOS)
+        if: runner.os == 'macOS'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
+      
+      - name: Build and verify PyInstaller binaries (Windows)
+        if: runner.os == 'Windows'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          ./make_executables.ps1
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "PyInstaller build failed."
+          }
+
+          $binaries = @(
+            "metabolite",
+            "metabolite_for_db",
+            "ccs_preprocess",
+            "prediction_model"
+          )
+
+          foreach ($binary in $binaries) {
+            $path = "dist/${binary}-x86_64-pc-windows-msvc.exe"
+
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              throw "Missing required sidecar: $path"
+            }
+          }
+
+          Get-ChildItem dist
 
       - uses: tauri-apps/tauri-action@v0
 
