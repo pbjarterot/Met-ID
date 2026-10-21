@@ -11,8 +11,8 @@ sys.path.insert(0, str(python_api_path))
 
 
 project = "Met-ID"
-author = "Your Name"
-copyright = "2026, Your Name"
+author = "Patrik Bjärterot"
+copyright = "2026, Patrik Bjärterot"
 release = "0.1.0"
 
 extensions = [
