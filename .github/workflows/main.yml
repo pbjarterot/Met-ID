@@ -63,7 +63,7 @@ jobs:
           channels: conda-forge
           channel-priority: strict
 
-      - name: Install pinned native RDKit
+      - name: Install native RDKit and Boost development files
         if: runner.os == 'macOS'
         shell: bash -el {0}
         run: |
@@ -71,14 +71,13 @@ jobs:
 
           conda install --yes -c conda-forge \
             "rdkit=2024.09.6" \
-            "librdkit-dev=2024.09.6"
+            "librdkit-dev=2024.09.6" \
+            libboost-devel
 
           echo "CONDA_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
 
-          if [[ ! -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h" ]]; then
-            echo "RDKit C++ headers are missing from $CONDA_PREFIX"
-            exit 1
-          fi
+          test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
+          test -f "$CONDA_PREFIX/include/boost/config.hpp"
 
           python -c "import rdkit; print('RDKit:', rdkit.__version__)"
 
@@ -166,7 +165,37 @@ jobs:
           test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
           echo "Native RDKit prefix: $CONDA_PREFIX"
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protoc
+        run: protoc --version
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf \
+            protobuf-compiler
+
+          pkg-config --modversion glib-2.0 gobject-2.0
+
       - uses: tauri-apps/tauri-action@v0
+
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -232,8 +261,7 @@ jobs:
             libxdo-dev \
             libssl-dev \
             patchelf \
-            protobuf-compiler \
-            zip
+            protobuf-compiler
 
           pkg-config --modversion glib-2.0 gobject-2.0
 
