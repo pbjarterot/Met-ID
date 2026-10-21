@@ -1,14 +1,14 @@
 # docs/source/conf.py
 
-import os
+from pathlib import Path
 import sys
 
-# Make the project and Python API importable for autodoc.
-project_root = os.path.abspath("..")
-python_api_path = os.path.join(project_root, "python_api")
+project_root = Path(__file__).resolve().parents[2]
+python_api_path = project_root / "python_api"
 
-sys.path.insert(0, project_root)
-sys.path.insert(0, python_api_path)
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(python_api_path))
+
 
 project = "Met-ID"
 author = "Your Name"
