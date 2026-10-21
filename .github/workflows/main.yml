@@ -202,7 +202,7 @@ jobs:
           chmod +x make_linux_executables.sh
           ./make_linux_executables.sh
 
-          for binary in metabolite metabolite_for_db ccs_preprocess prediction_model; do
+          for binary in metabolite metabolite_for_db prediction_model; do
             path="dist/${binary}-x86_64-unknown-linux-gnu"
             if [[ ! -f "$path" ]]; then
               echo "Missing required sidecar: $path"
@@ -251,7 +251,6 @@ jobs:
           $binaries = @(
             "metabolite",
             "metabolite_for_db",
-            "ccs_preprocess",
             "prediction_model"
           )
 

@@ -2,6 +2,16 @@
 pyinstaller ../src/metabolite.py --onefile -n metabolite-x86_64-unknown-linux-gnu
 pyinstaller ../src/metabolite_for_db.py --onefile -n metabolite_for_db-x86_64-unknown-linux-gnu
 
+libpyg="$(python -c "import importlib.util; s = importlib.util.find_spec('libpyg'); print(s.origin if s else '')")"
+
+if [[ -z "$libpyg" || ! -f "$libpyg" ]]; then
+  echo "Could not locate libpyg in this Python environment."
+  python -m pip show pyg-lib
+  exit 1
+fi
+
+echo "Bundling: $libpyg"
+
 pyinstaller ../ccs_prediction/model.py \
     --onefile --noconfirm --clean --console \
     --collect-all torch_geometric --collect-all pyg_lib --collect-all rdkit --copy-metadata torch-geometric \
