@@ -16,4 +16,3 @@ pyinstaller ../ccs_prediction/model.py `
     --collect-binaries torch --copy-metadata torch-geometric --hidden-import pyg_lib --hidden-import libpyg --add-binary "${libpyg}:." `
     --add-data "../ccs_prediction/trained_weights.pt:." -n prediction_model-x86_64-pc-windows-msvc.exe
 
-pyinstaller ../ccs_prediction/ccs_preprocess.py --onefile -n ccs_prediction-x86_64-pc-windows-msvc.exe
