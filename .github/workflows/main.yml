@@ -368,19 +368,13 @@ jobs:
       - name: Verify Protoc
         run: protoc --version
 
-      - name: Build Linux sidecars
-        if: runner.os == 'Linux'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: bash
+      - name: Install Python build dependencies
         run: |
-          set -euo pipefail
-          bash ./make_linux_executables.sh
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller grpcio grpcio-tools protobuf rdkit
 
-          for name in metabolite metabolite_for_db prediction_model; do
-            test -f "dist/${name}-x86_64-unknown-linux-gnu"
-          done
 
-      - name: Build PyInstaller executables (Windows)
+      - name: Build and verify PyInstaller binaries (Windows)
         if: runner.os == 'Windows'
         working-directory: met-id/src-tauri/pyinstaller
         shell: pwsh
@@ -390,40 +384,49 @@ jobs:
           ./make_executables.ps1
 
           if ($LASTEXITCODE -ne 0) {
-            throw "PyInstaller build failed"
+            throw "PyInstaller build failed."
           }
 
-          foreach ($name in @("metabolite", "metabolite_for_db", "prediction_model")) {
-            $path = "dist/${name}-x86_64-pc-windows-msvc.exe"
+          $binaries = @(
+            "metabolite",
+            "metabolite_for_db",
+            "prediction_model"
+          )
 
-            if (-not (Test-Path -LiteralPath $path)) {
-              throw "Missing sidecar: $path"
+          foreach ($binary in $binaries) {
+            $path = "dist/${binary}-x86_64-pc-windows-msvc.exe"
+
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              throw "Missing required sidecar: $path"
             }
           }
-      - name: Build PyInstaller executables (macOS)
-        if: runner.os == 'macOS'
+
+          Get-ChildItem dist
+      - name: Build PyInstaller binaries (Linux)
+        if: runner.os == 'Linux'
         working-directory: met-id/src-tauri/pyinstaller
-        shell: bash -el {0}
+        shell: bash
         run: |
           set -euo pipefail
+          chmod +x make_linux_executables.sh
+          ./make_linux_executables.sh
 
-          TARGET="$(rustc -vV | sed -n 's/^host: //p')"
-
-          python -m PyInstaller --version
-          python -c "import torch, torch_geometric, pyg_lib, rdkit"
-
-          bash ./make_macos_executables.sh
-
-          for name in metabolite metabolite_for_db prediction_model; do
-            path="dist/${name}-${TARGET}"
-
+          for binary in metabolite metabolite_for_db prediction_model; do
+            path="dist/${binary}-x86_64-unknown-linux-gnu"
             if [[ ! -f "$path" ]]; then
-              echo "::error::Missing sidecar: $path"
+              echo "Missing required sidecar: $path"
               exit 1
             fi
-
             chmod +x "$path"
           done
+      - name: Build PyInstaller binaries (macOS)
+        if: runner.os == 'macOS'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x make_macos_executables.sh
+          ./make_macos_executables.sh
 
       - name: Build server binary
         run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
