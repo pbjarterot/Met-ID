@@ -62,7 +62,7 @@ fn is_backend_ready() -> bool {
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub async fn run() {
+pub fn run() {
     // Initialize logger
     log::set_logger(&*LOGGER).unwrap();
     log::set_max_level(log::LevelFilter::Info);
