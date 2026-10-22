@@ -175,8 +175,6 @@ jobs:
           version: "23.4"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify Protoc
-        run: protoc --version
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
@@ -197,7 +195,8 @@ jobs:
             protobuf-compiler
 
           pkg-config --modversion glib-2.0 gobject-2.0
-
+      - name: Verify Protoc
+        run: protoc --version
       - name: Install prediction dependencies
         run: python -m pip install pandas
       
