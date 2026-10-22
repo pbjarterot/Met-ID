@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, windows-latest, ubuntu-latest]
+        platform: [] #[macos-latest, windows-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
 
@@ -322,224 +322,23 @@ jobs:
           gh release edit "${{ steps.version.outputs.release_tag }}" --draft=false
 
   build-python-wheel:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            pkg-config \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libxdo-dev \
-            libssl-dev \
-            patchelf \
-            protobuf-compiler
-
-          pkg-config --modversion glib-2.0 gobject-2.0
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify Protoc
-        run: protoc --version
-
-      - name: Install Python build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyinstaller grpcio grpcio-tools protobuf rdkit
-
-      - name: Install CCS model dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          python -m pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
-          if ($LASTEXITCODE -ne 0) { throw "Torch installation failed" }
-
-          python -m pip install "torch-geometric==2.8.0"
-          if ($LASTEXITCODE -ne 0) { throw "PyG installation failed" }
-
-          python -m pip install "pyg_lib==0.6.0+pt28cpu" --only-binary=:all: --no-index --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-          if ($LASTEXITCODE -ne 0) { throw "pyg-lib installation failed" }
-
-          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
-          if ($LASTEXITCODE -ne 0) { throw "Model dependency imports failed" }
-          
-      - name: Build and verify PyInstaller binaries (Windows)
-        if: runner.os == 'Windows'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          ./make_executables.ps1
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "PyInstaller build failed."
-          }
-
-          $binaries = @(
-            "metabolite",
-            "metabolite_for_db",
-            "prediction_model"
-          )
-
-          foreach ($binary in $binaries) {
-            $path = "dist/${binary}-x86_64-pc-windows-msvc.exe"
-
-            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-              throw "Missing required sidecar: $path"
-            }
-          }
-
-          Get-ChildItem dist
-      
-      - name: Install CCS model dependencies (Linux/macOS)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            python -m pip install "torch==2.8.0" \
-              --index-url https://download.pytorch.org/whl/cpu
-          else
-            python -m pip install "torch==2.8.0"
-          fi
-
-          python -m pip install "torch-geometric==2.8.0"
-
-          python -m pip install "pyg_lib==0.6.0" \
-            --only-binary=:all: \
-            --no-index \
-            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-
-          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
-      - name: Build PyInstaller binaries (Linux)
-        if: runner.os == 'Linux'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x make_linux_executables.sh
-          ./make_linux_executables.sh
-
-          for binary in metabolite metabolite_for_db prediction_model; do
-            path="dist/${binary}-x86_64-unknown-linux-gnu"
-            if [[ ! -f "$path" ]]; then
-              echo "Missing required sidecar: $path"
-              exit 1
-            fi
-            chmod +x "$path"
-          done
-      - name: Build PyInstaller binaries (macOS)
-        if: runner.os == 'macOS'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x make_macos_executables.sh
-          ./make_macos_executables.sh
-
-      - name: Build server binary
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
-
-      - name: Install RDKit and configure C++20 (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          
-          echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
-      - name: Set up Conda for native RDKit (macOS)
-        if: runner.os == 'macOS'
-        uses: conda-incubator/setup-miniconda@v4
-        with:
-          miniforge-version: latest
-          activate-environment: metid-native
-          python-version: "3.12"
-          channels: conda-forge
-          channel-priority: strict
-
-      - name: Install native RDKit dependencies (macOS)
-        if: runner.os == 'macOS'
-        shell: bash -el {0}
-        run: |
-          set -euo pipefail
-
-          conda install --yes -c conda-forge \
-            "rdkit=2024.09.6" \
-            "librdkit-dev=2024.09.6" \
-            libboost-devel
-
-          test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
-          test -f "$CONDA_PREFIX/include/boost/config.hpp"
-
-          echo "CONDA_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
-          echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
-
-      - name: Build server binary (macOS)
-        if: runner.os == 'macOS'
-        shell: bash -el {0}
-        run: |
-          set -euo pipefail
-          conda --version
-          cargo build --release \
-            --manifest-path met-id/src-tauri/Cargo.toml \
-            --bin Met-ID
-
-      - name: Build server binary (Linux/Windows)
-        if: runner.os != 'macOS'
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
-      - name: Build server binary
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
-
-      - name: Copy server into Python package (Linux/macOS)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          mkdir -p python-client/metid_api/bin
-          cp met-id/src-tauri/target/release/metid-server \
-            python-client/metid_api/bin/metid-server
-          chmod +x python-client/metid_api/bin/metid-server
-
-      - name: Copy server into Python package (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force python-client/metid_api/bin | Out-Null
-          Copy-Item met-id/src-tauri/target/release/metid-server.exe `
-            python-client/metid_api/bin/metid-server.exe
-
-      - name: Build wheel
-        working-directory: python-client
+      - name: Build Python wheel
+        working-directory: met-id/met-id-api
         run: |
           python -m pip install --upgrade build
           python -m build --wheel
 
       - uses: actions/upload-artifact@v4
         with:
-          name: metid-wheel-${{ matrix.os }}
+          name: metid-python-wheel
           path: python-client/dist/*.whl
           if-no-files-found: error
