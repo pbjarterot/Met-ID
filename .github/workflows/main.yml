@@ -193,6 +193,30 @@ jobs:
 
           pkg-config --modversion glib-2.0 gobject-2.0
 
+      
+      
+      - name: Install CCS model dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install "torch==2.8.0" \
+              --index-url https://download.pytorch.org/whl/cpu
+          else
+            python -m pip install "torch==2.8.0"
+          fi
+
+          python -m pip install "torch-geometric==2.8.0"
+
+          python -m pip install "pyg_lib==0.6.0" \
+            --only-binary=:all: \
+            --no-index \
+            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
+
+          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
+      
       - name: Build PyInstaller binaries (Linux)
         if: runner.os == 'Linux'
         working-directory: met-id/src-tauri/pyinstaller
@@ -218,28 +242,6 @@ jobs:
           set -euo pipefail
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
-      
-      - name: Install CCS model dependencies (Linux/macOS)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            python -m pip install "torch==2.8.0" \
-              --index-url https://download.pytorch.org/whl/cpu
-          else
-            python -m pip install "torch==2.8.0"
-          fi
-
-          python -m pip install "torch-geometric==2.8.0"
-
-          python -m pip install "pyg_lib==0.6.0" \
-            --only-binary=:all: \
-            --no-index \
-            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-
-          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
       - name: Install CCS model dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -356,6 +358,17 @@ jobs:
             protobuf-compiler
 
           pkg-config --modversion glib-2.0 gobject-2.0
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protoc
+        run: protoc --version
+
+      - name: Build server binary
+        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 
       - name: Install RDKit and configure C++20 (macOS)
         if: runner.os == 'macOS'
@@ -487,6 +500,16 @@ jobs:
         run: |
           chmod +x make_linux_executables.sh
           ./make_linux_executables.sh
+
+      
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Build server binary
         run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
