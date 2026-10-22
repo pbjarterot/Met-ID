@@ -62,7 +62,6 @@ fn is_backend_ready() -> bool {
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-#[tokio::main]
 pub async fn run() {
     // Initialize logger
     log::set_logger(&*LOGGER).unwrap();
@@ -80,55 +79,57 @@ pub async fn run() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.contains(&"--server".to_string()) {
-        let port = args
-            .iter()
-            .skip_while(|arg| *arg != "--port")
-            .nth(1)
-            .and_then(|value| value.parse::<u16>().ok())
-            .unwrap_or(3001);
+        tauri::async_runtime::block_on(async move {
+            let port = args
+                .iter()
+                .skip_while(|arg| *arg != "--port")
+                .nth(1)
+                .and_then(|value| value.parse::<u16>().ok())
+                .unwrap_or(3001);
 
-        let db_path =
-            install_helper_functions::ensure_database_in_appdata_headless("db.db");
-        let msms_db_path =
-            install_helper_functions::ensure_database_in_appdata_headless("msms_db.db");
+            let db_path =
+                install_helper_functions::ensure_database_in_appdata_headless("db.db");
+            let msms_db_path =
+                install_helper_functions::ensure_database_in_appdata_headless("msms_db.db");
 
-        MSMSPATH
-            .set(msms_db_path.to_string_lossy().to_string())
-            .expect("Failed to set MSMS DB path");
+            MSMSPATH
+                .set(msms_db_path.to_string_lossy().to_string())
+                .expect("Failed to set MSMS DB path");
 
-        let pool: Pool<SqliteConnectionManager> =
-            install_helper_functions::create_pool_from_app_path(db_path);
-        let msms_pool: Pool<SqliteConnectionManager> =
-            install_helper_functions::create_pool_from_app_path(msms_db_path);
+            let pool: Pool<SqliteConnectionManager> =
+                install_helper_functions::create_pool_from_app_path(db_path);
+            let msms_pool: Pool<SqliteConnectionManager> =
+                install_helper_functions::create_pool_from_app_path(msms_db_path);
 
-        database_setup::POOL
-            .set(pool)
-            .expect("Failed to initialize database pool");
-        database_setup::MSMS_POOL
-            .set(msms_pool)
-            .expect("Failed to initialize MSMS database pool");
+            database_setup::POOL
+                .set(pool)
+                .expect("Failed to initialize database pool");
+            database_setup::MSMS_POOL
+                .set(msms_pool)
+                .expect("Failed to initialize MSMS database pool");
 
-        check_user_tables().expect("Failed to check user tables");
-        check_latest_database().expect("Failed to check database version");
-        create_concat_views().expect("Failed to create database views");
+            check_user_tables().expect("Failed to check user tables");
+            check_latest_database().expect("Failed to check database version");
+            create_concat_views().expect("Failed to create database views");
 
 
-        let ccs_state = Arc::new(CcsSidecarState::default());
+            let ccs_state = Arc::new(CcsSidecarState::default());
 
-        let sidecar_path = env::var_os("METID_CCS_SIDECAR")
-            .map(PathBuf::from)
-            .ok_or("Set METID_CCS_SIDECAR to the prediction_model executable path").unwrap();
+            let sidecar_path = env::var_os("METID_CCS_SIDECAR")
+                .map(PathBuf::from)
+                .ok_or("Set METID_CCS_SIDECAR to the prediction_model executable path").unwrap();
 
-        sidecar::start_ccs_sidecar_process(&ccs_state, sidecar_path)
-            .map_err(|error| error.to_string()).unwrap();
-        sidecar::predict_with_sidecar(
-            ccs_state.as_ref(),
-            "CCO".to_string(),
-            Some("[M+H]+".to_string()),
-        )
-        .await
-        .expect("Could not warm up CCS sidecar");
-        api::serve_api(port, Arc::clone(&ccs_state)).await;
+            sidecar::start_ccs_sidecar_process(&ccs_state, sidecar_path)
+                .map_err(|error| error.to_string()).unwrap();
+            sidecar::predict_with_sidecar(
+                ccs_state.as_ref(),
+                "CCO".to_string(),
+                Some("[M+H]+".to_string()),
+            )
+            .await
+            .expect("Could not warm up CCS sidecar");
+            api::serve_api(port, Arc::clone(&ccs_state)).await;
+        })
 
     } else {
         tauri::Builder::default()

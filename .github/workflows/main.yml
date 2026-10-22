@@ -288,7 +288,7 @@ jobs:
           Get-ChildItem dist
 
       - uses: tauri-apps/tauri-action@v0
-        timeout-minutes: 45
+        timeout-minutes: 60
 
 
         env:
@@ -380,6 +380,51 @@ jobs:
             test -f "dist/${name}-x86_64-unknown-linux-gnu"
           done
 
+      - name: Build PyInstaller executables (Windows)
+        if: runner.os == 'Windows'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          ./make_executables.ps1
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "PyInstaller build failed"
+          }
+
+          foreach ($name in @("metabolite", "metabolite_for_db", "prediction_model")) {
+            $path = "dist/${name}-x86_64-pc-windows-msvc.exe"
+
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing sidecar: $path"
+            }
+          }
+      - name: Build PyInstaller executables (macOS)
+        if: runner.os == 'macOS'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash -el {0}
+        run: |
+          set -euo pipefail
+
+          TARGET="$(rustc -vV | sed -n 's/^host: //p')"
+
+          python -m PyInstaller --version
+          python -c "import torch, torch_geometric, pyg_lib, rdkit"
+
+          bash ./make_macos_executables.sh
+
+          for name in metabolite metabolite_for_db prediction_model; do
+            path="dist/${name}-${TARGET}"
+
+            if [[ ! -f "$path" ]]; then
+              echo "::error::Missing sidecar: $path"
+              exit 1
+            fi
+
+            chmod +x "$path"
+          done
+
       - name: Build server binary
         run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 
@@ -387,8 +432,48 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install rdkit
+          
           echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
+      - name: Set up Conda for native RDKit (macOS)
+        if: runner.os == 'macOS'
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: metid-native
+          python-version: "3.12"
+          channels: conda-forge
+          channel-priority: strict
+
+      - name: Install native RDKit dependencies (macOS)
+        if: runner.os == 'macOS'
+        shell: bash -el {0}
+        run: |
+          set -euo pipefail
+
+          conda install --yes -c conda-forge \
+            "rdkit=2024.09.6" \
+            "librdkit-dev=2024.09.6" \
+            libboost-devel
+
+          test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
+          test -f "$CONDA_PREFIX/include/boost/config.hpp"
+
+          echo "CONDA_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
+
+      - name: Build server binary (macOS)
+        if: runner.os == 'macOS'
+        shell: bash -el {0}
+        run: |
+          set -euo pipefail
+          conda --version
+          cargo build --release \
+            --manifest-path met-id/src-tauri/Cargo.toml \
+            --bin Met-ID
+
+      - name: Build server binary (Linux/Windows)
+        if: runner.os != 'macOS'
+        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
       - name: Build server binary
         run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 

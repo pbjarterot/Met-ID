@@ -28,14 +28,13 @@ pub fn frontend_bool_response(id: String, value: bool, state: tauri::State<Callb
 
 #[tauri::command]
 pub fn frontend_ready(app: AppHandle, state: State<CallbackMap>) {
-    tauri::async_runtime::spawn({
-        let app = app.clone();
-        let state = state.inner().clone(); // clone the Arc<Mutex<...>>
+    let state = Arc::clone(state.inner());
 
-        async move {
-            println!("Checking for updates");
-            info!("Checking for updates");
-            update(app, state).await.unwrap();
+    tauri::async_runtime::spawn(async move {
+        info!("Checking for updates");
+
+        if let Err(error) = update(app, state).await {
+            log::error!("Update check failed: {error}");
         }
     });
 }
