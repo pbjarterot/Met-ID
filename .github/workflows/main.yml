@@ -129,24 +129,6 @@ jobs:
           print("\n".join(staged_frameworks))
           PY
 
-      - name: Import Apple certificate
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          echo "${APPLE_CERTIFICATE}" | base64 --decode > apple_certificate.p12
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security import apple_certificate.p12 \
-            -k build.keychain \
-            -P "${APPLE_CERTIFICATE_PASSWORD}" \
-            -T /usr/bin/codesign
-          security set-key-partition-list \
-            -S apple-tool:,apple: \
-            -s -k "" build.keychain
-
       - name: Install frontend dependencies
         working-directory: met-id
         run: npm install
@@ -284,15 +266,20 @@ jobs:
           }
 
           Get-ChildItem dist
-
+      
+      - name: Import Apple signing certificate
+        if: runner.os == 'macOS'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          
       - uses: tauri-apps/tauri-action@v0
-        timeout-minutes: 60
-
-
+        timeout-minutes: 120
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        #   APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        #  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -300,6 +287,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          args: --verbose
           tagName: Met-ID-v__VERSION__
           releaseName: Met-ID v__VERSION__
           releaseBody: See the assets to download this version and install.
@@ -315,14 +303,9 @@ jobs:
           APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
-      - name: Publish verified GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit "${{ steps.version.outputs.release_tag }}" --draft=false
 
   build-python-wheel:
-    runs-on: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -332,7 +315,7 @@ jobs:
           python-version: "3.12"
 
       - name: Build Python wheel
-        working-directory: met-id/met-id-api
+        working-directory: met-id/python_api
         run: |
           python -m pip install --upgrade build
           python -m build --wheel
@@ -340,5 +323,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: metid-python-wheel
-          path: python-client/dist/*.whl
+          path: met-id/python_api/dist/*.whl
           if-no-files-found: error
+
+  publish-release:
+    needs: [publish-tauri, build-python-wheel]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish verified GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.publish-tauri.outputs.release_tag }}
+        run: gh release edit "$RELEASE_TAG" --draft=false
