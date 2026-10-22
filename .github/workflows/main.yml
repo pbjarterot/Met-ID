@@ -305,6 +305,7 @@ jobs:
 
 
   build-python-wheel:
+    needs: publish-tauri
     runs-on: ubuntu-latest
 
     steps:
@@ -315,7 +316,7 @@ jobs:
           python-version: "3.12"
 
       - name: Build Python wheel
-        working-directory: met-id/python_api
+        working-directory: met-id/metid_api
         run: |
           python -m pip install --upgrade build
           python -m build --wheel
@@ -323,7 +324,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: metid-python-wheel
-          path: met-id/python_api/dist/*.whl
+          path: met-id/metid_api/dist/*.whl
           if-no-files-found: error
 
   publish-release:
