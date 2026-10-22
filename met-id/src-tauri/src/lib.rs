@@ -36,8 +36,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
-use crate::api::start_server;
-
 pub static MSMSPATH: OnceCell<String> = OnceCell::new();
 pub static MSDBPATH: OnceCell<String> = OnceCell::new();
 

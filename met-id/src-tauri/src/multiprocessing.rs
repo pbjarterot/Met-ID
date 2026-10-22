@@ -40,7 +40,7 @@ pub fn my_command(window: Window, args: MyCommandArgs) {
         loop {
             match rx.recv() {
                 Ok(progress) => {
-                    if (progress + 1.0).abs() < std::f32::EPSILON {
+                    if (progress + 1.0).abs() < f32::EPSILON {
                         // Check if progress is close to -1.0
                         break; // Exit the loop once the task is done
                     }

@@ -288,6 +288,7 @@ jobs:
           Get-ChildItem dist
 
       - uses: tauri-apps/tauri-action@v0
+        timeout-minutes: 45
 
 
         env:
@@ -367,6 +368,18 @@ jobs:
       - name: Verify Protoc
         run: protoc --version
 
+      - name: Build Linux sidecars
+        if: runner.os == 'Linux'
+        working-directory: met-id/src-tauri/pyinstaller
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./make_linux_executables.sh
+
+          for name in metabolite metabolite_for_db prediction_model; do
+            test -f "dist/${name}-x86_64-unknown-linux-gnu"
+          done
+
       - name: Build server binary
         run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
 
@@ -407,201 +420,3 @@ jobs:
           name: metid-wheel-${{ matrix.os }}
           path: python-client/dist/*.whl
           if-no-files-found: error
-
-  build-r-server-bundles:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            protobuf-compiler \
-            zip
-
-      - name: Install Python build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyinstaller grpcio grpcio-tools protobuf rdkit
-
-      - name: Install proto
-        working-directory: met-id/src-tauri/src
-        run: |
-          python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
-
-      - name: Install CCS model dependencies (Linux/macOS)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            python -m pip install "torch==2.8.0" \
-              --index-url https://download.pytorch.org/whl/cpu
-          else
-            python -m pip install "torch==2.8.0"
-          fi
-
-          python -m pip install "torch-geometric==2.8.0"
-
-          python -m pip install "pyg_lib==0.6.0" \
-            --only-binary=:all: \
-            --no-index \
-            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-
-          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
-
-      - name: Install CCS model dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          python -m pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
-          if ($LASTEXITCODE -ne 0) { throw "Torch installation failed" }
-
-          python -m pip install "torch-geometric==2.8.0"
-          if ($LASTEXITCODE -ne 0) { throw "PyG installation failed" }
-
-          python -m pip install "pyg_lib==0.6.0+pt28cpu" --only-binary=:all: --no-index --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-          if ($LASTEXITCODE -ne 0) { throw "pyg-lib installation failed" }
-
-          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
-          if ($LASTEXITCODE -ne 0) { throw "Model dependency imports failed" }
-
-      - name: Build PyInstaller binaries (Windows)
-        if: runner.os == 'Windows'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: pwsh
-        run: ./make_executables.ps1
-
-      - name: Build PyInstaller binaries (Linux)
-        if: runner.os == 'Linux'
-        working-directory: met-id/src-tauri/pyinstaller
-        shell: bash
-        run: |
-          chmod +x make_linux_executables.sh
-          ./make_linux_executables.sh
-
-      
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify Protoc
-        run: protoc --version
-
-      - name: Build server binary
-        run: cargo build --release --manifest-path met-id/src-tauri/Cargo.toml --bin Met-ID
-
-      - name: Assemble R server bundle (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $stage = "r-bundle"
-          New-Item -ItemType Directory -Force "$stage/bin" | Out-Null
-
-          Copy-Item `
-            "met-id/src-tauri/target/release/metid-server.exe" `
-            "$stage/bin/metid-server.exe"
-
-          $sidecar = Get-ChildItem `
-            "met-id/src-tauri/pyinstaller/dist" `
-            -File |
-            Where-Object { $_.Name -like "prediction_model*.exe" } |
-            Select-Object -First 1
-
-          if (-not $sidecar) {
-            throw "Could not find prediction_model*.exe in pyinstaller/dist"
-          }
-
-          Copy-Item $sidecar.FullName "$stage/bin/prediction_model.exe"
-
-          if (Test-Path "met-id/src-tauri/DBs") {
-            Copy-Item "met-id/src-tauri/DBs" "$stage/DBs" -Recurse
-          }
-
-          New-Item -ItemType Directory -Force "r-bundle-dist" | Out-Null
-          Compress-Archive `
-            -Path "$stage/*" `
-            -DestinationPath "r-bundle-dist/metid-r-bundle-windows.zip" `
-            -Force
-
-      - name: Assemble R server bundle (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGE="r-bundle"
-          mkdir -p "$STAGE/bin" r-bundle-dist
-
-          cp met-id/src-tauri/target/release/metid-server "$STAGE/bin/metid-server"
-          chmod +x "$STAGE/bin/metid-server"
-
-          SIDECAR="$(find met-id/src-tauri/pyinstaller/dist \
-            -maxdepth 1 -type f -name 'prediction_model*' \
-            ! -name '*.spec' | head -n 1)"
-
-          if [[ -z "$SIDECAR" ]]; then
-            echo "Could not find prediction_model* in pyinstaller/dist"
-            exit 1
-          fi
-
-          cp "$SIDECAR" "$STAGE/bin/prediction_model"
-          chmod +x "$STAGE/bin/prediction_model"
-
-          if [[ -d met-id/src-tauri/DBs ]]; then
-            cp -R met-id/src-tauri/DBs "$STAGE/DBs"
-          fi
-
-          zip -r r-bundle-dist/metid-r-bundle-linux.zip "$STAGE"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: metid-r-bundle-${{ matrix.os }}
-          path: r-bundle-dist/*.zip
-          if-no-files-found: error
-
-  publish-r-server-bundles:
-    needs:
-      - publish-tauri
-      - build-r-server-bundles
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: metid-r-bundle-*
-          path: release-assets
-          merge-multiple: true
-
-      - name: Upload R bundles to the Met-ID release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.publish-tauri.outputs.release_tag }}
-          files: release-assets/*.zip
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

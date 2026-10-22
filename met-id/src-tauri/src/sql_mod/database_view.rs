@@ -117,8 +117,6 @@ fn adducts_string(
     id: usize,
     origin: &String,
 ) -> Result<String> {
-    let mut conn2: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> =
-        get_connection().unwrap();
     let mut select_stmt = "".to_string();
 
     for (idx, (matrix, fgs)) in map.iter().enumerate() {
@@ -145,11 +143,6 @@ fn adducts_string(
             select_stmt += " OR "
         }
     }
-
-    //let tx: rusqlite::Transaction<'_> = conn2.transaction().unwrap();
-    //tx.execute("DROP TABLE IF EXISTS temp_concat_adducts", [])
-    //    .unwrap();
-    //tx.execute("CREATE TEMP TABLE temp_concat_adducts AS SELECT * FROM adducts UNION ALL SELECT * FROM user_adducts", []).unwrap();
 
     let sql = format!(
         "

@@ -29,9 +29,15 @@ pub fn functional_group_macos(
                 Ok(mol) => mol,
                 Err(_e) => ROMol::from_smiles("").unwrap(),
             };
-            //let mol: ROMol = .unwrap();
-            let res: usize = substruct_match(&mol, &smarts_mol, &params).len();
-            let new_idx: usize = (batch_idx * 1_000) + smiles_idx + 1;
+            let res = i64::try_from(
+                substruct_match(&mol, &smarts_mol, &params).len(),
+            )
+            .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+
+            let new_idx = i64::try_from(
+                (batch_idx * 1_000) + smiles_idx + 1,
+            )
+            .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
             transaction
                 .execute(
                     &format!(

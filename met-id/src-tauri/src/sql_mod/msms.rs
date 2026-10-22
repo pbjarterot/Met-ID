@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::time::Instant;
 
 use super::table::check_if_table_exists_msms;
 use super::IDentifierMap;

@@ -52,10 +52,6 @@ fn parse_fgs(fgs: &[String]) -> String {
     fgs.iter().map(|s| format!("'{}'", s)).collect::<Vec<_>>().join(", ")
 }
 
-fn table_exists(tx: &rusqlite::Transaction<'_>) -> Result<usize> {
-    tx.execute("SELECT COUNT(*) FROM temp_concat_adducts", [])
-}
-
 use std::error::Error;
 
 pub fn create_concat_views() -> Result<(), Box<dyn Error>> {

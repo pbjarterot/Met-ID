@@ -120,7 +120,7 @@ impl CommandError {
 
 impl fmt::Display for CommandError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message);
+        write!(f, "{}", self.message).unwrap();
         Ok(())
     }
     
