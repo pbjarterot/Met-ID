@@ -219,6 +219,27 @@ jobs:
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
       
+      - name: Install CCS model dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install "torch==2.8.0" \
+              --index-url https://download.pytorch.org/whl/cpu
+          else
+            python -m pip install "torch==2.8.0"
+          fi
+
+          python -m pip install "torch-geometric==2.8.0"
+
+          python -m pip install "pyg_lib==0.6.0" \
+            --only-binary=:all: \
+            --no-index \
+            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
+
+          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
       - name: Install CCS model dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -414,6 +435,28 @@ jobs:
         working-directory: met-id/src-tauri/src
         run: |
           python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
+
+      - name: Install CCS model dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install "torch==2.8.0" \
+              --index-url https://download.pytorch.org/whl/cpu
+          else
+            python -m pip install "torch==2.8.0"
+          fi
+
+          python -m pip install "torch-geometric==2.8.0"
+
+          python -m pip install "pyg_lib==0.6.0" \
+            --only-binary=:all: \
+            --no-index \
+            --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
+
+          python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
 
       - name: Install CCS model dependencies (Windows)
         if: runner.os == 'Windows'
