@@ -327,8 +327,7 @@ pub async fn sidecar_ccs(
     smiles: String,
     adduct: Option<String>,
 ) -> Result<CcsPredictionResult, CommandError> {
-    //predict_with_sidecar(state.inner().as_ref(), smiles, adduct).await
-
+    info!("CCS prediction requested");
     
     if smiles.trim().is_empty() {
         return Err(CommandError::new("SMILES cannot be empty"));
@@ -386,7 +385,7 @@ pub async fn sidecar_ccs(
         if let Ok(mut pending) = state.inner.pending.lock() {
             pending.remove(&id);
         }
-
+        info!("error: {:?}", error);
         return Err(error);
     }
 
@@ -408,7 +407,6 @@ pub async fn sidecar_ccs(
             if let Ok(mut pending) = state.inner.pending.lock() {
                 pending.remove(&id);
             }
-
             return Err(CommandError::new(
                 "CCS prediction timed out after 120 seconds",
             ));
@@ -433,11 +431,12 @@ pub async fn sidecar_ccs(
             "CCS sidecar returned no mz value"
         )
     })?;
-
+    info!("CCS Prediction finished");
     Ok(CcsPredictionResult {
         predicted_ccs,
         mz
     })
+    
     
 }
 
@@ -446,6 +445,7 @@ pub(crate) async fn predict_with_sidecar(
     smiles: String,
     adduct: Option<String>,
 ) -> Result<CcsPredictionResult, CommandError> {
+    info!("Predict with sidecar");
     if smiles.trim().is_empty() {
         return Err(CommandError::new("SMILES cannot be empty"));
     }
