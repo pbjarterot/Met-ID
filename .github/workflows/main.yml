@@ -168,12 +168,37 @@ jobs:
           test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
           echo "Native RDKit prefix: $CONDA_PREFIX"
 
-      - name: Install Protoc
-        if: runner.os != 'Linux'
+      - name: Install Protoc (macOS)
+        if: runner.os == 'macOS'
         uses: arduino/setup-protoc@v3
         with:
           version: "23.4"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Protoc (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $archive = Join-Path $env:RUNNER_TEMP "protoc.zip"
+          $destination = Join-Path $env:RUNNER_TEMP "protoc"
+
+          Invoke-WebRequest `
+            -Uri "https://github.com/protocolbuffers/protobuf/releases/download/v23.4/protoc-23.4-win64.zip" `
+            -OutFile $archive
+
+          Expand-Archive -Path $archive -DestinationPath $destination -Force
+
+          $bin = Join-Path $destination "bin"
+          $protoc = Join-Path $bin "protoc.exe"
+
+          if (-not (Test-Path -LiteralPath $protoc)) {
+            throw "protoc.exe was not extracted"
+          }
+
+          $bin | Out-File $env:GITHUB_PATH -Encoding utf8 -Append
+          "PROTOC=$protoc" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
 
       - name: Install Linux build dependencies
