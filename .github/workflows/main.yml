@@ -10,10 +10,11 @@ permissions:
 
 jobs:
   publish-tauri:
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
-        platform: [] #[windows-latest, ubuntu-latest] #[macos-latest, windows-latest, ubuntu-latest]
+        platform: [windows-latest, ubuntu-latest] #[macos-latest, windows-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
 
