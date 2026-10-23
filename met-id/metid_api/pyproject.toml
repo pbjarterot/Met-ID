@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metid-api"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.10"
 dependencies = [
     "requests",
@@ -12,10 +12,13 @@ dependencies = [
     "numpy",
     "platformdirs",
     "psutil",
-    "toml"
+    "toml",
 ]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-[tool.setuptools.package-data]
-metid_api = ["bin/*"]
+include = ["metid_api*"]
+namespaces = false
