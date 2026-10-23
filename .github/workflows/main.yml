@@ -356,7 +356,7 @@ jobs:
 
 
   build-python-wheel:
-    needs: publish-tauri
+    # needs: publish-tauri
     runs-on: ubuntu-latest
 
     steps:
@@ -379,7 +379,7 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    needs: [publish-tauri, build-python-wheel]
+    needs: build-python-wheel # [publish-tauri, build-python-wheel]
     runs-on: ubuntu-latest
     permissions:
       contents: write
