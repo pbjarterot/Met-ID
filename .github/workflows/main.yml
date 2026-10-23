@@ -395,7 +395,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: Met-ID v2.0.0 # ${{ needs.publish-tauri.outputs.release_tag }}
+          RELEASE_TAG: Met-ID-v__VERSION__ # ${{ needs.publish-tauri.outputs.release_tag }}
         run: gh release upload "$RELEASE_TAG" wheel-dist/*.whl --clobber
 
       - name: Publish verified GitHub release
