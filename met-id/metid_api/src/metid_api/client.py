@@ -1,234 +1,237 @@
-import subprocess
-import requests
+"""Python client for an already installed Met-ID application."""
+import json
 import os
 import platform
-import time
-import threading
-import toml
-import uuid
+import shutil
 import socket
-import psutil
+import subprocess
+import threading
+import time
+import uuid
+from collections import deque
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
-import json
+import requests
+
+
+def _as_1d_list(value, name):
+    values = np.asarray(value)
+    if values.ndim > 1:
+        raise ValueError(f"{name} must be a scalar or a one-dimensional sequence")
+    return values.reshape(-1).tolist()
+
 
 class MetIDServer:
-    def __init__(self, project_dir=None, port=None, binary_name=None, kill_conflicts=True):
-        if project_dir is None:
-            # Default to the directory where this Python file is installed
-            project_dir = os.path.dirname(os.path.abspath(__file__))
-            project_dir = os.path.join(project_dir, "../src-tauri")
-        self.project_dir = os.path.abspath(project_dir)
-        self.port = port or self._get_free_port()
-        self.binary_name = binary_name or self._detect_binary_name()
-        self.binary_name += ".exe" if platform.system() == "Windows" else ""
+    def __init__(self, project_dir=None, port=None, binary_name=None,
+                 kill_conflicts=False, *, server_path=None, sidecar_path=None,
+                 startup_timeout=180, auto_shutdown_after=3600):
+        """Launch installed Met-ID; never invoke Cargo or rustc.
+
+        Override discovery with server_path / sidecar_path or the environment
+        variables METID_SERVER_PATH / METID_CCS_SIDECAR. project_dir is an
+        optional installation directory or existing src-tauri directory.
+        Occupied ports are rejected; unrelated processes are never killed.
+        """
         self.instance_id = uuid.uuid4().hex[:6]
-        self.kill_conflicts = kill_conflicts
-        self.base_url = f"http://127.0.0.1:{self.port}"
         self.process = None
-
-        triple = self.get_rust_host_triple()
-        suffix = ".exe" if platform.system() == "Windows" else ""
-
-        #self.ccs_sidecar_path = os.path.abspath(
-        #    os.path.join(
-        #        self.project_dir,
-        #        "bin",
-        #        f"prediction_model-{triple}{suffix}",
-        #    ),
-        #)
-        self.ccs_sidecar_path = os.path.abspath(
-            os.path.join(
-                self.project_dir,
-                "pyinstaller",
-                "dist",
-                f"prediction_model-{triple}{suffix}",
-            ),
-        )
-
-        self.ccs_sidecar_path = os.path.abspath(self.ccs_sidecar_path)
-
-        self.binary_path = os.path.join(self.project_dir, "target", "release", self.binary_name)
+        self._timer = None
+        self._output = deque(maxlen=50)
+        self.startup_timeout = startup_timeout
+        self.auto_shutdown_after = auto_shutdown_after
+        self.kill_conflicts = kill_conflicts  # retained for call compatibility
+        self.project_dir = str(Path(project_dir).expanduser().resolve()) if project_dir else None
+        self.port = port if port is not None else self._get_free_port()
+        if not isinstance(self.port, int) or not 1 <= self.port <= 65535:
+            raise ValueError("port must be an integer between 1 and 65535")
+        self.base_url = f"http://127.0.0.1:{self.port}"
+        self.binary_path = str(self._find_server(server_path, binary_name))
+        self.binary_name = Path(self.binary_path).name
+        self.ccs_sidecar_path = str(self._find_sidecar(sidecar_path))
         self.start()
 
     @staticmethod
-    def get_rust_host_triple():
-        result = subprocess.run(
-            ["rustc", "-vV"],
-            check=True,
-            capture_output=True,
-            text=True,
+    def _checked_file(value, label):
+        path = Path(value).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"{label} not found: {path}")
+        if os.name != "nt" and not os.access(path, os.X_OK):
+            raise PermissionError(f"{label} is not executable: {path}")
+        return path
+
+    def _find_server(self, explicit, binary_name):
+        override = explicit or os.environ.get("METID_SERVER_PATH")
+        if override:
+            return self._checked_file(override, "Met-ID executable")
+        name = binary_name or "Met-ID"
+        if os.name == "nt" and not name.lower().endswith(".exe"):
+            name += ".exe"
+        candidates = []
+        if self.project_dir:
+            root = Path(self.project_dir)
+            candidates.extend([root / name, root / "target/release" / name,
+                               root / "Contents/MacOS" / name])
+        found = shutil.which(name)
+        if found:
+            candidates.append(Path(found))
+        system = platform.system()
+        if system == "Windows":
+            for key in ("LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)"):
+                root = os.environ.get(key)
+                if root:
+                    for folder in ("Met-ID", "met-id", "Programs/Met-ID", "Programs/met-id"):
+                        candidates.append(Path(root) / folder / name)
+        elif system == "Darwin":
+            for root in (Path("/Applications"), Path.home() / "Applications"):
+                candidates.append(root / "Met-ID.app/Contents/MacOS" / name)
+        else:
+            candidates.extend([Path("/usr/bin") / name, Path("/usr/local/bin") / name,
+                               Path.home() / ".local/bin" / name,
+                               Path("/usr/bin/met-id")])
+        for candidate in candidates:
+            if candidate.is_file():
+                return self._checked_file(candidate, "Met-ID executable")
+        raise FileNotFoundError(
+            "Could not locate installed Met-ID. Pass server_path=r'C:\\path\\Met-ID.exe' "
+            "or set METID_SERVER_PATH. Custom installations and AppImages require an explicit path."
         )
 
-        for line in result.stdout.splitlines():
-            if line.startswith("host:"):
-                return line.split(":", 1)[1].strip()
+    def _find_sidecar(self, explicit):
+        override = (explicit or os.environ.get("METID_CCS_SIDECAR")
+                    or os.environ.get("METID_CCS_SIDECAR_PATH"))
+        if override:
+            return self._checked_file(override, "CCS sidecar")
+        binary_dir = Path(self.binary_path).parent
+        roots = [binary_dir, binary_dir / "pyinstaller/dist",
+                 binary_dir / "resources/pyinstaller/dist"]
+        if self.project_dir:
+            roots.append(Path(self.project_dir) / "pyinstaller/dist")
+        if binary_dir.name == "MacOS" and binary_dir.parent.name == "Contents":
+            roots.extend([binary_dir.parent / "Resources",
+                          binary_dir.parent / "Resources/pyinstaller/dist"])
+        if platform.system() == "Linux":
+            for folder in ("met-id", "Met-ID", "com.farmbio.metid"):
+                root = Path("/usr/lib") / folder
+                roots.extend([root, root / "pyinstaller/dist"])
+        suffix = ".exe" if os.name == "nt" else ""
+        machine = platform.machine().lower()
+        arch = "aarch64" if machine in ("arm64", "aarch64") else "x86_64"
+        triple = {"Windows": f"{arch}-pc-windows-msvc",
+                  "Darwin": f"{arch}-apple-darwin",
+                  "Linux": f"{arch}-unknown-linux-gnu"}.get(platform.system())
+        names = [f"prediction_model{suffix}"]
+        if triple:
+            names.append(f"prediction_model-{triple}{suffix}")
+        for root in roots:
+            for name in names:
+                candidate = root / name
+                if candidate.is_file():
+                    return self._checked_file(candidate, "CCS sidecar")
+        raise FileNotFoundError(
+            "Could not locate prediction_model beside installed Met-ID. "
+            "Pass sidecar_path or set METID_CCS_SIDECAR to its full executable path."
+        )
 
-        raise RuntimeError("Could not find Rust host triple in `rustc -vV` output")
-    
-    def _detect_binary_name(self):
-        cargo_toml = os.path.join(self.project_dir, "Cargo.toml")
-        if not os.path.exists(cargo_toml):
-            raise FileNotFoundError("Cargo.toml not found in project directory.")
-        with open(cargo_toml, "r") as f:
-            parsed = toml.load(f)
-        return parsed["package"]["name"]
-
-    def _get_free_port(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("127.0.0.1", 0))
-            return s.getsockname()[1]
+    @staticmethod
+    def _get_free_port():
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            return sock.getsockname()[1]
 
     def _is_port_in_use(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        with socket.socket() as sock:
+            sock.settimeout(0.5)
             return sock.connect_ex(("127.0.0.1", self.port)) == 0
 
-    def _kill_port(self):
-        for conn in psutil.net_connections(kind='inet'):
-            if conn.laddr.port == self.port and conn.status == psutil.CONN_LISTEN:
-                print(f"💀 Killing process on port {self.port} (PID {conn.pid})")
-                if conn.pid:
-                    try:
-                        psutil.Process(conn.pid).terminate()
-                    except Exception as e:
-                        print(f"⚠️ Could not kill process {conn.pid}: {e}")
-                return
-
-    def _kill_process_using_file(self, filepath):
-        for proc in psutil.process_iter(['pid', 'open_files']):
-            try:
-                if any(f.path == filepath for f in (proc.info['open_files'] or [])):
-                    print(f"💀 Killing process {proc.pid} locking {filepath}")
-                    psutil.Process(proc.pid).terminate()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-
-    def _attempt_build(self, max_retries=2):
-        for attempt in range(max_retries):
-            print(f"🔨 Building release binary... (attempt {attempt + 1})")
-            result = subprocess.run(["cargo", "build", "--release"], cwd=self.project_dir)
-            if result.returncode == 0:
-                return True
-            print("❌ Build failed.")
-            if attempt == 0:
-                print("🔍 Trying to kill process that may be locking the binary...")
-                self._kill_process_using_file(self.binary_path)
-                time.sleep(1)
-        return False
-
     def _print_stdout(self, stream):
-        for line in stream:
-            print(f"[{self.instance_id} RUST]", line, end="")
+        try:
+            for line in stream:
+                self._output.append(line.rstrip())
+                print(f"[{self.instance_id} RUST] {line}", end="")
+        finally:
+            stream.close()
 
-    def start(self, auto_shutdown_after=3600):
-        if not os.path.isfile(self.binary_path):
-            if not self._attempt_build():
-                raise RuntimeError("❌ Cargo build failed after retry.")
-
-        if not os.path.exists(self.binary_path):
-            raise FileNotFoundError(f"❌ Binary not found after build: {self.binary_path}")
-
+    def start(self, auto_shutdown_after=None):
+        if self.process is not None and self.process.poll() is None:
+            return self
         if self._is_port_in_use():
-            if self.kill_conflicts:
-                self._kill_port()
-                time.sleep(0.1)
-            else:
-                raise RuntimeError(f"❌ Port {self.port} is already in use!")
-
-        print(f"🚀 Starting server [{self.instance_id}] on port {self.port}")
+            raise RuntimeError(f"Port {self.port} is already in use. Choose another port.")
+        if self._timer:
+            self._timer.cancel()
+        self._output.clear()
         env = os.environ.copy()
         env["METID_CCS_SIDECAR"] = self.ccs_sidecar_path
-
-        print("CCS sidecar:", env["METID_CCS_SIDECAR"])
-        print("Sidecar exists:", os.path.isfile(env["METID_CCS_SIDECAR"]))
-
         self.process = subprocess.Popen(
             [self.binary_path, "--server", "--port", str(self.port)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=env,
+            cwd=str(Path(self.binary_path).parent), env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace",
         )
-
-        threading.Thread(target=self._print_stdout, args=(self.process.stdout,), daemon=True).start()
+        threading.Thread(target=self._print_stdout,
+                         args=(self.process.stdout,), daemon=True).start()
         try:
-            self._wait_for_server(timeout=60)
+            self._wait_for_server(self.startup_timeout)
         except Exception:
-            if self.process is not None:
-                if self.process.poll() is None:
-                    self.process.terminate()
-                    try:
-                        self.process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        self.process.kill()
-                        self.process.wait()
-                self.process = None
-            raise
-        self._start_auto_shutdown_timer(timeout_seconds=auto_shutdown_after)
-
-    def _wait_for_server(self, timeout=60):
-        print(f"[{self.instance_id}] ⏳ Waiting for server...")
-        deadline = time.monotonic() + timeout
-        url = f"{self.base_url}/warmup"
-
-        while time.monotonic() < deadline:
-            if self.process is None:
-                raise RuntimeError("Server process was not started.")
-
-            exit_code = self.process.poll()
-            if exit_code is not None:
-                raise RuntimeError(
-                    f"Met-ID server exited before becoming ready "
-                    f"(exit code {exit_code})."
-                )
-
-            try:
-                res = requests.get(url, timeout=(0.5, 1))
-                if res.status_code == 200 and res.text.strip() == "OK":
-                    print(f"[{self.instance_id}] ✅ Server is ready!")
-                    return
-            except requests.exceptions.RequestException:
-                pass
-
-            time.sleep(0.25)
-
-        raise TimeoutError(
-            f"[{self.instance_id}] Server did not become ready within {timeout} seconds."
-        )
-    
-    def _start_auto_shutdown_timer(self, timeout_seconds=1800):  # default = 30 min
-        def shutdown_later():
-            print(f"[{self.instance_id}] ⏳ Auto-shutdown timer started ({timeout_seconds} seconds)")
-            time.sleep(timeout_seconds)
-            print(f"[{self.instance_id}] 🔔 Auto-shutdown timeout reached, stopping server.")
             self.stop()
-        threading.Thread(target=shutdown_later, daemon=True).start()
+            raise
+        delay = self.auto_shutdown_after if auto_shutdown_after is None else auto_shutdown_after
+        if delay is not None and delay > 0:
+            self._timer = threading.Timer(delay, self.stop)
+            self._timer.daemon = True
+            self._timer.start()
+        return self
 
-    def _raise_with_rust_error(self, res: requests.Response):
-        # Try JSON first
-        ct = res.headers.get("content-type", "")
-        if "application/json" in ct.lower():
-            try:
-                payload = res.json()
-                # common patterns: {"error":"..."} or {"message":"..."}
-                msg = payload.get("error") or payload.get("message") or json.dumps(payload)
-            except Exception:
-                msg = res.text
-        else:
-            msg = res.text
-
-        raise MetIDApiError(res.status_code, msg)
+    def _wait_for_server(self, timeout):
+        deadline = time.monotonic() + timeout
+        with requests.Session() as session:
+            session.trust_env = False
+            while time.monotonic() < deadline:
+                code = self.process.poll()
+                if code is not None:
+                    raise RuntimeError(
+                        f"Met-ID exited during startup (code {code}).\n"
+                        + "\n".join(self._output)
+                        + "\nCheck the Met-ID application log too; Windows GUI binaries may not emit console output."
+                    )
+                try:
+                    response = session.get(f"{self.base_url}/warmup", timeout=(0.5, 1))
+                    if response.status_code == 200 and response.text.strip() == "OK":
+                        return
+                except requests.RequestException:
+                    pass
+                time.sleep(0.25)
+        raise TimeoutError(f"Met-ID was not ready after {timeout} seconds.\n" + "\n".join(self._output))
 
     def stop(self):
-        print(f"[{self.instance_id}] 🛑 Sending shutdown signal...")
-        try:
-            requests.post(f"{self.base_url}/shutdown")
-        except requests.exceptions.RequestException as e:
-            print(f"[{self.instance_id}] ⚠️ Shutdown failed: {e}")
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
-            print(f"[{self.instance_id}] ✅ Server process terminated.")
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
+        process = self.process
+        if process is not None:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
             self.process = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop()
+
+    def _raise_with_rust_error(self, res):
+        try:
+            payload = res.json()
+            message = (payload.get("error") or payload.get("message") or json.dumps(payload)
+                       if isinstance(payload, dict) else json.dumps(payload))
+        except ValueError:
+            message = res.text
+        raise MetIDApiError(res.status_code, message)
 
     def return_name(self, name:str, retries=3):
         for attempt in range(retries):
@@ -399,14 +402,6 @@ class MetIDServer:
         self.stop()
         raise RuntimeError(f"[{self.instance_id}] Failed to process items after retries")
 
-    def _as_1d_list(value, name):
-        values = np.asarray(value)
-
-        if values.ndim > 1:
-            raise ValueError(f"{name} must be a scalar or a one-dimensional sequence")
-
-        return values.reshape(-1).tolist()
-    
     def read_imzml(self, path: str, n: int, tolerance: float, retries=3):
         payload = {
             "path": os.fspath(path),
@@ -530,7 +525,7 @@ class MetIDServer:
                     time.sleep(0.5)
 
 
-        raise RuntimeError(f"Failed to predict CCS after retries: {e}")
+        raise RuntimeError("Failed to predict CCS after retries; see preceding errors")
 
 
 class IdentificationDataFrame(pd.DataFrame):

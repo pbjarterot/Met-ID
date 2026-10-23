@@ -1,4 +1,0 @@
-pandas==2.3.0
-psutil==7.0.0
-Requests==2.32.4
-toml==0.10.2
