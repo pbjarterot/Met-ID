@@ -299,7 +299,25 @@ jobs:
           projectPath: ./met-id
           releaseDraft: true
           prerelease: false
+          
+      - name: Sign PyInstaller binaries for notarization
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          DIST="met-id/src-tauri/pyinstaller/dist"
 
+          for binary in \
+            metabolite-aarch64-apple-darwin \
+            metabolite_for_db-aarch64-apple-darwin \
+            prediction_model-aarch64-apple-darwin
+          do
+            codesign --force --timestamp --options runtime \
+              --sign "$APPLE_SIGNING_IDENTITY" "$DIST/$binary"
+            codesign --verify --strict --verbose=2 "$DIST/$binary"
+          done
       - name: Verify macOS app signature
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -307,6 +325,7 @@ jobs:
           set -euo pipefail
           APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
   build-python-wheel:
     needs: publish-tauri
     runs-on: ubuntu-latest
