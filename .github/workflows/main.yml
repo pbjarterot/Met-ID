@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest, ubuntu-latest] #[macos-latest, windows-latest, ubuntu-latest]
+        platform: [macos-latest, windows-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
 
@@ -30,7 +30,6 @@ jobs:
         run: |
           VERSION=$(python3 -c "import json; print(json.load(open('met-id/src-tauri/tauri.conf.json'))['version'])")
           echo "release_tag=Met-ID-v${VERSION}" >> "$GITHUB_OUTPUT"
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -59,22 +58,18 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           mkdir -p met-id/src-tauri/DBs
-
           gh release download database-v1 \
             --pattern "db.db" \
             --dir met-id/src-tauri/DBs \
             --clobber
-
       - name: Install Python build dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install pyinstaller grpcio grpcio-tools protobuf rdkit
-
       - name: Install proto
         working-directory: met-id/src-tauri/src
         run: |
           python -m grpc_tools.protoc -I add_to_db --python_out=. --pyi_out=. --grpc_python_out=. protos/streaming.proto
-
       - name: Set up Conda for native RDKit
         if: runner.os == 'macOS'
         uses: conda-incubator/setup-miniconda@v4
@@ -90,67 +85,52 @@ jobs:
         shell: bash -el {0}
         run: |
           set -euo pipefail
-
           conda install --yes -c conda-forge \
             "rdkit=2024.09.6" \
             "librdkit-dev=2024.09.6" \
             libboost-devel
-
           echo "CONDA_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
-
           test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
           test -f "$CONDA_PREFIX/include/boost/config.hpp"
-
           python -c "import rdkit; print('RDKit:', rdkit.__version__)"
-
       - name: Stage RDKit dylibs and configure Tauri bundling
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           set -euo pipefail
-
           SOURCE_DIR="$CONDA_PREFIX/lib"
           STAGE_DIR="met-id/src-tauri/rdkit-libs"
           mkdir -p "$STAGE_DIR"
-
           shopt -s nullglob
           libraries=("$SOURCE_DIR"/libRDKit*.dylib)
           if [[ ${#libraries[@]} -eq 0 ]]; then
             echo "No libRDKit*.dylib files found in $SOURCE_DIR"
             exit 1
           fi
-
           for library in "${libraries[@]}"; do
             # Resolve Homebrew symlinks so the staged dylibs are regular files.
             cp -L "$library" "$STAGE_DIR/$(basename "$library")"
           done
-
           python3 - <<'PY'
           import json
           from pathlib import Path
-
           config_path = Path("met-id/src-tauri/tauri.conf.json")
           config = json.loads(config_path.read_text())
-
           bundle = config.setdefault("bundle", {})
           macos = bundle.setdefault("macOS", {})
-
           dylibs = sorted(
               p for p in Path("met-id/src-tauri/rdkit-libs").glob("*.dylib")
           )
           staged_frameworks = [
               f"./rdkit-libs/{path.name}" for path in dylibs
           ]
-
           # Preserve any frameworks already configured in tauri.conf.json.
           existing = macos.get("frameworks", [])
           macos["frameworks"] = list(dict.fromkeys(existing + staged_frameworks))
-
           config_path.write_text(json.dumps(config, indent=2) + "\n")
           print("Configured RDKit dylibs:")
           print("\n".join(staged_frameworks))
           PY
-
       - name: Install frontend dependencies
         working-directory: met-id
         run: npm install
@@ -160,7 +140,6 @@ jobs:
         shell: bash
         run: |
           echo "CXXFLAGS=-std=c++20" >> "$GITHUB_ENV"
-
       - name: Check native RDKit environment
         if: runner.os == 'macOS'
         shell: bash
@@ -168,7 +147,6 @@ jobs:
           test -n "$CONDA_PREFIX"
           test -f "$CONDA_PREFIX/include/rdkit/GraphMol/Atom.h"
           echo "Native RDKit prefix: $CONDA_PREFIX"
-
       - name: Install Protoc (macOS)
         if: runner.os == 'macOS'
         uses: arduino/setup-protoc@v3
@@ -181,27 +159,19 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-
           $archive = Join-Path $env:RUNNER_TEMP "protoc.zip"
           $destination = Join-Path $env:RUNNER_TEMP "protoc"
-
           Invoke-WebRequest `
             -Uri "https://github.com/protocolbuffers/protobuf/releases/download/v23.4/protoc-23.4-win64.zip" `
             -OutFile $archive
-
           Expand-Archive -Path $archive -DestinationPath $destination -Force
-
           $bin = Join-Path $destination "bin"
           $protoc = Join-Path $bin "protoc.exe"
-
           if (-not (Test-Path -LiteralPath $protoc)) {
             throw "protoc.exe was not extracted"
           }
-
           $bin | Out-File $env:GITHUB_PATH -Encoding utf8 -Append
           "PROTOC=$protoc" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
-
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         shell: bash 
@@ -219,7 +189,6 @@ jobs:
             libssl-dev \
             patchelf \
             protobuf-compiler
-
           pkg-config --modversion glib-2.0 gobject-2.0
       - name: Verify Protoc
         run: protoc --version
@@ -231,21 +200,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             python -m pip install "torch==2.8.0" \
               --index-url https://download.pytorch.org/whl/cpu
           else
             python -m pip install "torch==2.8.0"
           fi
-
           python -m pip install "torch-geometric==2.8.0"
-
           python -m pip install "pyg_lib==0.6.0" \
             --only-binary=:all: \
             --no-index \
             --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
-
           python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
       
       - name: Build PyInstaller binaries (Linux)
@@ -256,7 +221,6 @@ jobs:
           set -euo pipefail
           chmod +x make_linux_executables.sh
           ./make_linux_executables.sh
-
           for binary in metabolite metabolite_for_db prediction_model; do
             path="dist/${binary}-x86_64-unknown-linux-gnu"
             if [[ ! -f "$path" ]]; then
@@ -279,13 +243,10 @@ jobs:
         run: |
           python -m pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
           if ($LASTEXITCODE -ne 0) { throw "Torch installation failed" }
-
           python -m pip install "torch-geometric==2.8.0"
           if ($LASTEXITCODE -ne 0) { throw "PyG installation failed" }
-
           python -m pip install "pyg_lib==0.6.0+pt28cpu" --only-binary=:all: --no-index --find-links "https://data.pyg.org/whl/torch-2.8.0+cpu.html"
           if ($LASTEXITCODE -ne 0) { throw "pyg-lib installation failed" }
-
           python -c "import torch, pyg_lib; print('Torch:', torch.__version__); print('pyg-lib:', pyg_lib.__version__)"
           if ($LASTEXITCODE -ne 0) { throw "Model dependency imports failed" }
       
@@ -295,27 +256,21 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-
           ./make_executables.ps1
-
           if ($LASTEXITCODE -ne 0) {
             throw "PyInstaller build failed."
           }
-
           $binaries = @(
             "metabolite",
             "metabolite_for_db",
             "prediction_model"
           )
-
           foreach ($binary in $binaries) {
             $path = "dist/${binary}-x86_64-pc-windows-msvc.exe"
-
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
               throw "Missing required sidecar: $path"
             }
           }
-
           Get-ChildItem dist
       
       - name: Import Apple signing certificate
@@ -353,10 +308,8 @@ jobs:
           set -euo pipefail
           APP_PATH="met-id/src-tauri/target/release/bundle/macos/Met-ID.app"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-
-
   build-python-wheel:
-    # needs: publish-tauri
+    needs: publish-tauri
     runs-on: ubuntu-latest
 
     steps:
@@ -371,7 +324,6 @@ jobs:
         run: |
           python -m pip install --upgrade build
           python -m build --wheel
-
       - uses: actions/upload-artifact@v4
         with:
           name: metid-python-wheel
@@ -379,7 +331,7 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    needs: build-python-wheel # [publish-tauri, build-python-wheel]
+    needs: [publish-tauri, build-python-wheel]
     runs-on: ubuntu-latest
     permissions:
       contents: write
