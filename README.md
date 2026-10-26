@@ -30,7 +30,7 @@ And do a simple identification:
             typ="All",
             adducts="All",
             mass_error=5,
-            mz=[180.0634, 196.0583],
+            mz=421.1911,
             mzwindow=5,
         )
 
