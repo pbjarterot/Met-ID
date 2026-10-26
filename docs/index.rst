@@ -17,7 +17,7 @@ sidecar installed on the same computer where your Python or R session runs.
 The clients start the local server process and wait until it is ready. The
 server only needs to be reachable from the local machine.
 
-Download the Python client wheel from the `Met-ID GitHub releases page
+Download the Python client (v>= 2.0.0) wheel from the `Met-ID GitHub releases page
 <https://github.com/pbjarterot/Met-ID/releases>`_ and install it with pip:
 
 .. code-block:: console
@@ -96,9 +96,20 @@ sentinel to disable CCS for every mass. Other length mismatches raise a
 ``ValueError``. The server only uses CCS filtering when the values are valid
 and aligned with the m/z values.
 
+
+
+The special value ``typ="All"`` asks the server to include Exogenous,
+Endogenous, and Unspecified records. The current server maps ``adducts="All"``
+to its configured default filter. You can also pass a string or list for these
+selectors, depending on the database query you need.
+
+To group identification rows by observed mass, use ``as_dict``. The default
+grouping column is ``oMass``; pass another column name if your result uses a
+different observed-mass field.
+
+
 Identify output columns
 ------------------------
-
 .. list-table:: Identification output columns
    :header-rows: 1
    :widths: 20 80
@@ -137,62 +148,6 @@ Identify output columns
      - Difference between observed and theoretical CCS, in ppm.
    * - ``Posterior``
      - Posterior probability for the annotation.
-
-
-+------------------------+------------+
-| Column | Description   | 
-+========================+============+
-| name  | Name of the annotated feature |
-+------------------------+------------+
-| oMass           | Observed m/z      | 
-+------------------------+------------+
-| aMass           | Adjusted m/z  | 
-+------------------------+------------+
-| tMass           | Theoretical m/z (Database m/z) | 
-+------------------------+------------+
-| dMass           | delta m/z (aMass-tMass)  | 
-+------------------------+------------+
-| dPPM           | Difference between adjusted m/z and theoretical m/z in parts-per-million        | 
-+------------------------+------------+
-| matrix             | The matrix used in identification        | 
-+------------------------+------------+
-| Accession       | HMDB/Lipidmaps accession ID        | 
-+------------------------+------------+
-| SMILES            | The identified metabolite SMILES        | 
-+------------------------+------------+
-| MSMS           | Are MSMS spectra available in Met-ID?        | 
-+------------------------+------------+
-| Formula            | The chemical formula of the identified metabolite        | 
-+------------------------+------------+
-| Possible derivs            | How many of the possible derivatizations have been annotated        | 
-+------------------------+------------+
-| ccs            | Observed CCS        | 
-+------------------------+------------+
-| tCCS           | Theoretical CCS (Database CCS)        | 
-+------------------------+------------+
-|ccsPPM         | Difference between Observed CCS and Theoretical CCS in parts-per-million        | 
-+------------------------+------------+
-| Posterior            | The posterior probability of this annotation being the correct annotation        | 
-+------------------------+------------+
-| Error factor            |         | 
-+------------------------+------------+
-| exist_pep            | The posterior error probability that the correct annotation exists in the database        | 
-+------------------------+------------+
-| exist_q          | The q-value that the correct annotation exists in the database      | 
-+------------------------+------------+
-| null_pep          | The posterior error probability of the null hypothesis     | 
-+------------------------+------------+
-| h0_q          | The q-value of the null hypothesis     | 
-+------------------------+------------+
-
-The special value ``typ="All"`` asks the server to include Exogenous,
-Endogenous, and Unspecified records. The current server maps ``adducts="All"``
-to its configured default filter. You can also pass a string or list for these
-selectors, depending on the database query you need.
-
-To group identification rows by observed mass, use ``as_dict``. The default
-grouping column is ``oMass``; pass another column name if your result uses a
-different observed-mass field.
 
 .. code-block:: python
 
