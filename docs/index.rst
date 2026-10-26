@@ -1,422 +1,340 @@
-Met-ID API
-==========
+Met-ID Python and R clients
+===========================
 
-Met-ID exposes a local HTTP API from its Rust/Axum server. The API provides
-metabolite identification, database queries, imzML reading, and CCS prediction
-through the configured prediction sidecar. The Python ``MetIDServer`` class is
-a convenience client for starting the server and calling these routes.
+The Met-ID clients let you use metabolite identification, CCS prediction, and
+Met-ID database resources from Python and R. Each client starts or connects to
+a local Met-ID server and returns results in data structures suited to its
+language: pandas DataFrames in Python and data frames in R.
 
-This reference describes the behavior implemented by the supplied Rust and
-Python code. Route names, accepted values, and response shapes below reflect
-that code, including current limitations noted at the end.
+This guide focuses on programming workflows. You usually do not need to call
+the HTTP routes yourself.
 
-Starting the server
--------------------
+Before you start
+----------------
 
-The Rust server binds to ``127.0.0.1`` on the port passed to ``serve_api``.
-When started through the Python client, a free local port is selected unless
-one is supplied explicitly. The client launches the release binary with
-``--server --port <port>``, sets ``METID_CCS_SIDECAR`` to the prediction
-sidecar executable, and waits for ``GET /warmup`` to return HTTP 200.
+You need the Met-ID desktop application and its matching CCS prediction
+sidecar installed on the same computer where your Python or R session runs.
+The clients start the local server process and wait until it is ready. The
+server only needs to be reachable from the local machine.
 
-The default Python project directory is ``../src-tauri`` relative to the
-client module. The client finds the Cargo package name in ``Cargo.toml`` to
-locate ``target/release/<package-name>``. If the binary is missing or
-``kill_conflicts=True``, it runs ``cargo build --release`` first.
+Install the Python client and its dependencies using the instructions for the
+Python distribution you received. The R client uses ``httr``, ``jsonlite``,
+and ``processx``. The R client functions shown below must be available in your
+session, either by loading the client package or sourcing its client code.
 
-Python quick start
-------------------
+Python
+------
 
-The example below assumes the client module is importable as ``metid_api`` and
-that its Python dependencies and native build tools are installed.
+Start and stop the local server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Import ``MetIDServer`` and use it as a context manager. The context manager
+stops the child server process when the block ends, including when an error
+occurs. By default, the client finds an installed Met-ID executable and the
+matching ``prediction_model`` sidecar. It chooses a free local port and shuts
+the server down after one hour of inactivity by default.
 
 .. code-block:: python
 
    from metid_api import MetIDServer
 
-   server = MetIDServer(port=8765)
+   with MetIDServer() as metid:
+       print(metid.base_url)
+       print(metid.list_tables())
+
+For explicit installation paths, pass ``server_path`` and ``sidecar_path`` or
+set ``METID_SERVER_PATH`` and ``METID_CCS_SIDECAR`` in the environment. You can
+also pass ``project_dir`` when the application is installed in a non-standard
+location. ``port`` selects a specific local port; if that port is occupied,
+the client raises an error. ``startup_timeout`` controls how long the client
+waits for readiness, and ``auto_shutdown_after`` sets the idle shutdown timer
+in seconds. Set ``auto_shutdown_after=None`` to disable that timer.
+
+If you manage the process explicitly, call ``metid.stop()`` when finished:
+
+.. code-block:: python
+
+   metid = MetIDServer(port=8765)
    try:
-       print(server.list_tables())
-       results = server.predict_ccs(
-           "CCO",
+       results = metid.identify(mz=[180.0634, 196.0583])
+   finally:
+       metid.stop()
+
+Metabolite identification
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+``identify`` accepts one or more m/z values and optional corresponding CCS
+values. It returns an ``IdentificationDataFrame`` (a pandas DataFrame subclass)
+with metabolite names as the index. The defaults select ``HMDB(All)`` and the
+``FMP-10`` matrix.
+
+.. code-block:: python
+
+   with MetIDServer() as metid:
+       hits = metid.identify(
+           metabolome="HMDB(All)",
+           matrix="FMP-10",
+           typ="All",
+           adducts="All",
+           mass_error=5,
+           mz=[180.0634, 196.0583],
+           mzwindow=5,
+           ccs=[-1, -1],
+       )
+
+       print(hits.head())
+       print(hits.columns)
+
+Use ``ccs=-1`` (the default) or ``ccs=None`` to search without CCS. For a
+multiple-mass query, provide one CCS value per m/z, or the single ``-1``
+sentinel to disable CCS for every mass. Other length mismatches raise a
+``ValueError``. The server only uses CCS filtering when the values are valid
+and aligned with the m/z values.
+
+The special value ``typ="All"`` asks the server to include Exogenous,
+Endogenous, and Unspecified records. The current server maps ``adducts="All"``
+to its configured default filter. You can also pass a string or list for these
+selectors, depending on the database query you need.
+
+To group identification rows by observed mass, use ``as_dict``. The default
+grouping column is ``oMass``; pass another column name if your result uses a
+different observed-mass field.
+
+.. code-block:: python
+
+   grouped = hits.as_dict(mass_column="oMass")
+   for mass, identifications in grouped.items():
+       print(mass, list(identifications))
+
+CCS prediction
+~~~~~~~~~~~~~~
+
+``predict_ccs`` accepts one SMILES string or a one-dimensional sequence. An
+adduct can be omitted, supplied once for all SMILES, or supplied as a sequence
+that pairs with the SMILES. A single SMILES can be paired with several adducts;
+otherwise the two input lengths must match. The method returns a DataFrame
+with ``smiles``, ``adduct``, ``predicted_ccs``, and ``mz`` columns.
+
+.. code-block:: python
+
+   with MetIDServer() as metid:
+       predictions = metid.predict_ccs(
+           ["CCO", "c1ccccc1"],
            adduct="[M+H]+",
        )
-       print(results)
-   finally:
-       server.stop()
+       print(predictions)
 
-If no port is specified, the client selects an available local port. The
-server's base URL is available as ``server.base_url``.
+The Python wrapper accepts ``[M+H]+``, ``[M]+``, ``[M+Na]+``, and ``[M+K]+``.
+Blank or unsupported adducts are replaced with the ``[M+H]+`` fallback before
+the request is sent. Invalid SMILES are reported as a ``ValueError``.
 
-HTTP routes
------------
+Browse database data and search names
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All routes are served on the loopback interface. JSON request bodies should
-use ``Content-Type: application/json``. The client sends JSON bodies on a few
-``GET`` requests; see the implementation notes for compatibility details.
+The client exposes common tables as DataFrames:
 
-.. list-table:: Routes
-   :header-rows: 1
-   :widths: 18 18 64
+.. code-block:: python
 
-   * - Method
-     - Path
-     - Purpose
-   * - ``GET``
-     - ``/``
-     - Returns the text ``Hello from Tauri API!``.
-   * - ``GET``
-     - ``/warmup``
-     - Health/readiness check. Returns ``OK``.
-   * - ``GET``
-     - ``/name``
-     - Accepts a JSON string body and returns a greeting JSON string.
-   * - ``POST``
-     - ``/process``
-     - Adds 5 to every number in a JSON array.
-   * - ``POST``
-     - ``/identify``
-     - Identifies metabolites from m/z values and optional CCS values.
-   * - ``GET``
-     - ``/get_database``
-     - Accepts a JSON string body naming ``tables`` or a table to fetch.
-   * - ``POST``
-     - ``/post_database``
-     - Placeholder route; currently performs no database write.
-   * - ``POST``
-     - ``/cutom_sql``
-     - Executes the supplied SQL statement. The route is spelled ``cutom`` in
-       the current router.
-   * - ``GET``
-     - ``/search_by_name``
-     - Accepts a JSON object body with ``name`` and ``ccs`` fields.
-   * - ``POST``
-     - ``/read_imzml``
-     - Reads an imzML file and returns m/z and intensity arrays.
-   * - ``POST``
-     - ``/predict_ccs``
-     - Predicts CCS and m/z for one or more SMILES/adduct pairs.
+   with MetIDServer() as metid:
+       tables = metid.list_tables()
+       metabolites = metid.list_metabolites()
+       matrices = metid.list_matrices()
+       groups = metid.list_functional_groups()
+       adducts = metid.list_adducts()
 
-Health and greeting routes
---------------------------
+       dopamine = metid.search_by_name("dopamine")
+       print(dopamine.head())
 
-``GET /``
-~~~~~~~~~
+``search_by_name(name, ccs=False)`` searches by name. Set ``ccs=True`` to ask
+for CCS-related fields in addition to m/z fields. To retrieve another table,
+use ``metid.list_tables()`` to find its name; the supplied Python client has
+convenience methods for the tables listed above.
 
-Returns a plain-text greeting:
+Read imzML data
+~~~~~~~~~~~~~~~
+
+``read_imzml(path, n, tolerance)`` reads an imzML file accessible to the local
+Met-ID process and returns a DataFrame with ``mz`` and ``intensity`` columns.
+The file path is interpreted on the computer running the server.
+
+.. code-block:: python
+
+   with MetIDServer() as metid:
+       spectrum = metid.read_imzml(
+           r"C:\data\sample.imzML",
+           n=100,
+           tolerance=0.01,
+       )
+       print(spectrum.head())
+
+R
+-
+
+Configure and start the server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The R client starts the executable with ``processx``. Set ``METID_PROJECT_ROOT``
+to the directory used by the R client's default path lookup. The default
+lookup expects the release executable at
+``met-id/src-tauri/target/release/Met-ID`` (``Met-ID.exe`` on Windows) and one
+matching sidecar under ``met-id/src-tauri/pyinstaller/dist``.
+
+For example, add the project location to ``~/.Renviron``:
 
 .. code-block:: text
 
-   Hello from Tauri API!
+   METID_PROJECT_ROOT=/path/to/your/project
 
-``GET /warmup``
-~~~~~~~~~~~~~~~
+Alternatively, pass explicit ``binary`` and ``sidecar`` paths to
+``start_metid_server``. The environment variables ``METID_SERVER_PATH`` and
+``METID_CCS_SIDECAR_PATH`` provide the same overrides. The R client defaults
+to port 8787; choose another port if it is already in use.
 
-Returns HTTP 200 with the body ``OK`` when the server is ready. The Python
-client polls this route during startup.
+.. code-block:: r
 
-``GET /name``
-~~~~~~~~~~~~~
+   metid <- start_metid_server(port = 8787, timeout = 60)
+   on.exit(stop_metid_server(metid), add = TRUE)
 
-The handler expects a JSON string in the request body and returns a JSON
-string.
+When running in a function, register ``on.exit`` immediately after startup so
+the server is closed if later code fails. At the console, call
+``stop_metid_server(metid)`` when you have finished.
 
-.. code-block:: http
-
-   GET /name
-   Content-Type: application/json
-
-   "Patrik"
-
-.. code-block:: json
-
-   "Hello Patrik!"
-
-``POST /process``
-~~~~~~~~~~~~~~~~~
-
-Accepts a JSON array of numbers and returns an array with 5 added to each
-value.
-
-.. code-block:: json
-
-   [1.0, 2.5, -1.0]
-
-.. code-block:: json
-
-   [6.0, 7.5, 4.0]
-
-Metabolite identification
--------------------------
-
-``POST /identify`` accepts a JSON object. ``masses`` may be a number, numeric
-string, or an array of numbers/numeric strings. ``mass_error`` and ``mzwindow``
-are scalar numbers or numeric strings. ``typ`` and ``adducts`` accept a string
-or an array of strings; numeric values are also accepted and converted to
-strings by the parser.
-
-.. code-block:: json
-
-   {
-     "met": "HMDB(All)",
-     "mat": "FMP-10",
-     "typ": "All",
-     "adducts": "All",
-     "mass_error": 0,
-     "masses": [421.1911, 245.123],
-     "ccss": [-1, -1],
-     "mzwindow": 5
-   }
-
-Fields:
-
-.. list-table:: ``/identify`` request fields
-   :header-rows: 1
-   :widths: 16 18 66
-
-   * - Field
-     - Required
-     - Meaning and accepted values
-   * - ``met``
-     - Yes
-     - Metabolome/database selector passed to the SQL handler (for example,
-       ``HMDB(All)``).
-   * - ``mat``
-     - Yes
-     - Matrix selector passed to the SQL handler (for example, ``FMP-10``).
-   * - ``typ``
-     - Yes
-     - One type or a list of types. The special string ``All`` expands to
-       ``Exogenous``, ``Endogenous``, and ``Unspecified``.
-   * - ``adducts``
-     - Yes
-     - One value or a list of values. In this implementation the special
-       string ``All`` maps to ``Phenolic Hydroxyls``.
-   * - ``mass_error``
-     - Yes
-     - Scalar numeric value or numeric string, converted to a string before
-       calling the SQL handler.
-   * - ``masses``
-     - Yes
-     - One m/z value or a non-empty list of m/z values.
-   * - ``ccss``
-     - No
-     - Optional CCS value(s). CCS is used only if the list length equals the
-       m/z list length and its first value is not ``-1``. If omitted, empty,
-       set to the ``-1`` sentinel, or length-mismatched, CCS is not used.
-   * - ``mzwindow``
-     - Yes
-     - Scalar numeric value or numeric string passed as the m/z window.
-
-The response is a JSON object whose properties are result-column names and
-whose values are arrays of strings. Exact properties depend on the SQL
-handler's returned identification fields. The Python ``identify`` helper
-converts this object to an ``IdentificationDataFrame`` and sets ``names`` as
-the DataFrame index.
-
-Database routes
----------------
-
-``GET /get_database``
-~~~~~~~~~~~~~~~~~~~~
-
-Accepts a JSON string body. Use ``"tables"`` to list table names, or pass a
-table name to fetch its contents.
-
-.. code-block:: http
-
-   GET /get_database
-   Content-Type: application/json
-
-   "tables"
-
-Table-list response:
-
-.. code-block:: json
-
-   {"Tables": ["metabolites", "matrices", "adducts"]}
-
-For a table request, the response has this shape:
-
-.. code-block:: json
-
-   {
-     "Table": {
-       "col_names": ["name", "mz"],
-       "rows": [["example", 123.4]]
-     }
-   }
-
-SQLite values are represented as JSON nulls, numbers, strings, or base64
-strings for BLOB values. The Python helpers ``list_metabolites``,
-``list_matrices``, ``list_functional_groups``, and ``list_adducts`` convert
-table results to pandas DataFrames.
-
-``POST /post_database``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-This route is currently a placeholder. It obtains a database connection but
-does not add or modify records.
-
-``POST /cutom_sql``
+Identify metabolites
 ~~~~~~~~~~~~~~~~~~~
 
-Accepts a JSON string containing SQL, executes it on the application
-database, and returns an empty result wrapper. The route spelling is exactly
-``/cutom_sql`` in the current server code. This is a powerful local operation;
-send only trusted SQL and do not expose the server beyond loopback.
+``metid_identify`` returns a data frame. Use numeric vectors for multiple m/z
+and CCS values. The default ``ccs = -1`` disables CCS filtering; ``ccs = NULL``
+also disables it. For multiple m/z values, provide a matching CCS vector or
+the scalar sentinel ``-1``.
 
-``GET /search_by_name``
-~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: r
 
-Accepts a JSON object body and searches metabolite names using a substring
-match. Set ``ccs`` to ``true`` to include CCS columns in addition to m/z
-columns.
+   metid <- start_metid_server()
+   on.exit(stop_metid_server(metid), add = TRUE)
 
-.. code-block:: json
+   hits <- metid_identify(
+     metid,
+     metabolome = "HMDB(All)",
+     matrix = "FMP-10",
+     typ = "All",
+     adducts = "All",
+     mass_error = 5,
+     mz = c(180.0634, 196.0583),
+     mzwindow = 5,
+     ccs = c(-1, -1)
+   )
 
-   {"name": "dopamine", "ccs": true}
+   head(hits)
 
-The response uses the same ``Table`` shape as ``/get_database``. The Python
-helper returns a pandas DataFrame indexed by ``name``.
+The server's ``typ="All"`` setting includes Exogenous, Endogenous, and
+Unspecified records. In the current server implementation,
+``adducts="All"`` maps to its configured default filter.
 
-imzML route
------------
+Predict CCS
+~~~~~~~~~~~
 
-``POST /read_imzml`` accepts a file path and two numeric parameters:
+``metid_predict_ccs`` returns one row per prediction, with the input SMILES,
+adduct, predicted CCS, and calculated m/z. If ``adduct`` is omitted, the
+server uses ``[M+H]+``.
 
-.. code-block:: json
+.. code-block:: r
 
-   {
-     "path": "C:/data/sample.imzML",
-     "n": 100,
-     "tolerance": 0.01
-   }
+   predictions <- metid_predict_ccs(
+     metid,
+     smiles = c("CCO", "c1ccccc1"),
+     adduct = c("[M+H]+", "[M+H]+")
+   )
 
-The response contains parallel arrays:
+   predictions
 
-.. code-block:: json
+A single adduct can be used for multiple SMILES. For multiple adducts per
+molecule, repeat the SMILES value for each requested pairing. Use adduct values
+supported by the installed sidecar.
 
-   {
-     "mz": [100.0, 101.0],
-     "intensity": [1200.0, 450.0]
-   }
+Work with database tables and name search
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Python ``read_imzml`` helper returns these values as a DataFrame with
-``mz`` and ``intensity`` columns. The path is read by the local server process,
-so it must be accessible from that machine.
+Use ``metid_list_tables`` to inspect the database tables available in the
+installed application. Common convenience functions return data frames:
 
-CCS prediction
---------------
+.. code-block:: r
 
-``POST /predict_ccs`` accepts a single SMILES string or a list of SMILES
-strings. The adduct property may be named ``adduct`` or ``adducts`` and may
-be a string or a list of strings. If omitted, the default adduct is
-``[M+H]+``.
+   tables <- metid_list_tables(metid)
+   metabolites <- metid_list_metabolites(metid)
+   matrices <- metid_list_matrices(metid)
+   groups <- metid_list_functional_groups(metid)
+   adducts <- metid_list_adducts(metid)
 
-.. code-block:: json
+   dopamine <- metid_search_by_name(metid, "dopamine", ccs = TRUE)
 
-   {
-     "smiles": ["CCO", "c1ccccc1"],
-     "adducts": ["[M+H]+", "[M+Na]+"]
-   }
+For a table without a convenience function, call ``metid_get_table(metid,
+"table_name")``. ``metid_search_by_name`` accepts a name and an optional
+``ccs`` flag.
 
-One SMILES can be paired with several adducts, or several SMILES can share
-one adduct. Otherwise, the two lists must have the same length. Empty SMILES
-values are rejected. Blank adduct values use ``[M+H]+``.
+Read imzML data
+~~~~~~~~~~~~~~~
 
-.. code-block:: json
+``metid_read_imzml`` returns a data frame with parallel ``mz`` and
+``intensity`` columns. The path must be visible to the local server process.
 
-   [
-     {
-       "smiles": "CCO",
-       "adduct": "[M+H]+",
-       "predicted_ccs": 123.4,
-       "mz": 47.049
-     }
-   ]
+.. code-block:: r
 
-Each result includes the input SMILES, selected adduct, predicted CCS, and
-calculated m/z. Predictions are sent to the sidecar sequentially.
+   spectrum <- metid_read_imzml(
+     metid,
+     path = "data/sample.imzML",
+     n = 100,
+     tolerance = 0.01
+   )
+   head(spectrum)
 
-The Python ``predict_ccs`` helper accepts a scalar or one-dimensional list of
-SMILES and an optional scalar/list of adducts. It returns a pandas DataFrame.
-The helper normalizes blank or unsupported adducts to ``[M+H]+`` before
-sending the request. The Rust route itself reports invalid SMILES/adducts as
-HTTP 400 and sidecar failures as HTTP 502.
+Common client operations
+------------------------
 
-Error responses
----------------
+| Task | Python | R |
+| --- | --- | --- |
+| Start server | ``MetIDServer()`` | ``start_metid_server()`` |
+| Stop server | ``stop()`` or context manager | ``stop_metid_server(client)`` |
+| Identify | ``identify(...)`` | ``metid_identify(client, ...)`` |
+| Predict CCS | ``predict_ccs(...)`` | ``metid_predict_ccs(client, ...)`` |
+| List tables | ``list_tables()`` | ``metid_list_tables(client)`` |
+| Read a table | convenience methods | ``metid_get_table(client, name)`` |
+| Search names | ``search_by_name(...)`` | ``metid_search_by_name(client, ...)`` |
+| Read imzML | ``read_imzml(...)`` | ``metid_read_imzml(client, ...)`` |
 
-The identification API maps JSON and parsing errors to HTTP 400 and SQLite
-errors to HTTP 500. The custom JSON error handler used by ``/process`` and
-``/cutom_sql`` returns a JSON object with an ``error`` property: missing JSON
-content type and invalid JSON data return HTTP 400; other JSON request
-rejections return HTTP 422. CCS validation errors return HTTP 400, while
-sidecar failures return HTTP 502.
+Errors and troubleshooting
+--------------------------
 
-The Python client raises ``MetIDApiError`` for HTTP failures when using its
-shared error helper. It retries several operations before raising a
-``RuntimeError``; CCS client errors in the 4xx range are converted to
-``ValueError`` without retrying.
+* **Executable not found:** pass ``server_path`` and ``sidecar_path`` in
+  Python, or ``binary`` and ``sidecar`` in R. Check the corresponding
+  environment variables and executable permissions.
+* **Server fails to start:** verify the executable and sidecar came from the
+  same Met-ID release. In R, confirm ``METID_PROJECT_ROOT`` points to the
+  expected directory layout. In Python, inspect the startup output printed by
+  the client.
+* **Port is already in use:** choose another ``port``. The clients do not need
+  a public or network-facing port.
+* **CCS prediction fails:** check that each SMILES is valid and the adduct is
+  supported by the installed sidecar. Python normalizes unsupported adducts to
+  ``[M+H]+``; R passes the selected adduct through to the server.
+* **imzML file cannot be read:** use an existing path readable by the local
+  server process, not merely by a different machine or remote R/Python client.
+* **Identification returns no rows:** verify the selected metabolome, matrix,
+  mass error, m/z window, and whether CCS filtering is enabled. Use ``-1`` to
+  disable CCS filtering.
 
-Python client reference
------------------------
+The clients retry some transient requests and report server errors as
+exceptions. Python exposes ``MetIDApiError`` for HTTP failures; the CCS helper
+raises ``ValueError`` for invalid client input. R reports request failures as
+``metid_api_error`` conditions, which include a ``status_code`` when an HTTP
+status was returned.
 
-``MetIDServer(project_dir=None, port=None, binary_name=None,
-kill_conflicts=True)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Starts a local API process. ``project_dir`` points to the Rust project,
-``port`` selects the local listening port, ``binary_name`` overrides the
-Cargo package name, and ``kill_conflicts`` controls whether the client tries
-to stop a process already using the port and rebuilds the release binary.
-The client starts a one-hour auto-shutdown timer by default.
-
-Public helper methods:
-
-* ``stop()`` — attempts ``POST /shutdown`` and then terminates the child
-  process. The supplied Rust router does not currently register ``/shutdown``.
-* ``identify(...)`` — calls ``/identify`` and returns an
-  ``IdentificationDataFrame``.
-* ``list_tables()`` — lists SQLite tables.
-* ``list_metabolites()``, ``list_matrices()``,
-  ``list_functional_groups()``, ``list_adducts()`` — return table data as
-  pandas DataFrames.
-* ``search_by_name(name, ccs=False)`` — searches names and returns a DataFrame.
-* ``read_imzml(path, n, tolerance)`` — reads an imzML file into a DataFrame.
-* ``predict_ccs(smiles, adduct=None)`` — predicts CCS and m/z into a DataFrame.
-* ``return_name(name)`` and ``process_items(items)`` — call the simple example
-  routes ``/name`` and ``/process``.
-
-``IdentificationDataFrame.as_dict(mass_column="oMass")`` groups rows by the
-requested mass column and returns a mapping from each mass to a dictionary
-of identifications. Repeated or blank metabolite names receive generated
-unique keys.
-
-Implementation notes
+Low-level HTTP access
 --------------------
 
-* ``/name``, ``/get_database``, and ``/search_by_name`` are registered as
-  ``GET`` routes but expect JSON request bodies. Some HTTP clients, proxies,
-  and servers do not handle GET bodies consistently. A future API revision
-  should consider changing these to ``POST`` or query parameters.
-* The client calls ``POST /shutdown``, but the supplied router has no such
-  route; ``stop()`` still terminates its child process directly.
-* The client code uses ``np.asarray`` in ``_as_1d_list`` but does not import
-  NumPy in the supplied file. Also, ``_as_1d_list`` is defined inside the
-  class but called as an unqualified function by ``identify``. Those issues
-  must be corrected for the Python ``identify`` helper to work as written.
-* The CCS retry path interpolates ``e`` after the exception handler. Python
-  clears exception variables after an ``except`` block, so the final error
-  path may raise ``NameError`` instead of the intended ``RuntimeError``.
-* ``/search_by_name`` constructs SQL using the supplied name in a formatted
-  query. Bind the value as a SQL parameter before exposing this route to
-  untrusted input.
-* ``/read_imzml`` unwraps numeric conversions and indexes returned pairs
-  directly. Invalid numeric input or unexpected pair data may panic rather
-  than return a structured client error.
-* The ``_static`` directory must exist under ``docs/`` if
-  ``html_static_path = ["_static"]`` remains in ``docs/conf.py``. Otherwise,
-  Sphinx emits a warning.
-
+The clients call the local Axum API internally. Most application code should
+use the language-level functions above. Advanced users who need to implement
+another client can inspect the server's route definitions: ``/identify`` for
+metabolite search, ``/predict_ccs`` for CCS prediction, ``/get_database`` for
+table access, ``/search_by_name`` for name lookup, and ``/read_imzml`` for
+imzML input. These routes are local implementation details; the Python and R
+client methods provide the recommended interface.
