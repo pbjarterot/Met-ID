@@ -83,7 +83,7 @@ with metabolite names as the index. The defaults select ``HMDB(All)`` and the
            typ="All",
            adducts="All",
            mass_error=5,
-           mz=[180.0634, 196.0583],
+           mz=421.1911,
            mzwindow=5,
        )
 
