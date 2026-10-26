@@ -17,8 +17,14 @@ sidecar installed on the same computer where your Python or R session runs.
 The clients start the local server process and wait until it is ready. The
 server only needs to be reachable from the local machine.
 
-Install the Python client and its dependencies using the instructions for the
-Python distribution you received. The R client uses ``httr``, ``jsonlite``,
+Download the Python client wheel from the `Met-ID GitHub releases page
+<https://github.com/pbjarterot/Met-ID/releases>`_ and install it with pip:
+
+.. code-block:: console
+
+   python -m pip install path/to/metid_api.whl
+   
+The R client uses ``httr``, ``jsonlite``,
 and ``processx``. The R client functions shown below must be available in your
 session, either by loading the client package or sourcing its client code.
 
@@ -79,7 +85,6 @@ with metabolite names as the index. The defaults select ``HMDB(All)`` and the
            mass_error=5,
            mz=[180.0634, 196.0583],
            mzwindow=5,
-           ccs=[-1, -1],
        )
 
        print(hits.head())
@@ -90,6 +95,95 @@ multiple-mass query, provide one CCS value per m/z, or the single ``-1``
 sentinel to disable CCS for every mass. Other length mismatches raise a
 ``ValueError``. The server only uses CCS filtering when the values are valid
 and aligned with the m/z values.
+
+Identify output columns
+------------------------
+
+.. list-table:: Identification output columns
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Column
+     - Description
+   * - ``names``
+     - Name of the annotated feature.
+   * - ``oMass``
+     - Observed m/z.
+   * - ``aMass``
+     - Adjusted m/z.
+   * - ``tMass``
+     - Theoretical m/z from the database.
+   * - ``dMass``
+     - Difference between adjusted and theoretical m/z.
+   * - ``dPPM``
+     - Difference between adjusted and theoretical m/z, in ppm.
+   * - ``matrix``
+     - Matrix used for identification.
+   * - ``accession``
+     - Database accession ID.
+   * - ``smiles``
+     - SMILES representation.
+   * - ``msms``
+     - Whether an MS/MS spectrum is available.
+   * - ``formula``
+     - Chemical formula.
+   * - ``possible_derivs``
+     - Number of annotated possible derivatizations.
+   * - ``ccs``
+     - Observed CCS.
+   * - ``tCCS``
+     - Theoretical CCS from the database.
+   * - ``ccsPPM``
+     - Difference between observed and theoretical CCS, in ppm.
+   * - ``Posterior``
+     - Posterior probability for the annotation.
+
+
++------------------------+------------+
+| Column | Description   | 
++========================+============+
+| name  | Name of the annotated feature |
++------------------------+------------+
+| oMass           | Observed m/z      | 
++------------------------+------------+
+| aMass           | Adjusted m/z  | 
++------------------------+------------+
+| tMass           | Theoretical m/z (Database m/z) | 
++------------------------+------------+
+| dMass           | delta m/z (aMass-tMass)  | 
++------------------------+------------+
+| dPPM           | Difference between adjusted m/z and theoretical m/z in parts-per-million        | 
++------------------------+------------+
+| matrix             | The matrix used in identification        | 
++------------------------+------------+
+| Accession       | HMDB/Lipidmaps accession ID        | 
++------------------------+------------+
+| SMILES            | The identified metabolite SMILES        | 
++------------------------+------------+
+| MSMS           | Are MSMS spectra available in Met-ID?        | 
++------------------------+------------+
+| Formula            | The chemical formula of the identified metabolite        | 
++------------------------+------------+
+| Possible derivs            | How many of the possible derivatizations have been annotated        | 
++------------------------+------------+
+| ccs            | Observed CCS        | 
++------------------------+------------+
+| tCCS           | Theoretical CCS (Database CCS)        | 
++------------------------+------------+
+|ccsPPM         | Difference between Observed CCS and Theoretical CCS in parts-per-million        | 
++------------------------+------------+
+| Posterior            | The posterior probability of this annotation being the correct annotation        | 
++------------------------+------------+
+| Error factor            |         | 
++------------------------+------------+
+| exist_pep            | The posterior error probability that the correct annotation exists in the database        | 
++------------------------+------------+
+| exist_q          | The q-value that the correct annotation exists in the database      | 
++------------------------+------------+
+| null_pep          | The posterior error probability of the null hypothesis     | 
++------------------------+------------+
+| h0_q          | The q-value of the null hypothesis     | 
++------------------------+------------+
 
 The special value ``typ="All"`` asks the server to include Exogenous,
 Endogenous, and Unspecified records. The current server maps ``adducts="All"``
