@@ -16,8 +16,26 @@ The Met-ID API was introduced with Met-ID 2.0. The software needs to be updated 
 
 For python, a wheel is distributed in "Releases" and can be installed via:
 
+```bash
+    python -m pip install path/to/metid_api.whl
+```
+And do a simple identification:
 ```python
-python -m pip install path/to/metid_api.whl
+    from metid_api import MetIDServer
+
+    with MetIDServer() as metid:
+        hits = metid.identify(
+            metabolome="HMDB(All)",
+            matrix="FMP-10",
+            typ="All",
+            adducts="All",
+            mass_error=5,
+            mz=[180.0634, 196.0583],
+            mzwindow=5,
+        )
+
+        print(hits.head())
+        print(hits.columns)
 ```
 
 ## Met-ID is under development
