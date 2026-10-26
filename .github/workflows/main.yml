@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   publish-tauri:
-    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
