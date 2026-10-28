@@ -198,25 +198,26 @@ fn process_csv_data_ccs(
 ) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
     let mut res_rows = Vec::with_capacity(n);
 
-    for result in reader.records().take(n) {
+    for result in reader.records() {
         match result {
+            Ok(record) if record.len() == 1 => {
+                eprintln!("Warning: skipping one-field CSV row: {record:?}");
+            }
             Ok(record) => {
-                let row = record
-                    .iter()
-                    .map(String::from)
-                    .collect::<Vec<String>>();
+                res_rows.push(record.iter().map(String::from).collect());
 
-                res_rows.push(row);
+                if res_rows.len() == n {
+                    break;
+                }
             }
             Err(err) => {
-                eprintln!("Warning: Error reading CSV row—skipping: {}", err);
+                eprintln!("Warning: Error reading CSV row—skipping: {err}");
             }
         }
     }
 
     Ok(res_rows)
 }
-
 
 #[tauri::command]
 pub fn read_ms1_imzml(
@@ -304,7 +305,11 @@ pub fn read_ms1_csv(
 ) -> Vec<Vec<String>> {
     let file: File = File::open(path).unwrap();
 
-    let mut reader: csv::Reader<File> = ReaderBuilder::new().delimiter(delimiter.as_bytes()[0]).has_headers(false).from_reader(file);
+    let mut reader = ReaderBuilder::new()
+        .delimiter(delimiter.as_bytes()[0])
+        .has_headers(false)
+        .flexible(true)
+        .from_reader(file);
 
     let mut res_rows: Vec<Vec<String>> = 
         if typeofcsv == "ms1" {
