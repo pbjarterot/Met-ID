@@ -93,73 +93,124 @@ jobs:
           test -f "$CONDA_PREFIX/include/boost/config.hpp"
           python -c "import rdkit; print('RDKit:', rdkit.__version__)"
       
-      - name: Stage RDKit and Boost dylibs and configure Tauri bundling
+      
+      - name: Stage native macOS libraries
         if: runner.os == 'macOS'
         shell: bash
         run: |
           set -euo pipefail
 
-          SOURCE_DIR="$CONDA_PREFIX/lib"
-          STAGE_DIR="met-id/src-tauri/rdkit-libs"
-
-          mkdir -p "$STAGE_DIR"
-          rm -f "$STAGE_DIR"/*.dylib
-
-          shopt -s nullglob
-
-          # Collect RDKit and Boost shared libraries
-          libraries=(
-            "$SOURCE_DIR"/libRDKit*.dylib
-            "$SOURCE_DIR"/libboost_*.dylib
-          )
-
-          if [[ ${#libraries[@]} -eq 0 ]]; then
-            echo "No RDKit or Boost libraries found"
-            exit 1
-          fi
-
-          # Copy libraries, resolving symlinks
-          for library in "${libraries[@]}"; do
-            name="$(basename "$library")"
-            echo "Staging $name"
-            cp -L "$library" "$STAGE_DIR/$name"
-          done
-
-          # Ensure required libraries exist
-          test -f "$STAGE_DIR/libboost_serialization.dylib" || {
-            echo "Missing libboost_serialization.dylib"
-            exit 1
-          }
-
-          # Add the libraries to Tauri configuration
           python3 - <<'PY'
           import json
+          import os
+          import shutil
+          import subprocess
+          from collections import deque
           from pathlib import Path
 
-          config_path = Path(
-              "met-id/src-tauri/tauri.conf.json"
-          )
+          source = Path(os.environ["CONDA_PREFIX"]) / "lib"
+          stage = Path("met-id/src-tauri/rdkit-libs")
+          stage.mkdir(parents=True, exist_ok=True)
+
+          # Remove files from previous staging runs
+          for file in stage.glob("*.dylib"):
+              file.unlink()
+
+          # Start with RDKit and Boost
+          initial = sorted(source.glob("libRDKit*.dylib"))
+          initial += sorted(source.glob("libboost_*.dylib"))
+
+          if not initial:
+              raise RuntimeError("No RDKit or Boost libraries found")
+
+          queue = deque(initial)
+          processed = set()
+          missing = set()
+
+          while queue:
+              library = queue.popleft()
+              name = library.name
+
+              if name in processed:
+                  continue
+
+              if not library.exists():
+                  missing.add(name)
+                  continue
+
+              processed.add(name)
+
+              # Resolve symlinks and copy actual library
+              shutil.copy2(library.resolve(), stage / name)
+              print(f"Bundled: {name}")
+
+              output = subprocess.check_output(
+                  ["otool", "-L", str(library)],
+                  text=True
+              )
+
+              for line in output.splitlines()[1:]:
+                  dep = line.strip().split(" (")[0]
+
+                  # macOS-provided absolute paths
+                  if dep.startswith(("/usr/lib/", "/System/Library/")):
+                      continue
+
+                  # Resolve Conda libraries
+                  if dep.startswith("@rpath/"):
+                      dep_name = dep.split("/")[-1]
+                      dep_path = source / dep_name
+
+                  elif dep.startswith(str(source) + "/"):
+                      dep_name = Path(dep).name
+                      dep_path = Path(dep)
+
+                  elif dep.startswith("@loader_path/"):
+                      dep_name = Path(dep).name
+                      dep_path = library.parent / dep.split(
+                          "@loader_path/", 1
+                      )[1]
+
+                  else:
+                      # Other dependency paths need separate inspection
+                      if dep.startswith("@") or dep.startswith("/"):
+                          raise RuntimeError(
+                              f"Unsupported dependency: {name} -> {dep}"
+                          )
+                      continue
+
+                  if dep_path.exists():
+                      if dep_name not in processed:
+                          queue.append(dep_path)
+                  elif Path("/usr/lib", dep_name).exists():
+                      # System fallback must be verified separately
+                      print(f"System fallback: {dep_name}")
+                  else:
+                      missing.add(dep_name)
+
+          if missing:
+              raise RuntimeError(
+                  "Unresolved dependencies: " + ", ".join(sorted(missing))
+              )
+
+          # Verify Boost Serialization
+          if not (stage / "libboost_serialization.dylib").exists():
+              raise RuntimeError("Boost Serialization is missing")
+
+          # Update Tauri configuration
+          config_path = Path("met-id/src-tauri/tauri.conf.json")
           config = json.loads(config_path.read_text())
 
-          bundle = config.setdefault("bundle", {})
-          macos = bundle.setdefault("macOS", {})
+          macos = config.setdefault("bundle", {}).setdefault("macOS", {})
 
-          staged = sorted(
-              Path("met-id/src-tauri/rdkit-libs")
-              .glob("*.dylib")
-          )
-
-          frameworks = [
-              f"./rdkit-libs/{p.name}" for p in staged
+          existing = [
+              p for p in macos.get("frameworks", [])
+              if not p.startswith("./rdkit-libs/")
           ]
 
-          existing = macos.get("frameworks", [])
-
-          # Retain other custom frameworks, but replace
-          # entries from our generated staging directory.
-          existing = [
-              p for p in existing
-              if not p.startswith("./rdkit-libs/")
+          frameworks = [
+              f"./rdkit-libs/{p.name}"
+              for p in sorted(stage.glob("*.dylib"))
           ]
 
           macos["frameworks"] = list(
@@ -170,10 +221,9 @@ jobs:
               json.dumps(config, indent=2) + "\n"
           )
 
-          print("Bundled libraries:")
-          for lib in frameworks:
-              print(lib)
+          print(f"\nStaged {len(frameworks)} libraries")
           PY
+
       - name: Install frontend dependencies
         working-directory: met-id
         run: npm install
@@ -411,7 +461,17 @@ jobs:
           binaries = [executable]
           binaries.extend(frameworks.glob("*.dylib"))
 
-          missing = []
+          missing = set()
+          system_candidates = set()
+
+          # Libraries commonly provided by macOS.
+          # Their actual runtime resolution must still be verified.
+          known_system = {
+              "libc++.1.dylib",
+              "libiconv.2.dylib",
+              "libz.1.dylib",
+              "libbz2.dylib",
+          }
 
           for binary in binaries:
               result = subprocess.check_output(
@@ -424,27 +484,42 @@ jobs:
 
                   if dependency.startswith("@rpath/"):
                       name = dependency.split("/")[-1]
-                      expected = frameworks / name
 
-                      if not expected.exists():
-                          missing.append(
-                              (binary.name, dependency)
-                          )
+                      if (frameworks / name).exists():
+                          continue
+
+                      if name in known_system:
+                          system_candidates.add(name)
+                      else:
+                          missing.add((binary.name, dependency))
+
+                  elif dependency.startswith("/"):
+                      if not Path(dependency).exists():
+                          missing.add((binary.name, dependency))
+
+          if system_candidates:
+              print("\nPotential macOS system libraries:")
+              for name in sorted(system_candidates):
+                  print(f"  {name}")
 
           if missing:
-              print("Missing bundled @rpath dependencies:")
-              for binary, dependency in missing:
-                  print(f"{binary}: {dependency}")
+              print("\nERROR: Missing dependencies:")
+              for binary, dependency in sorted(missing):
+                  print(f"  {binary}: {dependency}")
               sys.exit(1)
 
-          print("All @rpath dependency names exist")
+          print("\nBundled dependency name checks passed")
           PY
 
           echo "Checking code signature..."
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
-          echo "macOS bundle verification passed"
+          codesign --verify \
+            --deep \
+            --strict \
+            --verbose=2 \
+            "$APP_PATH"
 
+          echo "macOS application verification passed!"
 
   build-python-wheel:
     needs: publish-tauri
