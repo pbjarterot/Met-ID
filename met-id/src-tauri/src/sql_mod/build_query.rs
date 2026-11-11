@@ -200,7 +200,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, ion_mobil
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
-                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts}, 0.0 as ccs FROM temp_concat_lipids ",
                     fg_or_adduct = fg_or_adduct,
                     num_adducts = &coverage_string(&build_condition_query3(&args.adducts, "_lipid").unwrap(), &args.matrix)
                     );
@@ -211,7 +211,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, ion_mobil
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
-                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts}, 0.0 as ccs FROM temp_concat_lipids ",
                     fg_or_adduct = fg_or_adduct,
                     num_adducts = &coverage_string(&build_condition_query3(&args.adducts, "_lipid").unwrap(), &args.matrix)
                     );
@@ -222,7 +222,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, ion_mobil
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
-                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM as ccs temp_concat_lipids ",
                     fg_or_adduct = parse_fgs(&args.adducts),
                     num_adducts = args.adducts.len()
                 );
@@ -233,7 +233,7 @@ pub fn build_query(args: &Args, min_mz: f64, max_mz: f64, count: bool, ion_mobil
                     "SELECT DISTINCT (temp_concat_lipids.mz + CASE WHEN temp_concat_adducts.adduct IN ({fg_or_adduct}) \
                     THEN temp_concat_adducts.deltamass ELSE 0 END) \
                     AS adjusted_mz, temp_concat_lipids.name, temp_concat_adducts.adduct, '0', \
-                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts} FROM temp_concat_lipids ",
+                    temp_concat_lipids.smiles, temp_concat_lipids.formula, {num_adducts}, 0.0 as ccs FROM temp_concat_lipids ",
                     fg_or_adduct = parse_fgs(&args.adducts),
                     num_adducts = args.adducts.len()
                 );
