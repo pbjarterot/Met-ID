@@ -493,9 +493,18 @@ jobs:
                       else:
                           missing.add((binary.name, dependency))
 
+                  elif dependency.startswith((
+                      "/usr/lib/",
+                      "/System/Library/",
+                  )):
+                      # These are Apple system libraries.
+                      # They may reside in the dyld shared cache.
+                      continue
+                  
                   elif dependency.startswith("/"):
-                      if not Path(dependency).exists():
-                          missing.add((binary.name, dependency))
+                      # Other absolute paths must exist.
+                      # In particular, do not depend on Conda paths.
+                      missing.add((binary.name, dependency))
 
           if system_candidates:
               print("\nPotential macOS system libraries:")
