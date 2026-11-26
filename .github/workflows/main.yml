@@ -322,14 +322,48 @@ jobs:
             fi
             chmod +x "$path"
           done
+      - name: Import Apple signing certificate
+        if: runner.os == 'macOS'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      
       - name: Build PyInstaller binaries (macOS)
         if: runner.os == 'macOS'
         working-directory: met-id/src-tauri/pyinstaller
         shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           set -euo pipefail
+      
+          security find-identity -v -p codesigning
+      
           chmod +x make_macos_executables.sh
           ./make_macos_executables.sh
+      
+      - name: Verify PyInstaller signatures
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+      
+          DIST="met-id/src-tauri/pyinstaller/dist"
+      
+          for binary in \
+            metabolite-aarch64-apple-darwin \
+            metabolite_for_db-aarch64-apple-darwin \
+            prediction_model-aarch64-apple-darwin
+          do
+            test -f "$DIST/$binary"
+      
+            echo "Verifying $binary"
+      
+            codesign --verify --strict --verbose=2 "$DIST/$binary"
+      
+            codesign -dv --verbose=4 "$DIST/$binary" 2>&1
+          done
       - name: Install CCS model dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -365,32 +399,6 @@ jobs:
             }
           }
           Get-ChildItem dist
-      
-      - name: Import Apple signing certificate
-        if: runner.os == 'macOS'
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
-          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        
-      - name: Sign PyInstaller binaries for notarization
-        if: matrix.platform == 'macos-latest'
-        shell: bash
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: |
-          set -euo pipefail
-          DIST="met-id/src-tauri/pyinstaller/dist"
-
-          for binary in \
-            metabolite-aarch64-apple-darwin \
-            metabolite_for_db-aarch64-apple-darwin \
-            prediction_model-aarch64-apple-darwin
-          do
-            codesign --force --timestamp --options runtime \
-              --sign "$APPLE_SIGNING_IDENTITY" "$DIST/$binary"
-            codesign --verify --strict --verbose=2 "$DIST/$binary"
-          done
           
       - uses: tauri-apps/tauri-action@v0
         timeout-minutes: 120
